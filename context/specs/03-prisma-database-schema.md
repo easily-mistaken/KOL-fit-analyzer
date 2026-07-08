@@ -412,11 +412,24 @@ model ProviderUsageLog {
 
 8. **Do not touch:** `apps/web/*` (beyond nothing), `apps/worker/*`, `packages/{twitter,llm,analysis,scoring,shared}`, and create no `apps/web/app/api/*`.
 
-## Dependencies Introduced
+## Implementation Note — resolved Prisma **7.8.0** (as built)
+
+`pnpm add prisma @prisma/client` resolved to **Prisma 7.8.0**, a major that changes the setup this spec originally sketched (which assumed a Prisma 6-shaped world). Following the Unit 01/02 precedent of adapting to the resolved toolchain, the implementation differs from the prose above as follows — this section is authoritative where it conflicts:
+
+- **No `url`/`directUrl` in `schema.prisma`.** Prisma 7 rejects datasource connection URLs in the schema. The datasource block is just `datasource db { provider = "postgresql" }`. Connection URLs live in **`packages/db/prisma.config.ts`** (`defineConfig({ schema, migrations, datasource: { url } })`), which loads the root `.env` via `dotenv` and reads `process.env.DIRECT_URL ?? DATABASE_URL ?? ""` (empty fallback so offline `validate`/`generate` never throw).
+- **Generator is `prisma-client`** (Prisma 7's default), not `prisma-client-js`. It **requires** an explicit `output` and emits TypeScript, so it generates to `packages/db/src/generated/prisma` (gitignored) with `moduleFormat = "cjs"` — the CJS setting is required because the package is CommonJS (tsc, no `"type":"module"`); the default ESM output uses `import.meta.url` and breaks when compiled to CJS.
+- **Runtime uses a driver adapter.** Prisma 7 clients connect through a driver adapter, so `src/client.ts` does `new PrismaClient({ adapter: new PrismaPg(process.env.DATABASE_URL ?? "") })`. This adds `@prisma/adapter-pg` + `pg` as dependencies.
+- **Imports come from the generated output**, not `@prisma/client`. `src/index.ts` does `export { prisma } from "./client.js"` and `export * from "./generated/prisma/client.js"` (Node16 requires the `.js` specifier). Consumers still import everything from `@kol-fit/db`.
+- **Env loading via `dotenv` in `prisma.config.ts`**, not `dotenv-cli` wrapper scripts. Package scripts call `prisma …` directly (the config loads env). `dotenv-cli` was not used.
+- **`packages/db/tsconfig.json` is unchanged** — the generated client lives under `src/` and compiles with the rest of the package.
+
+## Dependencies Introduced (as built)
 
 - `prisma` (dev, in `packages/db`)
 - `@prisma/client` (runtime, in `packages/db`)
-- `dotenv-cli` (dev, in `packages/db`) — to load the root `.env` for Prisma CLI commands
+- `@prisma/adapter-pg` (runtime, in `packages/db`) — Prisma 7 Postgres driver adapter
+- `pg` (runtime, in `packages/db`) — driver used by the adapter
+- `dotenv` (dev, in `packages/db`) — loads the root `.env` inside `prisma.config.ts`
 
 Explicitly **not** introduced: `pg-boss`, `zod`, OpenAI/TwitterAPI.io clients, any web/worker dependency.
 

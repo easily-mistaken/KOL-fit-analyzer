@@ -1,0 +1,240 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum JobStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum ReportStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum ReportVerdict {
+  STRONG
+  GOOD
+  OKAY
+  WEAK
+  AVOID
+}
+
+enum EngagementSource {
+  REPLY
+  QUOTE
+  RETWEET
+  FOLLOWER
+}
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  requests AnalysisRequest[]
+  reports  Report[]
+}
+
+model AnalysisRequest {
+  id          String  @id @default(cuid())
+  workspaceId String?
+
+  orgHandle String
+  kolHandle String
+
+  websiteUrl      String?
+  docsUrl         String?
+  productCategory String?
+  targetUser      String?
+  campaignGoal    String?
+  stage           String?
+  region          String?
+
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  workspace  Workspace?         @relation(fields: [workspaceId], references: [id])
+  job        AnalysisJob?
+  report     Report?
+  orgProfile OrgProfile?
+  kolProfile KolProfile?
+  usageLogs  ProviderUsageLog[]
+
+  @@index([workspaceId, createdAt])
+  @@index([orgHandle])
+  @@index([kolHandle])
+  @@index([createdAt])
+}
+
+model AnalysisJob {
+  id        String    @id @default(cuid())
+  requestId String    @unique
+  status    JobStatus @default(QUEUED)
+  attempts  Int       @default(0)
+
+  pgBossJobId  String?
+  errorCode    String?
+  errorMessage String?
+
+  createdAt   DateTime  @default(now()) @db.Timestamptz
+  updatedAt   DateTime  @updatedAt @db.Timestamptz
+  startedAt   DateTime? @db.Timestamptz
+  completedAt DateTime? @db.Timestamptz
+  failedAt    DateTime? @db.Timestamptz
+
+  request AnalysisRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([status, createdAt])
+  @@index([createdAt])
+}
+
+model OrgProfile {
+  id        String @id @default(cuid())
+  requestId String @unique
+
+  handle         String
+  displayName    String?
+  bio            String?
+  followersCount Int?
+  followingCount Int?
+  verified       Boolean?
+
+  normalized     Json?
+  classification Json?
+
+  fetchedAt DateTime? @db.Timestamptz
+  createdAt DateTime  @default(now()) @db.Timestamptz
+  updatedAt DateTime  @updatedAt @db.Timestamptz
+
+  request AnalysisRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([handle])
+}
+
+model KolProfile {
+  id        String @id @default(cuid())
+  requestId String @unique
+
+  handle         String
+  displayName    String?
+  bio            String?
+  followersCount Int?
+  followingCount Int?
+  postsAnalyzed  Int?
+
+  normalized            Json?
+  contentClassification Json?
+
+  fetchedAt DateTime? @db.Timestamptz
+  createdAt DateTime  @default(now()) @db.Timestamptz
+  updatedAt DateTime  @updatedAt @db.Timestamptz
+
+  request AnalysisRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([handle])
+}
+
+model Report {
+  id          String       @id @default(cuid())
+  requestId   String       @unique
+  workspaceId String?
+  status      ReportStatus @default(PENDING)
+
+  overallScore Int?
+  verdict      ReportVerdict?
+  scores       Json?
+
+  report          Json?
+  audienceSummary Json?
+  confidence      Json?
+  sampleSize      Json?
+
+  reportSchemaVersion Int?
+  llmModel            String?
+  promptVersion       String?
+
+  errorCode    String?
+  errorMessage String?
+
+  createdAt   DateTime  @default(now()) @db.Timestamptz
+  updatedAt   DateTime  @updatedAt @db.Timestamptz
+  generatedAt DateTime? @db.Timestamptz
+
+  request        AnalysisRequest        @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  workspace      Workspace?             @relation(fields: [workspaceId], references: [id])
+  evidence       ReportEvidence?
+  engagedSamples EngagedAccountSample[]
+  usageLogs      ProviderUsageLog[]
+
+  @@index([workspaceId, createdAt])
+  @@index([status])
+  @@index([verdict])
+  @@index([createdAt])
+}
+
+model ReportEvidence {
+  id       String @id @default(cuid())
+  reportId String @unique
+
+  evidence    Json
+  sampleSizes Json?
+
+  createdAt DateTime @default(now()) @db.Timestamptz
+  updatedAt DateTime @updatedAt @db.Timestamptz
+
+  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+}
+
+model EngagedAccountSample {
+  id        String           @id @default(cuid())
+  reportId  String
+  handle    String?
+  accountId String?
+  source    EngagementSource
+  bucket    String?
+  signals   Json?
+
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@index([reportId])
+  @@index([bucket])
+}
+
+model ProviderUsageLog {
+  id          String  @id @default(cuid())
+  requestId   String?
+  reportId    String?
+  workspaceId String?
+
+  provider  String
+  operation String
+  requests  Int?
+  tokensIn  Int?
+  tokensOut Int?
+  costUsd   Decimal? @db.Decimal(12, 6)
+  meta      Json?
+
+  createdAt DateTime @default(now()) @db.Timestamptz
+
+  request AnalysisRequest? @relation(fields: [requestId], references: [id], onDelete: SetNull)
+  report  Report?          @relation(fields: [reportId], references: [id], onDelete: SetNull)
+
+  @@index([provider, createdAt])
+  @@index([requestId])
+  @@index([reportId])
+}
