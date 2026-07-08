@@ -71,9 +71,18 @@ importers:
 
   apps/worker:
     dependencies:
+      '@kol-fit/db':
+        specifier: workspace:^
+        version: link:../../packages/db
+      '@kol-fit/queue':
+        specifier: workspace:^
+        version: link:../../packages/queue
       '@kol-fit/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      dotenv:
+        specifier: ^17.4.2
+        version: 17.4.2
     devDependencies:
       '@types/node':
         specifier: latest
