@@ -1,0 +1,399 @@
+"use client";
+
+import * as React from "react";
+import { useRouter } from "next/navigation";
+import { AlertCircle, ChevronDown, Loader2, Search } from "lucide-react";
+import {
+  AnalysisRequestInputSchema,
+  CAMPAIGN_GOAL_LABELS,
+  PRODUCT_STAGE_LABELS,
+  type ApiResponse,
+} from "@kol-fit/shared";
+
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+
+type FieldName =
+  | "orgHandle"
+  | "kolHandle"
+  | "websiteUrl"
+  | "docsUrl"
+  | "productCategory"
+  | "targetUser"
+  | "campaignGoal"
+  | "stage"
+  | "region";
+
+type FormValues = Record<FieldName, string>;
+
+const EMPTY_VALUES: FormValues = {
+  orgHandle: "",
+  kolHandle: "",
+  websiteUrl: "",
+  docsUrl: "",
+  productCategory: "",
+  targetUser: "",
+  campaignGoal: "",
+  stage: "",
+  region: "",
+};
+
+const OPTIONAL_FIELDS: FieldName[] = [
+  "websiteUrl",
+  "docsUrl",
+  "productCategory",
+  "targetUser",
+  "campaignGoal",
+  "stage",
+  "region",
+];
+
+// Sentinel for the "not specified" Select option (Radix disallows an empty
+// string item value); mapped back to "" (omitted from the payload).
+const NONE = "__none__";
+
+type AnalysisCreated = {
+  id: string;
+  jobId: string;
+  status: string;
+  createdAt: string;
+};
+
+function buildPayload(values: FormValues): Record<string, string> {
+  const payload: Record<string, string> = {
+    orgHandle: values.orgHandle.trim(),
+    kolHandle: values.kolHandle.trim(),
+  };
+  for (const field of OPTIONAL_FIELDS) {
+    const value = values[field].trim();
+    if (value) payload[field] = value;
+  }
+  return payload;
+}
+
+/** Small label + control + inline-error row for consistent field markup. */
+function Field({
+  id,
+  label,
+  error,
+  optional,
+  hint,
+  children,
+}: {
+  id: string;
+  label: string;
+  error?: string;
+  optional?: boolean;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-baseline justify-between gap-2">
+        <Label htmlFor={id}>
+          {label}
+          {!optional && <span className="text-error"> *</span>}
+        </Label>
+        {hint && (
+          <span className="text-xs text-muted-foreground">{hint}</span>
+        )}
+      </div>
+      {children}
+      {error && (
+        <p className="text-xs text-error" role="alert">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+export function AnalysisForm() {
+  const router = useRouter();
+  const [values, setValues] = React.useState<FormValues>(EMPTY_VALUES);
+  const [fieldErrors, setFieldErrors] = React.useState<
+    Partial<Record<string, string>>
+  >({});
+  const [formError, setFormError] = React.useState<string | null>(null);
+  const [loading, setLoading] = React.useState(false);
+  const [showOptional, setShowOptional] = React.useState(false);
+
+  function setField(name: FieldName, value: string) {
+    setValues((prev) => ({ ...prev, [name]: value }));
+    if (fieldErrors[name]) {
+      setFieldErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
+  }
+
+  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setFormError(null);
+    setFieldErrors({});
+
+    const payload = buildPayload(values);
+    const parsed = AnalysisRequestInputSchema.safeParse(payload);
+    if (!parsed.success) {
+      const errors: Partial<Record<string, string>> = {};
+      for (const issue of parsed.error.issues) {
+        const key = String(issue.path[0] ?? "form");
+        if (!errors[key]) errors[key] = issue.message;
+      }
+      // Friendlier messages for the empty required fields.
+      if (!payload.orgHandle) errors.orgHandle = "Organization handle is required.";
+      if (!payload.kolHandle) errors.kolHandle = "KOL handle is required.";
+      setFieldErrors(errors);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/analyses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const body = (await res.json()) as ApiResponse<AnalysisCreated>;
+      if (body.ok) {
+        // Keep loading during navigation to the status page.
+        router.push(`/analyses/${body.data.id}`);
+        return;
+      }
+      setFormError(body.error.message);
+      setLoading(false);
+    } catch {
+      setFormError("Something went wrong. Please try again.");
+      setLoading(false);
+    }
+  }
+
+  return (
+    <Card className="mx-auto max-w-2xl">
+      <CardHeader>
+        <CardTitle className="text-lg text-foreground">New analysis</CardTitle>
+        <CardDescription>
+          Compare a crypto organization against a Twitter/X KOL. Only the two
+          handles are required.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={onSubmit} noValidate className="space-y-6">
+          {/* Primary inputs */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field id="orgHandle" label="Organization handle" error={fieldErrors.orgHandle}>
+              <Input
+                id="orgHandle"
+                name="orgHandle"
+                placeholder="@myorg"
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                disabled={loading}
+                aria-invalid={Boolean(fieldErrors.orgHandle)}
+                value={values.orgHandle}
+                onChange={(e) => setField("orgHandle", e.target.value)}
+              />
+            </Field>
+            <Field id="kolHandle" label="KOL handle" error={fieldErrors.kolHandle}>
+              <Input
+                id="kolHandle"
+                name="kolHandle"
+                placeholder="@somekol"
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                disabled={loading}
+                aria-invalid={Boolean(fieldErrors.kolHandle)}
+                value={values.kolHandle}
+                onChange={(e) => setField("kolHandle", e.target.value)}
+              />
+            </Field>
+          </div>
+
+          {/* Optional context toggle */}
+          <div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="px-2 text-secondary-foreground"
+              onClick={() => setShowOptional((v) => !v)}
+              aria-expanded={showOptional}
+            >
+              <ChevronDown
+                className={cn(
+                  "h-4 w-4 transition-transform",
+                  showOptional && "rotate-180"
+                )}
+              />
+              {showOptional ? "Hide optional context" : "Add optional context"}
+            </Button>
+          </div>
+
+          {showOptional && (
+            <div className="space-y-4">
+              <Separator />
+              <p className="text-xs text-muted-foreground">
+                Optional context improves accuracy. Leave anything blank if
+                unknown.
+              </p>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field id="websiteUrl" label="Website URL" optional error={fieldErrors.websiteUrl}>
+                  <Input
+                    id="websiteUrl"
+                    name="websiteUrl"
+                    type="url"
+                    inputMode="url"
+                    placeholder="https://example.com"
+                    disabled={loading}
+                    aria-invalid={Boolean(fieldErrors.websiteUrl)}
+                    value={values.websiteUrl}
+                    onChange={(e) => setField("websiteUrl", e.target.value)}
+                  />
+                </Field>
+                <Field id="docsUrl" label="Docs URL" optional error={fieldErrors.docsUrl}>
+                  <Input
+                    id="docsUrl"
+                    name="docsUrl"
+                    type="url"
+                    inputMode="url"
+                    placeholder="https://docs.example.com"
+                    disabled={loading}
+                    aria-invalid={Boolean(fieldErrors.docsUrl)}
+                    value={values.docsUrl}
+                    onChange={(e) => setField("docsUrl", e.target.value)}
+                  />
+                </Field>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field id="productCategory" label="Product category" optional error={fieldErrors.productCategory}>
+                  <Input
+                    id="productCategory"
+                    name="productCategory"
+                    placeholder="e.g. DeFi perps, L2, wallet"
+                    disabled={loading}
+                    aria-invalid={Boolean(fieldErrors.productCategory)}
+                    value={values.productCategory}
+                    onChange={(e) => setField("productCategory", e.target.value)}
+                  />
+                </Field>
+                <Field id="region" label="Region / language" optional error={fieldErrors.region}>
+                  <Input
+                    id="region"
+                    name="region"
+                    placeholder="e.g. English, SEA, LATAM"
+                    disabled={loading}
+                    aria-invalid={Boolean(fieldErrors.region)}
+                    value={values.region}
+                    onChange={(e) => setField("region", e.target.value)}
+                  />
+                </Field>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field id="campaignGoal" label="Campaign goal" optional>
+                  <Select
+                    value={values.campaignGoal || undefined}
+                    onValueChange={(v) =>
+                      setField("campaignGoal", v === NONE ? "" : v)
+                    }
+                    disabled={loading}
+                  >
+                    <SelectTrigger id="campaignGoal">
+                      <SelectValue placeholder="Select a goal" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NONE}>Any / not specified</SelectItem>
+                      {Object.entries(CAMPAIGN_GOAL_LABELS).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+                <Field id="stage" label="Stage" optional>
+                  <Select
+                    value={values.stage || undefined}
+                    onValueChange={(v) => setField("stage", v === NONE ? "" : v)}
+                    disabled={loading}
+                  >
+                    <SelectTrigger id="stage">
+                      <SelectValue placeholder="Select a stage" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NONE}>Any / not specified</SelectItem>
+                      {Object.entries(PRODUCT_STAGE_LABELS).map(([value, label]) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </Field>
+              </div>
+
+              <Field id="targetUser" label="Target user" optional error={fieldErrors.targetUser}>
+                <Textarea
+                  id="targetUser"
+                  name="targetUser"
+                  rows={3}
+                  placeholder="Who is the ideal user? e.g. active DeFi traders and LPs on L2s."
+                  disabled={loading}
+                  aria-invalid={Boolean(fieldErrors.targetUser)}
+                  value={values.targetUser}
+                  onChange={(e) => setField("targetUser", e.target.value)}
+                />
+              </Field>
+            </div>
+          )}
+
+          {formError && (
+            <div
+              role="alert"
+              className="flex items-start gap-2 rounded-lg border border-error/40 bg-error/10 px-3 py-2.5 text-sm text-error"
+            >
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{formError}</span>
+            </div>
+          )}
+
+          <div className="flex justify-end">
+            <Button type="submit" disabled={loading} className="min-w-40">
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Analyzing…
+                </>
+              ) : (
+                <>
+                  <Search className="h-4 w-4" />
+                  Run analysis
+                </>
+              )}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
