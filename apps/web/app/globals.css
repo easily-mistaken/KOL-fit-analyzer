@@ -1,0 +1,123 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/*
+ * Dark-only analyst-dashboard visual system.
+ * Raw palette below is the single source of truth for every color
+ * (values from context/ui-context.md). Components never hardcode hex —
+ * they consume these tokens through the Tailwind theme mapping below.
+ */
+:root {
+  color-scheme: dark;
+
+  /* Surfaces */
+  --bg-base: #080a0f;
+  --bg-surface: #10131a;
+  --bg-elevated: #171b24;
+  --bg-muted: #1d2230;
+
+  /* Text */
+  --text-primary: #f4f7fb;
+  --text-secondary: #b8c0cc;
+  --text-muted: #7d8794;
+
+  /* Accent */
+  --accent-primary: #6d5ef7;
+  --accent-hover: #8175ff;
+
+  /* State */
+  --state-success: #35d07f;
+  --state-warning: #f5b84b;
+  --state-error: #ff5c6c;
+  --state-info: #4da3ff;
+
+  /* Borders + shadow */
+  --border-default: #252b38;
+  --border-strong: #353d4d;
+  --shadow-card: rgba(0, 0, 0, 0.35);
+
+  /* Radius scale baseline (inputs/buttons = rounded-lg). */
+  --radius: 0.5rem;
+
+  /* shadcn semantic variables, mapped onto the raw palette above. */
+  --background: var(--bg-base);
+  --foreground: var(--text-primary);
+  --card: var(--bg-surface);
+  --card-foreground: var(--text-primary);
+  --popover: var(--bg-elevated);
+  --popover-foreground: var(--text-primary);
+  --primary: var(--accent-primary);
+  --primary-foreground: var(--text-primary);
+  --secondary: var(--bg-elevated);
+  --secondary-foreground: var(--text-secondary);
+  --muted: var(--bg-muted);
+  --muted-foreground: var(--text-muted);
+  --accent: var(--bg-elevated);
+  --accent-foreground: var(--text-primary);
+  --destructive: var(--state-error);
+  --destructive-foreground: var(--text-primary);
+  --border: var(--border-default);
+  --input: var(--border-strong);
+  --ring: var(--accent-primary);
+}
+
+/*
+ * Tailwind v4 theme mapping. Every utility color resolves to a token —
+ * shadcn-standard names for the generated primitives, plus a small set of
+ * ui-context-named utilities (bg-surface, text-success, border-default, ...)
+ * for app components.
+ */
+@theme inline {
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 6px);
+
+  /* shadcn semantic tokens */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* ui-context app utilities (surfaces / state / borders) */
+  --color-base: var(--bg-base);
+  --color-surface: var(--bg-surface);
+  --color-elevated: var(--bg-elevated);
+  --color-inset: var(--bg-muted);
+  --color-success: var(--state-success);
+  --color-warning: var(--state-warning);
+  --color-error: var(--state-error);
+  --color-info: var(--state-info);
+  --color-accent-hover: var(--accent-hover);
+  --color-default: var(--border-default);
+  --color-strong: var(--border-strong);
+}
+
+* {
+  border-color: var(--border-default);
+}
+
+body {
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
