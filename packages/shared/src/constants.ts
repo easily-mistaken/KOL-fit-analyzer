@@ -1,0 +1,10 @@
+// Product-level constants shared across web, worker, and packages.
+
+export const APP_NAME = "Crypto KOL Fit Analyzer";
+
+export const PRODUCT_POSITIONING =
+  "We don't just check what a KOL posts. We check who actually listens.";
+
+// Bumped whenever the FitReport shape changes; persisted with every report
+// (Report.reportSchemaVersion in the DB) so old reports remain interpretable.
+export const REPORT_SCHEMA_VERSION = 1;
