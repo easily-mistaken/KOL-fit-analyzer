@@ -47,6 +47,7 @@ apps/
 
 packages/
   db/                  # Prisma schema, Prisma client, database helpers
+  queue/               # pg-boss setup, enqueue helpers, job-name constants, job-payload schemas
   twitter/             # Twitter/X provider interface and TwitterAPI.io implementation
   llm/                 # LLM provider interface and OpenAI implementation
   analysis/            # Analysis pipeline orchestration
@@ -67,6 +68,7 @@ The repository is a pnpm workspace (`pnpm-workspace.yaml` at the root covering `
 - `apps/web/app/api/` — Owns lightweight request handlers. API routes validate input, enforce auth when added, create jobs, fetch report status, and return report data. They must not execute full analysis jobs.
 - `apps/worker/` — Owns the long-running worker process. It starts pg-boss, registers job handlers, executes analysis jobs, updates job/report status, and handles retries/errors.
 - `packages/db/` — Owns Prisma schema, migrations, Prisma client, database models, and database access helpers.
+- `packages/queue/` — Owns the pg-boss queue boundary: queue setup/lifecycle, enqueue helpers, job-name constants, and job-payload schemas. Isolates pg-boss so a future BullMQ swap is package-internal. Used by `apps/web` (enqueue) and `apps/worker` (consume). Uses the direct (non-pooled) database connection.
 - `packages/twitter/` — Owns Twitter/X data provider interfaces and implementations. No UI, scoring, or report generation logic belongs here.
 - `packages/llm/` — Owns LLM provider interfaces, model call helpers, structured-output validation, and provider-specific adapters.
 - `packages/analysis/` — Owns the orchestration pipeline that combines org analysis, KOL analysis, audience analysis, scoring, and final report generation.

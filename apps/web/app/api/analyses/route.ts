@@ -6,6 +6,7 @@ import {
   type JobStatus,
 } from "@kol-fit/shared";
 import { prisma } from "@kol-fit/db";
+import { enqueueAnalysisRun } from "@kol-fit/queue";
 
 // Prisma + the pg driver adapter require the Node.js runtime (not Edge).
 export const runtime = "nodejs";
@@ -37,9 +38,10 @@ function formatIssues(error: {
 /**
  * POST /api/analyses
  *
- * Creates one analysis: validates the input, then persists an AnalysisRequest
- * plus its AnalysisJob (QUEUED) in a single atomic write. It does not enqueue
- * anything (Unit 06), run analysis, or create a report (Unit 07).
+ * Creates one analysis: validates the input, persists an AnalysisRequest plus
+ * its AnalysisJob (QUEUED) in a single atomic write, then enqueues the
+ * `analysis.run` pg-boss job and records its id on AnalysisJob.pgBossJobId. It
+ * does not run analysis or create a report (Unit 07).
  */
 export async function POST(req: Request): Promise<Response> {
   let body: unknown;
@@ -78,11 +80,54 @@ export async function POST(req: Request): Promise<Response> {
     if (!created.job) {
       throw new Error("AnalysisJob was not created");
     }
+    const jobId = created.job.id;
+
+    // Records are committed; now enqueue the background job.
+    let pgBossJobId: string;
+    try {
+      pgBossJobId = await enqueueAnalysisRun({ requestId: created.id, jobId });
+    } catch (enqueueError) {
+      console.error("[POST /api/analyses] enqueue failed:", enqueueError);
+      // Mark the job FAILED so it is not a silent orphaned QUEUED job.
+      try {
+        await prisma.analysisJob.update({
+          where: { id: jobId },
+          data: {
+            status: "FAILED",
+            errorCode: "enqueue_failed",
+            failedAt: new Date(),
+          },
+        });
+      } catch (markError) {
+        console.error(
+          "[POST /api/analyses] failed to mark job FAILED after enqueue failure:",
+          markError
+        );
+      }
+      return json(
+        err("internal_error", "Failed to enqueue the analysis job."),
+        500
+      );
+    }
+
+    // Best-effort: store the pg-boss job id. The job is already enqueued and
+    // will run, so a failure here is non-fatal (the id is only a debug link).
+    try {
+      await prisma.analysisJob.update({
+        where: { id: jobId },
+        data: { pgBossJobId },
+      });
+    } catch (updateError) {
+      console.error(
+        "[POST /api/analyses] failed to store pgBossJobId (job still enqueued):",
+        updateError
+      );
+    }
 
     return json(
       ok({
         id: created.id,
-        jobId: created.job.id,
+        jobId,
         status: created.job.status,
         createdAt: created.createdAt.toISOString(),
       }),
