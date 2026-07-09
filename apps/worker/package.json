@@ -9,6 +9,7 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
+    "@kol-fit/analysis": "workspace:^",
     "@kol-fit/db": "workspace:^",
     "@kol-fit/queue": "workspace:^",
     "@kol-fit/shared": "workspace:*",

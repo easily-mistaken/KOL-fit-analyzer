@@ -77,6 +77,9 @@ importers:
 
   apps/worker:
     dependencies:
+      '@kol-fit/analysis':
+        specifier: workspace:^
+        version: link:../../packages/analysis
       '@kol-fit/db':
         specifier: workspace:^
         version: link:../../packages/db
@@ -101,6 +104,16 @@ importers:
         version: 7.0.2
 
   packages/analysis:
+    dependencies:
+      '@kol-fit/llm':
+        specifier: workspace:^
+        version: link:../llm
+      '@kol-fit/shared':
+        specifier: workspace:^
+        version: link:../shared
+      '@kol-fit/twitter':
+        specifier: workspace:^
+        version: link:../twitter
     devDependencies:
       '@types/node':
         specifier: ^26.1.1

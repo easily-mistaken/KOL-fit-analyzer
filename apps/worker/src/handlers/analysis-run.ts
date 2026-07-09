@@ -1,7 +1,6 @@
+import { runAnalysis, type AnalysisRequestData } from "@kol-fit/analysis";
 import { Prisma, prisma } from "@kol-fit/db";
 import { AnalysisRunPayloadSchema } from "@kol-fit/queue";
-
-import { buildPlaceholderReport } from "../placeholder-report.js";
 
 /**
  * Processes one `analysis.run` job: validates the payload, loads the job +
@@ -56,15 +55,41 @@ export async function processAnalysisRun(
       data: { status: "RUNNING", startedAt: new Date() },
     });
 
-    const placeholder = buildPlaceholderReport();
-    const reportJson = placeholder as unknown as Prisma.InputJsonValue;
+    // Run the mock analysis pipeline. Report-building lives entirely in
+    // @kol-fit/analysis; the worker only persists the validated result.
+    const requestData: AnalysisRequestData = {
+      orgHandle: job.request.orgHandle,
+      kolHandle: job.request.kolHandle,
+      websiteUrl: job.request.websiteUrl,
+      docsUrl: job.request.docsUrl,
+      productCategory: job.request.productCategory,
+      targetUser: job.request.targetUser,
+      campaignGoal: job.request.campaignGoal,
+      stage: job.request.stage,
+      region: job.request.region,
+    };
+    const { report, scores, evidence, llmModel } = await runAnalysis(requestData);
+
+    const asJson = (v: unknown) => v as unknown as Prisma.InputJsonValue;
     const reportFields = {
       status: "COMPLETED" as const,
-      overallScore: placeholder.overallScore.value,
-      verdict: placeholder.verdict,
-      report: reportJson,
-      confidence: { level: placeholder.confidence },
-      reportSchemaVersion: placeholder.schemaVersion,
+      overallScore: report.overallScore.value,
+      verdict: report.verdict,
+      scores: asJson(scores),
+      report: asJson(report),
+      audienceSummary: asJson(evidence.audienceDistribution),
+      confidence: { level: report.confidence },
+      sampleSize: asJson({
+        kolPosts: evidence.kolPostsSampled,
+        kolReplies: evidence.kolRepliesSampled,
+        topPostsAnalyzed: evidence.topPostsAnalyzed,
+        engagedAccounts: evidence.engagedAccountsSampled,
+        websiteStatus: evidence.websiteStatus,
+        docsStatus: evidence.docsStatus,
+      }),
+      reportSchemaVersion: report.schemaVersion,
+      llmModel,
+      promptVersion: null,
       generatedAt: new Date(),
     };
 
