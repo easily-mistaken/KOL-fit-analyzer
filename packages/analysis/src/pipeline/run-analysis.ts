@@ -139,6 +139,10 @@ export async function runAnalysis(
       kolReplies: kolReplies.length,
       topPostsAnalyzed: topPosts.length,
       engagedAccounts: engagedAccounts.length,
+      // The LLM-classified count may be < total when a provider caps audience
+      // classification (Unit 17 OpenAI cap); record both so confidence can
+      // reflect the capped sample later.
+      engagedAccountsClassified: audience.distribution.sampleSize,
     },
   });
 
