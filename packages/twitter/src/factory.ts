@@ -1,12 +1,14 @@
 import type { TwitterProvider, TwitterProviderKind } from "./provider.js";
 import { createMockTwitterProvider } from "./mock/provider.js";
+import { createTwitterApiProvider } from "./twitterapi/provider.js";
+import { TwitterApiError } from "./twitterapi/errors.js";
 
 /**
  * Selects a Twitter provider. Resolution order:
  *   options.kind -> process.env.TWITTER_PROVIDER -> "mock".
  *
- * Only the mock exists in Unit 10; "twitterapi" is wired in Unit 16 and throws
- * a clear error until then, so the selection seam is explicit.
+ * Mock stays the default for offline development; "twitterapi" is the live
+ * TwitterAPI.io provider (Unit 16), which requires TWITTERAPI_IO_KEY.
  */
 export function createTwitterProvider(options?: {
   kind?: TwitterProviderKind;
@@ -19,10 +21,17 @@ export function createTwitterProvider(options?: {
   switch (kind) {
     case "mock":
       return createMockTwitterProvider();
-    case "twitterapi":
-      throw new Error(
-        "TwitterAPI.io provider is not implemented yet (Unit 16)."
-      );
+    case "twitterapi": {
+      const apiKey = process.env.TWITTERAPI_IO_KEY?.trim();
+      if (!apiKey) {
+        // Fail fast — no silent fallback to mock.
+        throw new TwitterApiError(
+          "auth_error",
+          "TWITTERAPI_IO_KEY is not set; cannot use the twitterapi provider."
+        );
+      }
+      return createTwitterApiProvider({ apiKey });
+    }
     default:
       throw new Error(`Unknown TWITTER_PROVIDER: ${String(kind)}`);
   }

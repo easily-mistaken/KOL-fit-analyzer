@@ -7,3 +7,10 @@ export {
   MockTwitterProvider,
   createMockTwitterProvider,
 } from "./mock/provider.js";
+// Live TwitterAPI.io provider (Unit 16) — exported for observability/testing.
+export {
+  TwitterApiProvider,
+  createTwitterApiProvider,
+} from "./twitterapi/provider.js";
+export { TwitterApiError, type TwitterApiErrorCode } from "./twitterapi/errors.js";
+export type { UsageStats } from "./twitterapi/client.js";
