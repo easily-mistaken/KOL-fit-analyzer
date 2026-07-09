@@ -3,6 +3,7 @@ import type {
   JobStatus,
   ReportStatus,
   ReportVerdict,
+  ScoreBreakdown,
 } from "@kol-fit/shared";
 
 // Payload returned by GET /api/analyses/[id]. Defined once here and imported by
@@ -27,5 +28,6 @@ export type AnalysisStatusResponse = {
     overallScore: number | null;
     generatedAt: string | null;
     fitReport: FitReport | null; // Report.report JSON
+    scores: ScoreBreakdown | null; // Report.scores JSON (full 9-metric breakdown)
   } | null;
 };

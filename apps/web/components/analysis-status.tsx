@@ -18,6 +18,7 @@ import type {
 
 import { cn } from "@/lib/utils";
 import type { AnalysisStatusResponse } from "@/lib/analysis-status";
+import { FitReportView } from "@/components/report/fit-report-view";
 import { Badge } from "@/components/ui/badge";
 import {
   Card,
@@ -153,6 +154,22 @@ export function AnalysisStatus({ id }: { id: string }) {
   }
 
   const { job, report } = data;
+
+  // Completed with a full report: render the wide report view (its own shell).
+  if (job.status === "COMPLETED" && report?.fitReport) {
+    return (
+      <FitReportView
+        fitReport={report.fitReport}
+        scores={report.scores}
+        meta={{
+          orgHandle: data.orgHandle,
+          kolHandle: data.kolHandle,
+          requestId: data.id,
+          generatedAt: report.generatedAt,
+        }}
+      />
+    );
+  }
 
   return (
     <StatusShell>
@@ -290,30 +307,22 @@ const VERDICT_TONE: Record<ReportVerdict, string> = {
   AVOID: "border-error/40 text-error",
 };
 
+// Fallback shown only when the job is COMPLETED and a Report row exists but its
+// FitReport JSON is missing/malformed (the full report view handles the normal
+// case). Renders the flat saved summary fields only.
 function CompletedBody({ data }: { data: AnalysisStatusResponse }) {
   const report = data.report!;
-  const fit = report.fitReport;
-  const placeholderNote = fit?.evidence.notes[0];
-  const score = report.overallScore ?? fit?.overallScore.value ?? null;
-  const confidence = fit?.confidence ?? null;
 
   return (
     <div className="space-y-4">
-      {placeholderNote && (
-        <div className="flex items-start gap-2 rounded-lg border border-info/30 bg-muted px-3 py-2.5 text-xs text-muted-foreground">
-          <Clock className="mt-0.5 h-4 w-4 shrink-0 text-info" />
-          <span>{placeholderNote}</span>
-        </div>
-      )}
-
-      <div className="grid gap-4 sm:grid-cols-3">
+      <p className="text-sm text-muted-foreground">
+        Report data is unavailable; showing the saved summary only.
+      </p>
+      <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1">
           <p className="text-xs text-muted-foreground">Verdict</p>
           {report.verdict ? (
-            <Badge
-              variant="outline"
-              className={cn(VERDICT_TONE[report.verdict])}
-            >
+            <Badge variant="outline" className={cn(VERDICT_TONE[report.verdict])}>
               {report.verdict}
             </Badge>
           ) : (
@@ -323,13 +332,9 @@ function CompletedBody({ data }: { data: AnalysisStatusResponse }) {
         <div className="space-y-1">
           <p className="text-xs text-muted-foreground">Overall score</p>
           <p className="font-mono text-sm text-foreground">
-            {score === null ? "—" : `${score} / 100`}
-          </p>
-        </div>
-        <div className="space-y-1">
-          <p className="text-xs text-muted-foreground">Confidence</p>
-          <p className="text-sm capitalize text-secondary-foreground">
-            {confidence ?? "—"}
+            {report.overallScore === null
+              ? "—"
+              : `${report.overallScore} / 100`}
           </p>
         </div>
       </div>

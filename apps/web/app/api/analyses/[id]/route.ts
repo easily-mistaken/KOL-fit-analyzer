@@ -1,4 +1,10 @@
-import { err, ok, FitReportSchema, type ApiResponse } from "@kol-fit/shared";
+import {
+  err,
+  ok,
+  FitReportSchema,
+  ScoreBreakdownSchema,
+  type ApiResponse,
+} from "@kol-fit/shared";
 import { prisma } from "@kol-fit/db";
 
 import type { AnalysisStatusResponse } from "@/lib/analysis-status";
@@ -41,12 +47,18 @@ export async function GET(
 
     const { job, report } = request;
 
-    // The report JSON was validated on write (Unit 07); re-validate defensively
+    // The report/scores JSON was validated on write; re-validate defensively
     // and degrade to null rather than trust a malformed row.
     let fitReport = null;
     if (report?.report != null) {
       const parsed = FitReportSchema.safeParse(report.report);
       fitReport = parsed.success ? parsed.data : null;
+    }
+
+    let scores = null;
+    if (report?.scores != null) {
+      const parsed = ScoreBreakdownSchema.safeParse(report.scores);
+      scores = parsed.success ? parsed.data : null;
     }
 
     const dto: AnalysisStatusResponse = {
@@ -69,6 +81,7 @@ export async function GET(
             overallScore: report.overallScore,
             generatedAt: iso(report.generatedAt),
             fitReport,
+            scores,
           }
         : null,
     };
