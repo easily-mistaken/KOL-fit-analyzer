@@ -4,11 +4,11 @@ import {
   type EngagedAccountRaw,
 } from "@kol-fit/shared";
 import { createLlmProvider, type ClassifyOrgInput } from "@kol-fit/llm";
+import { scoreAnalysis } from "@kol-fit/scoring";
 import { createTwitterProvider } from "@kol-fit/twitter";
 
 import { ingestOrgContext } from "../ingestion/org-context.js";
 import { collectEngagedAccounts } from "./collect-engagement.js";
-import { buildPlaceholderScores } from "./placeholder-scores.js";
 import { selectTopPosts } from "./select-posts.js";
 import type {
   AnalysisRequestData,
@@ -102,9 +102,30 @@ export async function runAnalysis(
     accounts: engagedAccounts,
   });
 
-  // 4. Placeholder scoring — the single seam Unit 14 replaces.
-  const scores = buildPlaceholderScores();
-  const verdict = "OKAY" as const;
+  // 4. Deterministic scoring (packages/scoring). Numbers are computed here /
+  // there — never by the LLM.
+  const { scores, verdict } = scoreAnalysis({
+    org: orgClassification,
+    content: kolContent,
+    audience,
+    sample: {
+      kolPostsSampled: kolPosts.length,
+      kolRepliesSampled: kolReplies.length,
+      topPostsAnalyzed: topPosts.length,
+      engagedAccountsSampled: engagedAccounts.length,
+    },
+    evidence: {
+      websiteFetched: orgContext.website.status === "fetched",
+      docsFetched: orgContext.docs.status === "fetched",
+    },
+    brief: {
+      campaignGoal: request.campaignGoal,
+      region: request.region,
+      productCategory: request.productCategory,
+      targetUser: request.targetUser,
+      stage: request.stage,
+    },
+  });
 
   // 5. Report synthesis (LLM builds the report; scores/verdict passed through).
   const baseReport = await llm.generateFitReport({
@@ -133,7 +154,7 @@ export async function runAnalysis(
       },
       notes: [
         ...baseReport.evidence.notes,
-        "SCORES ARE PLACEHOLDERS — deterministic scoring is not implemented until Unit 14.",
+        "Scores computed by deterministic scoring (engaged-audience-match weighted).",
         `Providers: twitter=${twitterProviderKind}, llm=${llmProviderKind} (model ${llm.model}).`,
         `Website ingestion: ${orgContext.website.status}; docs ingestion: ${orgContext.docs.status}.`,
       ],

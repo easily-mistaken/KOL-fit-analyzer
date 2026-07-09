@@ -3,7 +3,6 @@
 export { runAnalysis } from "./pipeline/run-analysis.js";
 export { selectTopPosts, engagementScore } from "./pipeline/select-posts.js";
 export { collectEngagedAccounts } from "./pipeline/collect-engagement.js";
-export { buildPlaceholderScores } from "./pipeline/placeholder-scores.js";
 export type {
   AnalysisRequestData,
   RunAnalysisOptions,

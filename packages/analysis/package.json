@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@kol-fit/llm": "workspace:^",
+    "@kol-fit/scoring": "workspace:^",
     "@kol-fit/shared": "workspace:^",
     "@kol-fit/twitter": "workspace:^"
   }

@@ -9,5 +9,8 @@
   },
   "devDependencies": {
     "typescript": "latest"
+  },
+  "dependencies": {
+    "@kol-fit/shared": "workspace:^"
   }
 }

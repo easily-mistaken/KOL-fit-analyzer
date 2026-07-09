@@ -108,6 +108,9 @@ importers:
       '@kol-fit/llm':
         specifier: workspace:^
         version: link:../llm
+      '@kol-fit/scoring':
+        specifier: workspace:^
+        version: link:../scoring
       '@kol-fit/shared':
         specifier: workspace:^
         version: link:../shared
@@ -174,6 +177,10 @@ importers:
         version: 7.0.2
 
   packages/scoring:
+    dependencies:
+      '@kol-fit/shared':
+        specifier: workspace:^
+        version: link:../shared
     devDependencies:
       typescript:
         specifier: latest
