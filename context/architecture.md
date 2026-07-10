@@ -144,6 +144,20 @@ Use database-backed caching first:
 
 Add Redis/BullMQ only when Postgres-backed jobs become a bottleneck.
 
+**Implemented (Unit 19):** Twitter/X provider reads are cached in the
+`ProviderCache` table (a generic key/value store: `key`, `provider`, `payload`
+JSON, `fetchedAt`, `expiresAt`). Caching lives worker-side in `@kol-fit/cache`
+as a `withTwitterCache(provider, store, config)` decorator so the pipeline
+(`@kol-fit/analysis`) stays pure and db-free. Cache keys are versioned per
+operation (`tw:v1:profile:<handle>`, `tw:v1:tweets:<handle>:<limit>`,
+`tw:v1:replies|tweetReplies|tweetQuotes|retweeters|followers:...`); the stored
+value is the normalized shared-type output, never raw payloads (Invariant 15).
+The decorator is **miss-safe**: any store error is treated as a miss/no-op and
+never fails an analysis. TTLs: profiles 24h (`CACHE_TTL_PROFILE_SECONDS`),
+tweets/engagement 6h (`CACHE_TTL_SECONDS` / `CACHE_TTL_TWEETS_SECONDS`).
+`CACHE_ENABLED=false` disables caching (full pass-through). Expired rows are
+deleted lazily on read miss. `searchTweets` is not cached.
+
 ## Suggested Database Models
 
 Initial models should include at least:
@@ -232,7 +246,32 @@ Report depth is configurable, not hardcoded inline in pipeline stages. Centraliz
 | Retweeters fetched per selected post | up to 100 |
 | Unique engaged accounts per report | 1,500 maximum |
 
-These caps must be easy to change without touching pipeline logic, since they will be tuned as real API cost/rate-limit data comes in (see Unit 18, Caching and Cost Controls).
+These caps must be easy to change without touching pipeline logic, since they will be tuned as real API cost/rate-limit data comes in.
+
+**Implemented (Unit 19):** the defaults live in `packages/shared` (`ANALYSIS_CAPS`),
+and `resolveCaps()` in `packages/analysis` applies `ANALYSIS_*` environment
+overrides (`ANALYSIS_KOL_POSTS_FETCHED`, `ANALYSIS_KOL_REPLIES_FETCHED`,
+`ANALYSIS_TOP_POSTS_FOR_DEEP_ANALYSIS`, `ANALYSIS_REPLIES_PER_POST`,
+`ANALYSIS_QUOTES_PER_POST`, `ANALYSIS_RETWEETERS_PER_POST`,
+`ANALYSIS_MAX_UNIQUE_ENGAGED_ACCOUNTS`); invalid/non-positive values fall back
+to the default. The worker calls `resolveCaps()` and passes the result into
+`runAnalysis({ caps })`, keeping the pipeline pure.
+
+Audience classification (the dominant LLM cost) is additionally capped by
+`OPENAI_AUDIENCE_CLASSIFICATION_LIMIT` (default 300). When more unique engaged
+accounts are collected than that limit, the OpenAI provider selects a
+**representative deterministic sample** (`sampleAudienceAccounts`): the budget
+is allocated proportionally across engagement sources (REPLY/QUOTE/RETWEET) via
+largest-remainder rounding, and within each source group accounts are sorted by
+a stable key and picked evenly-spaced — so the sample spans the whole group
+rather than clustering at the front, and is identical across cached re-runs.
+
+Provider usage is recorded per completed report in `ProviderUsageLog` (raw
+request counts, LLM token in/out/total, cache hit/miss counts in `meta`).
+`costUsd` is estimated only when `LLM_INPUT_COST_PER_MTOK` /
+`LLM_OUTPUT_COST_PER_MTOK` are set; raw counts are always stored so cost can be
+recomputed later. Mock providers report no usage, so no rows are written for
+them. Usage logging is best-effort and never fails the job.
 
 ## Website/Docs Content Ingestion
 

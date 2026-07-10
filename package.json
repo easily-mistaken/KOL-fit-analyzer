@@ -6,9 +6,11 @@
   "scripts": {
     "build": "pnpm -r build",
     "lint": "pnpm -r --if-present lint",
+    "check": "node scripts/checks/base-url.regression.cjs && node scripts/checks/openai-reasoning.regression.cjs && node scripts/checks/twitterapi-envelope.regression.cjs && node scripts/checks/cache-and-caps.regression.cjs",
     "check:base-url": "node scripts/checks/base-url.regression.cjs",
     "check:openai-reasoning": "node scripts/checks/openai-reasoning.regression.cjs",
     "check:twitterapi-envelope": "node scripts/checks/twitterapi-envelope.regression.cjs",
+    "check:cache-and-caps": "node scripts/checks/cache-and-caps.regression.cjs",
     "dev:web": "pnpm --filter web dev",
     "dev:worker": "pnpm --filter worker dev"
   }

@@ -1,6 +1,7 @@
 // Public surface of @kol-fit/analysis.
 // Unit 13: analysis pipeline skeleton.
 export { runAnalysis } from "./pipeline/run-analysis.js";
+export { resolveCaps } from "./pipeline/resolve-caps.js";
 export { selectTopPosts, engagementScore } from "./pipeline/select-posts.js";
 export { collectEngagedAccounts } from "./pipeline/collect-engagement.js";
 export type {

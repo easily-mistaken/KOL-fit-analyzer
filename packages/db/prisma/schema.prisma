@@ -238,3 +238,16 @@ model ProviderUsageLog {
   @@index([requestId])
   @@index([reportId])
 }
+
+// Generic key-value cache for provider data (profiles/tweets/engagement),
+// reused across requests. Added in Unit 19. Keys are versioned + normalized
+// (e.g. "tw:v1:profile:uniswap"); payload holds a normalized shared-type value.
+model ProviderCache {
+  key       String   @id
+  provider  String
+  payload   Json
+  fetchedAt DateTime @default(now()) @db.Timestamptz
+  expiresAt DateTime @db.Timestamptz
+
+  @@index([expiresAt])
+}

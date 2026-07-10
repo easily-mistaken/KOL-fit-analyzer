@@ -1,0 +1,19 @@
+{
+  "name": "@kol-fit/cache",
+  "version": "0.0.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@kol-fit/db": "workspace:^",
+    "@kol-fit/shared": "workspace:^",
+    "@kol-fit/twitter": "workspace:^"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "typescript": "^5.9.3"
+  }
+}

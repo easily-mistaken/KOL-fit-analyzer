@@ -10,14 +10,17 @@
   },
   "dependencies": {
     "@kol-fit/analysis": "workspace:^",
+    "@kol-fit/cache": "workspace:^",
     "@kol-fit/db": "workspace:^",
+    "@kol-fit/llm": "workspace:^",
     "@kol-fit/queue": "workspace:^",
     "@kol-fit/shared": "workspace:*",
+    "@kol-fit/twitter": "workspace:^",
     "dotenv": "^17.4.2"
   },
   "devDependencies": {
     "@types/node": "latest",
     "tsx": "latest",
-    "typescript": "latest"
+    "typescript": "^5.9.3"
   }
 }

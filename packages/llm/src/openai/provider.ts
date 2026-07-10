@@ -39,6 +39,7 @@ import {
   buildReportPrompt,
   repairNote,
 } from "./prompts.js";
+import { sampleAudienceAccounts } from "./sampling.js";
 import {
   AUDIENCE_BATCH_SCHEMA,
   KOL_CONTENT_SCHEMA,
@@ -203,8 +204,9 @@ export class OpenAiLlmProvider implements LlmProvider {
   async classifyAudienceAccounts(
     input: ClassifyAudienceInput
   ): Promise<AudienceClassification> {
-    // Cap: classify only the first deterministic slice; batch at <=100.
-    const slice = input.accounts.slice(0, this.audienceLimit);
+    // Cap: classify a representative deterministic sample (proportional by
+    // engagement source, evenly spread within each), then batch at <=100.
+    const slice = sampleAudienceAccounts(input.accounts, this.audienceLimit);
     const accounts: AudienceAccount[] = [];
     for (const batch of chunk(slice, AUDIENCE_BATCH_SIZE)) {
       accounts.push(...(await this.classifyAudienceBatch(batch)));

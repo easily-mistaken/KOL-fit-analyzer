@@ -1,12 +1,19 @@
-import { runAnalysis, type AnalysisRequestData } from "@kol-fit/analysis";
+import {
+  resolveCaps,
+  runAnalysis,
+  type AnalysisRequestData,
+} from "@kol-fit/analysis";
 import { Prisma, prisma } from "@kol-fit/db";
 import { AnalysisRunPayloadSchema } from "@kol-fit/queue";
 
+import { buildProviders, logProviderUsage } from "../providers.js";
+
 /**
  * Processes one `analysis.run` job: validates the payload, loads the job +
- * request, drives QUEUED -> RUNNING -> COMPLETED/FAILED, and upserts a
- * placeholder Report. Errors are recorded on the AnalysisJob and swallowed
- * (the job is ack'd) so one failure does not sink the pg-boss batch.
+ * request, drives QUEUED -> RUNNING -> COMPLETED/FAILED, runs the analysis
+ * pipeline (@kol-fit/analysis), and upserts the resulting Report. Errors are
+ * recorded on the AnalysisJob and swallowed (the job is ack'd) so one failure
+ * does not sink the pg-boss batch.
  *
  * @param rawData  the pg-boss job payload (untrusted -> validated here)
  * @param pgJobId  the pg-boss job id (for logging only)
@@ -68,7 +75,14 @@ export async function processAnalysisRun(
       stage: job.request.stage,
       region: job.request.region,
     };
-    const { report, scores, evidence, llmModel } = await runAnalysis(requestData);
+    // Build cached Twitter provider + LLM provider (caching/usage logging live
+    // worker-side; the pipeline stays pure). Caps honor ANALYSIS_* env overrides.
+    const { twitter, llm } = buildProviders();
+    const caps = resolveCaps();
+    const { report, scores, evidence, llmModel } = await runAnalysis(
+      requestData,
+      { twitter, llm, caps }
+    );
 
     const asJson = (v: unknown) => v as unknown as Prisma.InputJsonValue;
     const reportFields = {
@@ -95,7 +109,7 @@ export async function processAnalysisRun(
 
     // Duplicate prevention: Report.requestId is unique, so upsert reuses the
     // single row on retry/double-processing instead of creating a duplicate.
-    await prisma.report.upsert({
+    const savedReport = await prisma.report.upsert({
       where: { requestId },
       create: {
         requestId,
@@ -105,6 +119,15 @@ export async function processAnalysisRun(
       update: reportFields,
     });
 
+    // Record provider usage (best-effort; mock providers report nothing).
+    await logProviderUsage({
+      requestId,
+      reportId: savedReport.id,
+      workspaceId: job.request.workspaceId,
+      twitter,
+      llm,
+    });
+
     // RUNNING -> COMPLETED
     await prisma.analysisJob.update({
       where: { id: jobId },
@@ -112,7 +135,7 @@ export async function processAnalysisRun(
     });
 
     console.log(
-      `[worker] analysis.run completed for request ${requestId} (placeholder report saved).`
+      `[worker] analysis.run completed for request ${requestId} (report saved).`
     );
   } catch (error) {
     // Full detail server-side only; never store secrets/stack traces on the job.
