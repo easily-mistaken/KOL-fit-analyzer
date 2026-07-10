@@ -68,6 +68,7 @@ export async function GET(
       createdAt: request.createdAt.toISOString(),
       job: {
         status: job.status,
+        attempts: job.attempts,
         startedAt: iso(job.startedAt),
         completedAt: iso(job.completedAt),
         failedAt: iso(job.failedAt),

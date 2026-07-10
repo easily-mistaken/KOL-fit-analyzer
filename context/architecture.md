@@ -232,6 +232,15 @@ Worker responsibilities:
 9. Mark job complete or failed.
 10. Store error details without leaking secrets.
 
+### Error Handling & Failure Taxonomy (Unit 21)
+
+Failures are made understandable and safe without leaking internals:
+
+- The worker maps any thrown pipeline/provider error to a **stable, user-facing `AnalysisErrorCode`** via `classifyAnalysisError` (`apps/worker/src/errors.ts`): `TwitterApiError`/`OpenAiError` are mapped by their `.code` to slugs like `twitter_not_found`, `twitter_rate_limited`, `llm_invalid_output`, `llm_auth`, …; anything unrecognized → `analysis_failed`.
+- Each code has a **fixed, safe, human-friendly message**. Only these codes/messages are persisted (`AnalysisJob.errorCode`/`errorMessage`) and shown in the UI — raw provider/exception text, keys, URLs, and PII never reach the DB, logs, or client. Worker failure logs emit only the code + a bounded message string.
+- **Retry metadata:** `AnalysisJob.attempts` is incremented on each QUEUED→RUNNING transition. Per-job errors stay isolated (a failure marks that job FAILED and is ack'd, so one bad job can't sink the pg-boss batch) and processing is idempotent (a COMPLETED job short-circuits). Automatic retry/backoff is **not** enabled yet (the handler does not re-throw to pg-boss) — deferred to a future `analysis.retry`.
+- The failed report page renders the friendly message + code + attempt count + `failedAt`, and offers "start a new analysis" / "back to reports" (no re-enqueue endpoint yet).
+
 ## Analysis Depth and Cost Controls
 
 Report depth is configurable, not hardcoded inline in pipeline stages. Centralize the following caps as named config constants (owned by `packages/shared` or a dedicated `packages/analysis` config module), with environment variable overrides where useful for local tuning:

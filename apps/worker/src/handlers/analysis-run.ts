@@ -7,6 +7,7 @@ import { Prisma, prisma } from "@kol-fit/db";
 import { AnalysisRunPayloadSchema } from "@kol-fit/queue";
 
 import { buildProviders, logProviderUsage } from "../providers.js";
+import { classifyAnalysisError } from "../errors.js";
 
 /**
  * Processes one `analysis.run` job: validates the payload, loads the job +
@@ -56,10 +57,14 @@ export async function processAnalysisRun(
   }
 
   try {
-    // QUEUED -> RUNNING
+    // QUEUED -> RUNNING (increment attempts as retry metadata)
     await prisma.analysisJob.update({
       where: { id: jobId },
-      data: { status: "RUNNING", startedAt: new Date() },
+      data: {
+        status: "RUNNING",
+        startedAt: new Date(),
+        attempts: { increment: 1 },
+      },
     });
 
     // Run the mock analysis pipeline. Report-building lives entirely in
@@ -138,10 +143,12 @@ export async function processAnalysisRun(
       `[worker] analysis.run completed for request ${requestId} (report saved).`
     );
   } catch (error) {
-    // Full detail server-side only; never store secrets/stack traces on the job.
+    // Map to a stable, user-facing code + safe message (never raw provider/
+    // exception text, keys, or PII). Log only the code + a bounded message.
+    const { code, message } = classifyAnalysisError(error);
     console.error(
-      `[worker] processing failed for request ${requestId} (job ${jobId}):`,
-      error
+      `[worker] processing failed for request ${requestId} (job ${jobId}): ${code}:`,
+      error instanceof Error ? error.message : String(error)
     );
     try {
       // RUNNING -> FAILED
@@ -150,8 +157,8 @@ export async function processAnalysisRun(
         data: {
           status: "FAILED",
           failedAt: new Date(),
-          errorCode: "worker_error",
-          errorMessage: "Worker failed to process the analysis job.",
+          errorCode: code,
+          errorMessage: message,
         },
       });
     } catch (markError) {

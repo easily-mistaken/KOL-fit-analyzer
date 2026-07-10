@@ -16,6 +16,7 @@ export type AnalysisStatusResponse = {
   createdAt: string; // ISO
   job: {
     status: JobStatus;
+    attempts: number;
     startedAt: string | null;
     completedAt: string | null;
     failedAt: string | null;

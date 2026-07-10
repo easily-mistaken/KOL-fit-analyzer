@@ -10,16 +10,14 @@ import {
   Clock,
   Loader2,
 } from "lucide-react";
-import type {
-  ApiResponse,
-  JobStatus,
-  ReportVerdict,
-} from "@kol-fit/shared";
+import type { ApiResponse, JobStatus } from "@kol-fit/shared";
 
 import { cn } from "@/lib/utils";
 import type { AnalysisStatusResponse } from "@/lib/analysis-status";
 import { FitReportView } from "@/components/report/fit-report-view";
+import { VerdictBadge } from "@/components/report/verdict-badge";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -299,14 +297,6 @@ function ProgressBody({ status }: { status: JobStatus }) {
   );
 }
 
-const VERDICT_TONE: Record<ReportVerdict, string> = {
-  STRONG: "border-success/40 text-success",
-  GOOD: "border-success/40 text-success",
-  OKAY: "border-warning/40 text-warning",
-  WEAK: "border-error/40 text-error",
-  AVOID: "border-error/40 text-error",
-};
-
 // Fallback shown only when the job is COMPLETED and a Report row exists but its
 // FitReport JSON is missing/malformed (the full report view handles the normal
 // case). Renders the flat saved summary fields only.
@@ -321,13 +311,7 @@ function CompletedBody({ data }: { data: AnalysisStatusResponse }) {
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1">
           <p className="text-xs text-muted-foreground">Verdict</p>
-          {report.verdict ? (
-            <Badge variant="outline" className={cn(VERDICT_TONE[report.verdict])}>
-              {report.verdict}
-            </Badge>
-          ) : (
-            <p className="text-sm text-muted-foreground">—</p>
-          )}
+          <VerdictBadge verdict={report.verdict} />
         </div>
         <div className="space-y-1">
           <p className="text-xs text-muted-foreground">Overall score</p>
@@ -353,19 +337,32 @@ function CompletedBody({ data }: { data: AnalysisStatusResponse }) {
 
 function FailedBody({ job }: { job: AnalysisStatusResponse["job"] }) {
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2 text-sm font-medium text-error">
-        <AlertTriangle className="h-4 w-4" />
-        Analysis failed
-      </div>
-      <p className="text-sm text-secondary-foreground">
-        {job.errorMessage ?? "The analysis could not be completed."}
-      </p>
-      {job.errorCode && (
-        <p className="font-mono text-xs text-muted-foreground">
-          {job.errorCode}
+    <div className="space-y-4">
+      <div className="space-y-2 rounded-xl border border-error/40 bg-error/5 p-4">
+        <div className="flex items-center gap-2 text-sm font-medium text-error">
+          <AlertTriangle className="h-4 w-4" />
+          Analysis failed
+        </div>
+        <p className="text-sm text-secondary-foreground">
+          {job.errorMessage ?? "The analysis could not be completed."}
         </p>
-      )}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1 font-mono text-xs text-muted-foreground">
+          {job.errorCode && <span>{job.errorCode}</span>}
+          {job.attempts > 1 && <span>{job.attempts} attempts</span>}
+          {job.failedAt && (
+            <span>Failed {new Date(job.failedAt).toLocaleString()}</span>
+          )}
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-3">
+        <Button asChild size="sm">
+          <Link href="/">Start a new analysis</Link>
+        </Button>
+        <Button asChild variant="outline" size="sm">
+          <Link href="/analyses">Back to reports</Link>
+        </Button>
+      </div>
     </div>
   );
 }
