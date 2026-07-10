@@ -1,4 +1,8 @@
-import { DEFAULT_MAX_PAGES, DEFAULT_TIMEOUT_MS, resolveBaseUrl } from "./endpoints.js";
+import {
+  DEFAULT_MAX_PAGES,
+  resolveBaseUrl,
+  resolveTimeoutMs,
+} from "./endpoints.js";
 import { TwitterApiError } from "./errors.js";
 
 export type FetchImpl = (
@@ -59,7 +63,7 @@ export class TwitterApiClient {
   constructor(options: TwitterApiClientOptions) {
     this.apiKey = options.apiKey;
     this.baseUrl = resolveBaseUrl(options.baseUrl);
-    this.timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+    this.timeoutMs = resolveTimeoutMs(options.timeoutMs);
     this.fetchImpl = options.fetchImpl ?? (globalThis.fetch as FetchImpl);
     this.maxPages = options.maxPages ?? DEFAULT_MAX_PAGES;
   }

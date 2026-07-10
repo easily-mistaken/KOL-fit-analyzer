@@ -30,8 +30,8 @@ function buildManualBrief(
 }
 
 /**
- * The mock analysis pipeline skeleton: mock Twitter -> optional website/docs
- * ingestion -> mock LLM classifications -> placeholder scores -> fit report.
+ * The analysis pipeline: Twitter fetch -> optional website/docs ingestion ->
+ * LLM classifications -> deterministic scoring (packages/scoring) -> fit report.
  * Depends only on provider interfaces/factories (never concrete providers) and
  * never touches @kol-fit/db. Returns a validated FitReport plus structured
  * evidence for the worker to persist.
@@ -146,8 +146,8 @@ export async function runAnalysis(
     },
   });
 
-  // Annotate evidence (sample sizes + provider/ingestion/placeholder notes) and
-  // re-validate the final report before it leaves the pipeline (Invariant 12).
+  // Annotate evidence (sample sizes + provider/ingestion notes) and re-validate
+  // the final report before it leaves the pipeline (Invariant 12).
   const report = FitReportSchema.parse({
     ...baseReport,
     evidence: {

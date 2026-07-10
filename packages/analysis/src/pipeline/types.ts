@@ -66,7 +66,7 @@ export type PipelineEvidence = {
 export type AnalysisResult = {
   /** Validated against FitReportSchema before it leaves the pipeline. */
   report: FitReport;
-  /** Placeholder score breakdown (pending deterministic scoring in Unit 14). */
+  /** Deterministic score breakdown from packages/scoring. */
   scores: ScoreBreakdown;
   evidence: PipelineEvidence;
   llmModel: string;

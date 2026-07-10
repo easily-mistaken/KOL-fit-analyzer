@@ -24,5 +24,11 @@ export const PATHS = {
 
 export const DEFAULT_TIMEOUT_MS = 15000;
 
+export function resolveTimeoutMs(override?: number): number {
+  if (typeof override === "number" && override > 0) return override;
+  const fromEnv = Number(process.env.TWITTERAPI_IO_TIMEOUT_MS);
+  return Number.isFinite(fromEnv) && fromEnv > 0 ? fromEnv : DEFAULT_TIMEOUT_MS;
+}
+
 // Guard against infinite pagination on stale/looping cursors.
 export const DEFAULT_MAX_PAGES = 200;
