@@ -10,9 +10,20 @@ export const SYSTEM_PROMPT =
   "You are a precise crypto-marketing analyst. Respond ONLY with a single JSON " +
   "object matching the provided schema — no prose, no markdown, no commentary.";
 
+// Strip unpaired UTF-16 surrogates: slicing can split an emoji (a surrogate
+// pair) and a lone surrogate is invalid UTF-8, which OpenAI rejects with a 400.
+// Also removes any pre-existing lone surrogate in the raw text.
+function stripLoneSurrogates(s: string): string {
+  return s.replace(
+    /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g,
+    ""
+  );
+}
+
 function truncate(text: string, max: number): string {
   const t = text.replace(/\s+/g, " ").trim();
-  return t.length > max ? `${t.slice(0, max)}…` : t;
+  const sliced = t.length > max ? `${t.slice(0, max)}…` : t;
+  return stripLoneSurrogates(sliced);
 }
 
 const BUCKET_LIST = Object.entries(AUDIENCE_BUCKET_LABELS)

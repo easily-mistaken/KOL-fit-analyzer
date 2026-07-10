@@ -3,8 +3,13 @@
 export const DEFAULT_BASE_URL = "https://api.twitterapi.io";
 
 export function resolveBaseUrl(override?: string): string {
-  const raw = (override ?? process.env.TWITTERAPI_IO_BASE_URL ?? DEFAULT_BASE_URL).trim();
-  return raw.replace(/\/+$/, "");
+  // Treat an empty/whitespace override or env var as "unset" and fall back to
+  // the default — `??` would keep an empty string, yielding a relative URL.
+  const base =
+    override?.trim() ||
+    process.env.TWITTERAPI_IO_BASE_URL?.trim() ||
+    DEFAULT_BASE_URL;
+  return base.replace(/\/+$/, "");
 }
 
 export const PATHS = {

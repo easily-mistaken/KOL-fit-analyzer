@@ -6,6 +6,9 @@
   "scripts": {
     "build": "pnpm -r build",
     "lint": "pnpm -r --if-present lint",
+    "check:base-url": "node scripts/checks/base-url.regression.cjs",
+    "check:openai-reasoning": "node scripts/checks/openai-reasoning.regression.cjs",
+    "check:twitterapi-envelope": "node scripts/checks/twitterapi-envelope.regression.cjs",
     "dev:web": "pnpm --filter web dev",
     "dev:worker": "pnpm --filter worker dev"
   }

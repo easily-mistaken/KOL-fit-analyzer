@@ -20,11 +20,23 @@ import {
 
 type Raw = Record<string, unknown>;
 
-/** Pull a named array field out of a response envelope. */
+/**
+ * Pull a named array field out of a response envelope. Live TwitterAPI.io wraps
+ * list results under `data` (e.g. `{ status, data: { tweets: [...] } }`) while
+ * some docs show them top-level — tolerate both, plus `data` as a bare array.
+ */
 const arrayField =
   (key: string) =>
-  (body: Raw): unknown =>
-    body[key];
+  (body: Raw): unknown => {
+    if (Array.isArray(body[key])) return body[key];
+    const data = body.data;
+    if (data && typeof data === "object" && !Array.isArray(data)) {
+      const nested = (data as Raw)[key];
+      if (Array.isArray(nested)) return nested;
+    }
+    if (Array.isArray(data)) return data;
+    return undefined;
+  };
 
 const authorOf = (raw: unknown): unknown =>
   raw && typeof raw === "object" ? (raw as Raw).author : undefined;

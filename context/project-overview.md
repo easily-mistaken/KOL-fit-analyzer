@@ -226,3 +226,25 @@ The final report should include:
 8. Every report includes confidence and evidence/sample-size information.
 9. Reports are saved and viewable after generation.
 10. The codebase keeps API, worker, provider, scoring, database, and UI concerns separate.
+
+## Post-MVP Enhancement Roadmap
+
+Deferred product enhancements to make this best-in-class after the first build (Units 1–21) ships. Not in current scope; captured here so we work on them later. Prioritized by impact on the core value (engaged-audience match + audience quality + turning the report into a *spend decision*). A rough self-rating: the planned MVP ≈ 6.5/10 (right core metric, deterministic + explainable, provider-abstracted, but 1:1, single-snapshot, text-only, no ranking/ROI, blunt audience sampling, thin engagement-quality depth); with P0 ≈ 8.5/10 (becomes a decision tool); with P0+P1+select P2 ≈ 9/10.
+
+### P0 — turns "neat report" into a paid decision tool
+
+1. **Engagement-quality depth (reply/quote *content*, not just the engaging account).** Today the Twitter provider normalization keeps only *who* engaged and drops reply/quote *text* (a known limitation since the Unit 10 provider design). Capture a bounded sample of reply/quote text to score meaningful discussion vs shallow `gm 🚀`/giveaway/bot engagement, and detect **repeat quality engagers** (real community vs one-off). Highest-signal lever for detecting fake/farmed engagement; directly strengthens the existing "Engagement Quality Analysis" feature. Fix in provider normalization + the audience/engagement classification, not the scoring math.
+2. **KOL shortlisting / ranking (N KOLs → one ranked list for a campaign).** The MVP is 1:1 (a research tool); agencies decide from a shortlist. Analyze several KOLs for one org/goal and rank them by fit. Biggest usability lever.
+3. **ROI / cost framing.** Accept a KOL price/rate input and express fit as cost per *matched-engaged* reach (not per follower). This is what makes it an actual spend decision, not just an interesting report.
+
+### P1 — accuracy + trust
+
+4. **Representative audience sampling** (already flagged for Unit 19): replace the blunt first-N deterministic slice (`OPENAI_AUDIENCE_CLASSIFICATION_LIMIT`) with proportional sampling across sources/engagement so the core metric isn't order-biased; wire confidence to the classified-sample size (`engagedAccountsClassified`, already recorded).
+5. **Cross-KOL audience overlap** — "you already reached ~40% of this audience via KOL X." Stops paying twice for the same eyeballs (needs saved-report history, Unit 20).
+6. **Paid-promo track record** — historical shill frequency / unrelated-project mentions over time to deepen brand-risk beyond current single-snapshot content signals.
+
+### P2 — polish / reach
+
+7. **Media / visual content analysis** — whether posts are substantive (charts, threads, analysis) vs meme/image spam; feeds content-fit and brand-safety. Requires carrying media URLs through provider normalization + a vision-capable model. **Model foresight:** pick a multimodal frontier model family now (Claude, Gemini, and the GPT‑4o family are all multimodal — including their cheap tiers) so this is later just wiring, **no new API key/provider**. Avoid text-only models if media is on the roadmap.
+8. **Export / shareable client-facing reports** (PDF/link) — currently out of scope; agencies present to clients. Also saved-reports list + re-run + history (Unit 20 covers history/list).
+9. **Engagement trend over time** — growing vs declining engagement; stale vs recent engaged audience.

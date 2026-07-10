@@ -47,14 +47,18 @@ import {
 } from "./schemas.js";
 
 export const DEFAULT_AUDIENCE_LIMIT = 300;
-const AUDIENCE_BATCH_SIZE = 100;
+// Smaller batches → faster per-call structured output (a 100-account batch on a
+// reasoning model can exceed the request timeout).
+const AUDIENCE_BATCH_SIZE = 40;
 const DEFAULT_MAX_RETRIES = 1;
 
+// Caps (billed only for tokens actually generated). Generous headroom so
+// reasoning-model overhead + the structured JSON output both fit.
 const MAX_TOKENS = {
-  org: 700,
-  kolContent: 700,
-  audience: 4000,
-  report: 2000,
+  org: 2000,
+  kolContent: 2000,
+  audience: 8000,
+  report: 4000,
 } as const;
 
 export interface OpenAiProviderOptions {
@@ -229,12 +233,17 @@ export class OpenAiLlmProvider implements LlmProvider {
         const candidates = [];
         for (let i = 0; i < batch.length && i < model.length; i++) {
           const m = (model[i] ?? {}) as Record<string, unknown>;
+          const signals = { ...((m.signals as Record<string, unknown>) ?? {}) };
+          // Clamp botScore to [0,1] (no longer constrained in the JSON schema).
+          if (typeof signals.botScore === "number") {
+            signals.botScore = Math.max(0, Math.min(1, signals.botScore));
+          }
           candidates.push({
             handle: batch[i].user.handle,
             accountId: batch[i].user.id,
             source: batch[i].source,
             bucket: m.bucket,
-            signals: m.signals ?? {},
+            signals,
           });
         }
         const r = AudienceAccountSchema.array().safeParse(candidates);

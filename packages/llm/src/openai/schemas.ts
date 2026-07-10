@@ -73,7 +73,10 @@ export const AUDIENCE_BATCH_SCHEMA = {
             type: "object",
             additionalProperties: false,
             properties: {
-              botScore: { type: ["number", "null"], minimum: 0, maximum: 1 },
+              // No minimum/maximum: OpenAI strict Structured Outputs rejects
+              // numeric constraints. The shared Zod schema enforces botScore
+              // ∈ [0,1] (and the provider clamps) as the trust boundary.
+              botScore: { type: ["number", "null"] },
               emptyBio: { type: ["boolean", "null"] },
               farmingSignals: stringArray,
             },
