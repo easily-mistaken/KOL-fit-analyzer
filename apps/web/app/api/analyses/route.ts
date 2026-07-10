@@ -8,8 +8,43 @@ import {
 import { prisma } from "@kol-fit/db";
 import { enqueueAnalysisRun } from "@kol-fit/queue";
 
+import {
+  clampLimit,
+  listAnalyses,
+  type AnalysisListResponse,
+} from "@/lib/analyses-list";
+
 // Prisma + the pg driver adapter require the Node.js runtime (not Edge).
 export const runtime = "nodejs";
+// The list reflects live job state as it changes; never cache/prerender it.
+export const dynamic = "force-dynamic";
+
+/**
+ * GET /api/analyses
+ *
+ * Read-only, paginated list of saved analyses (newest first). Returns summary
+ * columns only — never the heavy report JSON. `?limit` (1..100, default 25) and
+ * `?cursor` (an AnalysisRequest.id) drive cursor pagination. Pagination noise is
+ * clamped/ignored rather than rejected.
+ */
+export async function GET(req: Request): Promise<Response> {
+  const url = new URL(req.url);
+  const limit = clampLimit(url.searchParams.get("limit"));
+  const cursor = url.searchParams.get("cursor") || undefined;
+
+  try {
+    const data = await listAnalyses({ limit, cursor });
+    return Response.json(ok(data) as ApiResponse<AnalysisListResponse>, {
+      status: 200,
+    });
+  } catch (error) {
+    console.error("[GET /api/analyses] failed to list analyses:", error);
+    return Response.json(
+      err("internal_error", "Failed to load analyses.") as ApiResponse<AnalysisListResponse>,
+      { status: 500 }
+    );
+  }
+}
 
 type AnalysisCreated = {
   id: string;

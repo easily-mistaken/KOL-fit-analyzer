@@ -3,13 +3,11 @@ import Link from "next/link";
 import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import type {
   FitReport,
-  ReportVerdict,
   ScoreBreakdown,
   ScoreMetric,
   ScoreValue,
 } from "@kol-fit/shared";
 
-import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -21,14 +19,7 @@ import {
   ChipRow,
   ReportSection,
 } from "@/components/report/report-section";
-
-const VERDICT_TONE: Record<ReportVerdict, string> = {
-  STRONG: "border-success/40 text-success",
-  GOOD: "border-success/40 text-success",
-  OKAY: "border-warning/40 text-warning",
-  WEAK: "border-error/40 text-error",
-  AVOID: "border-error/40 text-error",
-};
+import { VerdictBadge } from "@/components/report/verdict-badge";
 
 const SAMPLE_LABELS: Record<string, string> = {
   kolPosts: "KOL posts",
@@ -125,12 +116,7 @@ export function FitReportView({
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="space-y-1">
               <p className="text-xs text-muted-foreground">Verdict</p>
-              <Badge
-                variant="outline"
-                className={cn("text-sm", VERDICT_TONE[verdict])}
-              >
-                {verdict}
-              </Badge>
+              <VerdictBadge verdict={verdict} />
             </div>
             <div className="space-y-1 text-right">
               <p className="text-xs text-muted-foreground">Overall fit</p>
