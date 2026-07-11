@@ -5,9 +5,10 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * Small accessible ⓘ affordance (Unit 22). Click to open a popover explaining a
- * metric; click-away or Esc to close. No external dependency — works on touch
- * and keyboard. Title + one or two short paragraphs.
+ * Small accessible ⓘ affordance (Unit 22). The explainer reveals on hover and
+ * on keyboard focus — no click required. Tap still toggles it on touch devices
+ * (which have no hover), and Esc / tapping away closes it. Title + one or two
+ * short paragraphs.
  */
 export function InfoHint({
   title,
@@ -24,18 +25,19 @@ export function InfoHint({
   const popRef = React.useRef<HTMLDivElement>(null);
   const paras = Array.isArray(body) ? body : [body];
 
+  // Close on Esc, and on tap outside (touch, where there's no mouseleave).
   React.useEffect(() => {
     if (!open) return;
-    const onDown = (e: MouseEvent) => {
+    const onDown = (e: MouseEvent | TouchEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
     };
-    document.addEventListener("mousedown", onDown);
+    document.addEventListener("touchstart", onDown);
     document.addEventListener("keydown", onKey);
     return () => {
-      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("touchstart", onDown);
       document.removeEventListener("keydown", onKey);
     };
   }, [open]);
@@ -49,16 +51,31 @@ export function InfoHint({
   }, [open]);
 
   return (
-    <span ref={ref} className={cn("relative inline-flex", className)}>
+    <span
+      ref={ref}
+      className={cn("relative inline-flex", className)}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
       <button
         type="button"
         aria-label={`What does ${title} mean?`}
         aria-expanded={open}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setOpen(false)}
         onClick={() => setOpen((v) => !v)}
-        className="inline-grid h-4 w-4 place-content-center rounded-full border border-strong bg-elevated font-mono text-[10px] font-bold leading-none text-muted-foreground transition-colors hover:border-accent-primary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
+        className="inline-grid h-4 w-4 cursor-help place-content-center rounded-full border border-strong bg-elevated font-mono text-[10px] font-bold leading-none text-muted-foreground transition-colors hover:border-accent-primary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
       >
         i
       </button>
+      {/* Invisible bridge so moving the cursor into the popover doesn't
+          cross an un-hovered gap and close it. */}
+      {open && (
+        <span
+          aria-hidden="true"
+          className="absolute left-0 top-full h-2 w-full"
+        />
+      )}
       {open && (
         <div
           ref={popRef}
