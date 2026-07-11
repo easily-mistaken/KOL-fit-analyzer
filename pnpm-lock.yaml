@@ -142,6 +142,9 @@ importers:
       '@kol-fit/db':
         specifier: workspace:^
         version: link:../db
+      '@kol-fit/llm':
+        specifier: workspace:^
+        version: link:../llm
       '@kol-fit/shared':
         specifier: workspace:^
         version: link:../shared

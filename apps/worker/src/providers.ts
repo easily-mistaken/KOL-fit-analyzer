@@ -1,11 +1,14 @@
 import {
   PrismaCacheStore,
   resolveCacheConfig,
+  resolveClassificationCacheConfig,
+  withLlmCache,
   withTwitterCache,
+  type CachingLlmProvider,
   type CachingTwitterProvider,
 } from "@kol-fit/cache";
 import { Prisma, prisma } from "@kol-fit/db";
-import { createLlmProvider, type LlmProvider } from "@kol-fit/llm";
+import { createLlmProvider } from "@kol-fit/llm";
 import {
   createTwitterProvider,
   type TwitterProvider,
@@ -19,16 +22,21 @@ import {
  */
 export function buildProviders(): {
   twitter: CachingTwitterProvider;
-  llm: LlmProvider;
+  llm: CachingLlmProvider;
 } {
   const twitterKind = process.env.TWITTER_PROVIDER ?? "mock";
-  const inner = createTwitterProvider();
   const twitter = withTwitterCache(
-    inner,
+    createTwitterProvider(),
     new PrismaCacheStore(twitterKind),
     resolveCacheConfig()
   );
-  const llm = createLlmProvider();
+  // Content-addressed reuse of the expensive classifications across analyses
+  // (Unit 23). generateFitReport stays pair-specific (never cached).
+  const llm = withLlmCache(
+    createLlmProvider(),
+    new PrismaCacheStore("llm"),
+    resolveClassificationCacheConfig()
+  );
   return { twitter, llm };
 }
 
@@ -121,6 +129,7 @@ export async function logProviderUsage(args: {
         totalTokens: intOrNull(llm.totalTokens),
         byMethod: (llm.byMethod as unknown) ?? {},
         model: process.env.LLM_MODEL ?? null,
+        classificationCache: (llm.classificationCache as unknown) ?? null,
       } as Prisma.InputJsonValue,
     });
   }

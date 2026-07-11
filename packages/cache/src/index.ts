@@ -5,9 +5,21 @@ export {
   InMemoryCacheStore,
   PrismaCacheStore,
 } from "./store.js";
-export { type CacheConfig, type CacheTtls, resolveCacheConfig } from "./config.js";
+export {
+  type CacheConfig,
+  type CacheTtls,
+  resolveCacheConfig,
+  type ClassificationCacheConfig,
+  type ClassificationCacheTtls,
+  resolveClassificationCacheConfig,
+} from "./config.js";
 export {
   CachingTwitterProvider,
   withTwitterCache,
   type CacheHitStats,
 } from "./twitter-cache.js";
+export {
+  CachingLlmProvider,
+  withLlmCache,
+  type LlmClassificationCacheStats,
+} from "./llm-cache.js";

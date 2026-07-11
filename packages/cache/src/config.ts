@@ -34,3 +34,48 @@ export function resolveCacheConfig(): CacheConfig {
     },
   };
 }
+
+// --- Cross-analysis LLM classification cache (Unit 23) -----------------------
+
+export interface ClassificationCacheTtls {
+  orgSeconds: number;
+  contentSeconds: number;
+  audienceSeconds: number;
+}
+
+export interface ClassificationCacheConfig {
+  enabled: boolean;
+  ttls: ClassificationCacheTtls;
+}
+
+const DEFAULT_CLASSIFICATION_TTL_SECONDS = 1209600; // 14 days
+
+/**
+ * Config for the content-addressed classification cache. `CLASSIFICATION_CACHE_ENABLED=false`
+ * disables it (pass-through). Base TTL is `CLASSIFICATION_CACHE_TTL_SECONDS`
+ * (default 14d); per-kind overrides fall back to it.
+ */
+export function resolveClassificationCacheConfig(): ClassificationCacheConfig {
+  const enabled =
+    (process.env.CLASSIFICATION_CACHE_ENABLED ?? "true")
+      .trim()
+      .toLowerCase() !== "false";
+  const base = num(
+    process.env.CLASSIFICATION_CACHE_TTL_SECONDS,
+    DEFAULT_CLASSIFICATION_TTL_SECONDS
+  );
+  return {
+    enabled,
+    ttls: {
+      orgSeconds: num(process.env.CLASSIFICATION_CACHE_TTL_ORG_SECONDS, base),
+      contentSeconds: num(
+        process.env.CLASSIFICATION_CACHE_TTL_CONTENT_SECONDS,
+        base
+      ),
+      audienceSeconds: num(
+        process.env.CLASSIFICATION_CACHE_TTL_AUDIENCE_SECONDS,
+        base
+      ),
+    },
+  };
+}

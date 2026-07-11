@@ -158,6 +158,24 @@ tweets/engagement 6h (`CACHE_TTL_SECONDS` / `CACHE_TTL_TWEETS_SECONDS`).
 `CACHE_ENABLED=false` disables caching (full pass-through). Expired rows are
 deleted lazily on read miss. `searchTweets` is not cached.
 
+**Implemented (Unit 23) — cross-analysis classification reuse:** the expensive
+LLM classifications are also cached in `ProviderCache` (`provider: "llm"`) via a
+`withLlmCache(provider, store, config)` decorator, so re-analyses reuse them
+(`A×B` then `D×B` reuses the KOL's audience + content classification; `A×B` then
+`A×C` reuses the org classification). Keys are **content-addressed** — a
+sha-256 of the call's actual inputs + model under a versioned `cls:v1:`
+namespace (`content`: handle + sorted post/reply ids; `audience`: sorted
+engaged-account ids+sources + `OPENAI_AUDIENCE_CLASSIFICATION_LIMIT`; `org`:
+handle + brief + website hash) — so a cached result is served **only** for
+identical inputs (no staleness/mismatch risk, no cross-pair leakage). Cached
+payloads are re-validated against their Zod schema on read (miss on drift), the
+decorator is miss-safe, and **`generateFitReport` is pair-specific and never
+cached**. TTL defaults to 14 days (`CLASSIFICATION_CACHE_TTL_SECONDS`, per-kind
+overridable; `CLASSIFICATION_CACHE_ENABLED=false` disables). Classification
+cache hits/misses are recorded in the LLM `ProviderUsageLog.meta`. Caching lives
+worker-side (`packages/cache` + `buildProviders`); the pipeline and providers
+stay `@kol-fit/db`-free.
+
 ## Suggested Database Models
 
 Initial models should include at least:

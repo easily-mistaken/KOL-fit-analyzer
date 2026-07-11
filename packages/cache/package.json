@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "@kol-fit/db": "workspace:^",
+    "@kol-fit/llm": "workspace:^",
     "@kol-fit/shared": "workspace:^",
     "@kol-fit/twitter": "workspace:^"
   },
