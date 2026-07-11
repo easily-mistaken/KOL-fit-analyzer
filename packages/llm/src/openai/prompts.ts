@@ -100,9 +100,15 @@ export function buildReportPrompt(input: GenerateFitReportInput): string {
     input.scores
       ? `Deterministic scores (FINAL): overall=${input.scores.overall.value}, verdict=${input.verdict ?? "n/a"}, confidence=${input.scores.confidence}.`
       : "Deterministic scores are not yet available.",
+    "Write `summary` as a 3-5 sentence plain-English executive summary a reader can skim to understand the " +
+      "fit: whether this KOL is a good match for this org and why, grounded in the engaged-audience match, " +
+      "content alignment, and any risks. Reference the verdict qualitatively (e.g. \"a weak fit\") but do NOT " +
+      "state or invent any numeric scores. Write it as flowing prose, not bullet points.",
+    "Write `keyTakeaways` as 3-5 punchy, standalone one-line points (the scannable version of the summary) — " +
+      "each a concrete \"so what\" a busy reader can grasp in a glance. No numbers, no filler.",
     "IMPORTANT: The numeric scores and verdict are computed deterministically and are FINAL. " +
       "Do NOT output, repeat, recompute, or alter any numbers or the verdict. Write ONLY qualitative narrative " +
-      "for: bestUseCases, weakUseCases, audienceMatchSummary, contentNarrative, engagementNarrative, " +
+      "for: summary, keyTakeaways, bestUseCases, weakUseCases, audienceMatchSummary, contentNarrative, engagementNarrative, " +
       "engagementSignals, paidPromoNarrative, botFarmNarrative, brandSafetyNarrative, geoNarrative, " +
       "recommendedAngle, evidenceNotes.",
   ].join("\n");

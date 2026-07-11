@@ -62,6 +62,8 @@ export function assembleFitReport(
     overallScore: input.scores?.overall ?? placeholder("overall_fit"),
     verdict: input.verdict ?? "OKAY",
     confidence: input.scores?.confidence ?? "low",
+    summary: str(narrative.summary) || undefined,
+    keyTakeaways: arr(narrative.keyTakeaways),
     evidence: {
       sampleSizes:
         input.sampleSizes ?? { engagedAccounts: input.audience.distribution.sampleSize },

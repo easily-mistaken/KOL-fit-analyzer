@@ -25,6 +25,15 @@ export const FitReportSchema = z.object({
     notes: z.array(z.string()).default([]),
   }),
 
+  // Executive summary — a short readable prose conclusion (3-5 sentences) that
+  // ties the metrics together into a takeaway a reader can skim. Optional so
+  // older reports (and any provider that omits it) still validate.
+  summary: z.string().optional(),
+
+  // Key takeaways — the summary as 3-5 punchy one-line points for fast scanning.
+  // Optional/additive; the UI falls back to sentence-splitting `summary`.
+  keyTakeaways: z.array(z.string()).default([]),
+
   // narrative sections (optional -> degrade gracefully)
   bestUseCases: z.array(z.string()).default([]), // 3. Best Use Cases
   weakUseCases: z.array(z.string()).default([]), // 4. Weak Use Cases

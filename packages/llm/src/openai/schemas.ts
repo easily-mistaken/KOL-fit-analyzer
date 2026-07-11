@@ -96,6 +96,8 @@ export const REPORT_NARRATIVE_SCHEMA = {
   type: "object",
   additionalProperties: false,
   properties: {
+    summary: { type: "string" },
+    keyTakeaways: stringArray,
     bestUseCases: stringArray,
     weakUseCases: stringArray,
     audienceMatchSummary: { type: "string" },
@@ -110,6 +112,8 @@ export const REPORT_NARRATIVE_SCHEMA = {
     evidenceNotes: stringArray,
   },
   required: [
+    "summary",
+    "keyTakeaways",
     "bestUseCases",
     "weakUseCases",
     "audienceMatchSummary",

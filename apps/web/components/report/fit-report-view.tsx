@@ -1,45 +1,61 @@
 import * as React from "react";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Check,
+  TriangleAlert,
+  X,
+} from "lucide-react";
 import type {
   FitReport,
+  ReportVerdict,
   ScoreBreakdown,
   ScoreMetric,
   ScoreValue,
 } from "@kol-fit/shared";
 
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { AudienceBars } from "@/components/report/audience-bars";
-import { ConfidenceChip, ScoreMeter } from "@/components/report/score-meter";
-import { ScoreMatrix, type MetricMap } from "@/components/report/score-matrix";
-import {
-  BulletList,
-  ChipRow,
-  ReportSection,
-} from "@/components/report/report-section";
-import { VerdictBadge } from "@/components/report/verdict-badge";
+import { cn } from "@/lib/utils";
+import { METRIC_INFO } from "@/lib/metric-info";
+import { ConfidenceChip } from "@/components/report/score-meter";
+import { ScoreGauge } from "@/components/report/score-gauge";
+import { AudienceDonut } from "@/components/report/audience-donut";
+import { MetricGroups, type MetricMap } from "@/components/report/metric-groups";
+
+// ---- verdict presentation -------------------------------------------------
+const VERDICT: Record<ReportVerdict, { word: string; tone: string }> = {
+  STRONG: { word: "Strong fit", tone: "var(--state-success)" },
+  GOOD: { word: "Good fit", tone: "var(--state-success)" },
+  OKAY: { word: "Okay fit", tone: "var(--state-warning)" },
+  WEAK: { word: "Weak fit", tone: "var(--state-error)" },
+  AVOID: { word: "Avoid", tone: "var(--state-error)" },
+};
+
+const RISK_METRICS = new Set<ScoreMetric>(["paid_promo_risk", "bot_farm_risk"]);
 
 const SAMPLE_LABELS: Record<string, string> = {
   kolPosts: "KOL posts",
   kolReplies: "KOL replies",
   topPostsAnalyzed: "Top posts analyzed",
   engagedAccounts: "Engaged accounts",
+  engagedAccountsClassified: "Accounts classified",
   websiteChars: "Website chars",
   docsChars: "Docs chars",
 };
+const humanizeKey = (key: string): string =>
+  SAMPLE_LABELS[key] ??
+  key.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, (c) => c.toUpperCase());
 
-function humanizeKey(key: string): string {
-  return (
-    SAMPLE_LABELS[key] ??
-    key.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, (c) => c.toUpperCase())
-  );
+// ---- text helpers ---------------------------------------------------------
+function splitSentences(s: string | undefined): string[] {
+  if (!s) return [];
+  return s
+    .split(/(?<=[.!?])\s+(?=[A-Z"'@])/)
+    .map((x) => x.trim())
+    .filter(Boolean);
 }
 
-// Merge the full ScoreBreakdown (authoritative) with the 6 metrics embedded in
-// the FitReport (fallback when scores is null). No recomputation — just picks
-// saved ScoreValues.
+// Merge the full ScoreBreakdown (authoritative) with metrics embedded in the
+// FitReport (fallback when scores is null). No recomputation.
 function collectMetrics(fit: FitReport, scores: ScoreBreakdown | null): MetricMap {
   const metrics: MetricMap = {};
   if (scores) {
@@ -61,6 +77,75 @@ function collectMetrics(fit: FitReport, scores: ScoreBreakdown | null): MetricMa
   return metrics;
 }
 
+type Driver = { label: string; value: number; reason?: string };
+// Compute "what works / what to watch" from the scored metrics themselves.
+function computeDrivers(metrics: MetricMap): { pos: Driver[]; neg: Driver[] } {
+  const pos: Driver[] = [];
+  const neg: Driver[] = [];
+  for (const [k, score] of Object.entries(metrics)) {
+    const metric = k as ScoreMetric;
+    if (metric === "overall_fit" || !score) continue;
+    const label = METRIC_INFO[metric]?.label ?? metric;
+    const reason = score.reasons?.[0];
+    if (RISK_METRICS.has(metric)) {
+      if (score.value >= 55) neg.push({ label, value: score.value, reason });
+    } else if (score.value >= 65) {
+      pos.push({ label, value: score.value, reason });
+    } else if (score.value < 45) {
+      neg.push({ label, value: score.value, reason });
+    }
+  }
+  pos.sort((a, b) => b.value - a.value);
+  neg.sort((a, b) => a.value - b.value);
+  return { pos: pos.slice(0, 3), neg: neg.slice(0, 3) };
+}
+
+// ---- small building blocks ------------------------------------------------
+function Panel({
+  title,
+  children,
+  className,
+}: {
+  title?: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <section
+      className={cn(
+        "rounded-2xl border border-default bg-surface p-5 shadow-[0_1px_2px_rgba(0,0,0,0.4),0_8px_30px_rgba(0,0,0,0.35)] sm:p-6",
+        className
+      )}
+    >
+      {title && (
+        <div className="mb-4 flex items-center gap-3">
+          <h2 className="text-[15px] font-semibold tracking-tight text-foreground">
+            {title}
+          </h2>
+          <span className="h-px flex-1 bg-gradient-to-r from-default to-transparent" />
+        </div>
+      )}
+      {children}
+    </section>
+  );
+}
+
+function Chips({ items }: { items: string[] }) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {items.map((t, i) => (
+        <span
+          key={i}
+          className="rounded-lg border border-default bg-elevated px-2.5 py-1 text-xs text-secondary-foreground"
+        >
+          {t}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+// ---- main -----------------------------------------------------------------
 export function FitReportView({
   fitReport,
   scores,
@@ -79,308 +164,403 @@ export function FitReportView({
   const overall = scores?.overall ?? fitReport.overallScore;
   const confidence = scores?.confidence ?? fitReport.confidence;
   const verdict = fitReport.verdict;
+  const v = VERDICT[verdict];
+
+  // Takeaways: authored points if present, else sentence-split the summary.
+  const summarySentences = splitSentences(fitReport.summary);
+  const heroLine = summarySentences[0];
+  let points =
+    fitReport.keyTakeaways.length > 0
+      ? fitReport.keyTakeaways
+      : summarySentences;
+  if (fitReport.keyTakeaways.length === 0 && heroLine && points[0] === heroLine) {
+    points = points.slice(1);
+  }
+  points = points.slice(0, 5);
+
+  const drivers = computeDrivers(metrics);
+
+  // sample-size strip
+  const ss = fitReport.evidence.sampleSizes;
+  const sampleChips: string[] = [];
+  if (ss.kolPosts) sampleChips.push(`${ss.kolPosts} posts`);
+  if (ss.engagedAccounts) sampleChips.push(`${ss.engagedAccounts} engaged`);
+  const classified = ss.engagedAccountsClassified ?? fitReport.audienceBreakdown?.sampleSize;
+  if (classified) sampleChips.push(`${classified} classified`);
+
+  const heroStyle = { ["--v" as string]: v.tone } as React.CSSProperties;
 
   return (
     <div className="mx-auto max-w-4xl space-y-4">
       <Link
-        href="/"
+        href="/analyses"
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
-        New analysis
+        All reports
       </Link>
 
-      {/* Hero */}
-      <Card>
-        <CardHeader>
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="min-w-0">
-              <CardTitle className="text-base text-foreground">
-                @{meta.orgHandle}{" "}
-                <span className="text-muted-foreground">vs</span> @{meta.kolHandle}
-              </CardTitle>
-              <p className="mt-0.5 font-mono text-xs text-muted-foreground">
-                {meta.requestId}
-              </p>
-            </div>
-            <Badge
-              variant="outline"
-              className="shrink-0 gap-1.5 border-success/40 text-success"
-            >
-              <CheckCircle2 className="h-4 w-4" />
-              Completed
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground">Verdict</p>
-              <VerdictBadge verdict={verdict} />
-            </div>
-            <div className="space-y-1 text-right">
-              <p className="text-xs text-muted-foreground">Overall fit</p>
-              <p className="font-mono text-3xl font-semibold text-foreground">
-                {overall.value}
-                <span className="text-base text-muted-foreground"> / 100</span>
-              </p>
-            </div>
-          </div>
-
-          <div className="h-2 w-full overflow-hidden rounded-full bg-elevated">
-            <div
-              className="h-full rounded-full bg-accent-hover"
-              style={{ width: `${Math.max(0, Math.min(100, overall.value))}%` }}
-            />
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <ConfidenceChip level={confidence} />
-            {meta.generatedAt && (
-              <span className="text-xs text-muted-foreground">
-                Generated {new Date(meta.generatedAt).toLocaleString()}
+      {/* HERO / verdict band */}
+      <section
+        style={heroStyle}
+        className="relative overflow-hidden rounded-2xl border border-default bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.4),0_8px_30px_rgba(0,0,0,0.35)]"
+      >
+        <span
+          className="absolute inset-y-0 left-0 w-1"
+          style={{ background: "var(--v)" }}
+        />
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(105deg, color-mix(in srgb, var(--v) 12%, transparent), transparent 46%)",
+          }}
+        />
+        <div className="relative grid items-center gap-6 p-6 pl-7 sm:grid-cols-[1fr_auto]">
+          <div>
+            <div className="flex flex-wrap items-center gap-2 text-[15px]">
+              <span className="font-semibold text-foreground">@{meta.orgHandle}</span>
+              <span className="text-xs uppercase tracking-wider text-muted-foreground">
+                vs
               </span>
+              <span className="font-semibold text-foreground">@{meta.kolHandle}</span>
+            </div>
+            <div
+              className="my-2.5 text-[clamp(38px,7vw,56px)] font-bold leading-none tracking-tight"
+              style={{ color: "var(--v)" }}
+            >
+              {v.word}
+            </div>
+            {heroLine && (
+              <p className="max-w-[46ch] text-[15px] text-secondary-foreground">
+                {heroLine}
+              </p>
+            )}
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <ConfidenceChip level={confidence} />
+              {sampleChips.map((s, i) => {
+                const [n, ...rest] = s.split(" ");
+                return (
+                  <span
+                    key={i}
+                    className="inline-flex items-center gap-1 rounded-full border border-default bg-elevated px-2.5 py-1 text-xs text-secondary-foreground"
+                  >
+                    <span className="font-mono text-foreground">{n}</span>
+                    {rest.join(" ")}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+          <ScoreGauge value={overall.value} color={v.tone} />
+        </div>
+      </section>
+
+      {/* KEY TAKEAWAYS */}
+      {points.length > 0 && (
+        <Panel title="Key takeaways">
+          <ul className="grid gap-3">
+            {points.map((p, i) => (
+              <li key={i} className="grid grid-cols-[20px_1fr] items-start gap-3">
+                <span
+                  className="mt-1.5 h-2 w-2 rounded-full"
+                  style={{ background: v.tone }}
+                />
+                <span className="text-secondary-foreground">{p}</span>
+              </li>
+            ))}
+          </ul>
+        </Panel>
+      )}
+
+      {/* WHY — drivers */}
+      {(drivers.pos.length > 0 || drivers.neg.length > 0) && (
+        <Panel title="Why">
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div>
+              <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-success">
+                <Check className="h-4 w-4" /> What works
+              </div>
+              <ul className="grid gap-2.5">
+                {drivers.pos.length === 0 && (
+                  <li className="text-[13.5px] text-muted-foreground">
+                    No standout strengths.
+                  </li>
+                )}
+                {drivers.pos.map((d, i) => (
+                  <li key={i} className="grid grid-cols-[16px_1fr] gap-2 text-[13.5px] text-secondary-foreground">
+                    <Check className="mt-0.5 h-3.5 w-3.5 text-success" />
+                    <span>
+                      <span className="text-foreground">{d.label} ({d.value}).</span>{" "}
+                      {d.reason}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div>
+              <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-warning">
+                <TriangleAlert className="h-4 w-4" /> What to watch
+              </div>
+              <ul className="grid gap-2.5">
+                {drivers.neg.length === 0 && (
+                  <li className="text-[13.5px] text-muted-foreground">
+                    No major concerns.
+                  </li>
+                )}
+                {drivers.neg.map((d, i) => (
+                  <li key={i} className="grid grid-cols-[16px_1fr] gap-2 text-[13.5px] text-secondary-foreground">
+                    <X className="mt-0.5 h-3.5 w-3.5 text-error" />
+                    <span>
+                      <span className="text-foreground">{d.label} ({d.value}).</span>{" "}
+                      {d.reason}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </Panel>
+      )}
+
+      {/* AUDIENCE */}
+      {(fitReport.audienceMatch || fitReport.audienceBreakdown) && (
+        <Panel title="Engaged audience — who actually listens">
+          {fitReport.audienceBreakdown && (
+            <AudienceDonut distribution={fitReport.audienceBreakdown} />
+          )}
+          <div className="mt-4 grid gap-4 border-t border-default pt-4 sm:grid-cols-[auto_1fr] sm:items-start sm:gap-6">
+            <div className="flex gap-6">
+              {metrics.engaged_audience_match && (
+                <div>
+                  <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                    Audience match
+                  </div>
+                  <div
+                    className="font-mono text-[22px] font-semibold"
+                    style={{ color: metrics.engaged_audience_match.value >= 45 ? "var(--state-success)" : "var(--state-error)" }}
+                  >
+                    {metrics.engaged_audience_match.value}
+                  </div>
+                </div>
+              )}
+              {metrics.audience_quality && (
+                <div>
+                  <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                    Audience quality
+                  </div>
+                  <div
+                    className="font-mono text-[22px] font-semibold"
+                    style={{ color: metrics.audience_quality.value >= 65 ? "var(--state-success)" : metrics.audience_quality.value >= 45 ? "var(--state-warning)" : "var(--state-error)" }}
+                  >
+                    {metrics.audience_quality.value}
+                  </div>
+                </div>
+              )}
+            </div>
+            {fitReport.audienceMatch && (
+              <p className="text-[13.5px] text-secondary-foreground">
+                {fitReport.audienceMatch.summary}
+              </p>
             )}
           </div>
+        </Panel>
+      )}
 
-          {overall.reasons.length > 0 && (
-            <ul className="space-y-0.5 text-xs text-muted-foreground">
-              {overall.reasons.map((r, i) => (
-                <li key={i} className="flex gap-1.5">
-                  <span className="text-muted-foreground/60">•</span>
-                  <span>{r}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+      {/* SCORE BREAKDOWN */}
+      <Panel title="Score breakdown">
+        {!scores && (
+          <p className="mb-3 text-xs text-muted-foreground">
+            Full breakdown unavailable; showing metrics embedded in the report.
+          </p>
+        )}
+        <MetricGroups metrics={metrics} />
+      </Panel>
 
-      {/* Score matrix — all 9 metrics */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm text-foreground">Score breakdown</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {!scores && (
-            <p className="mb-3 text-xs text-muted-foreground">
-              Full breakdown unavailable; showing metrics embedded in the report.
+      {/* RECOMMENDATION */}
+      {(fitReport.recommendedAngle || fitReport.bestUseCases.length > 0) && (
+        <section className="relative overflow-hidden rounded-2xl border border-accent-primary/30 bg-surface p-5 shadow-[0_1px_2px_rgba(0,0,0,0.4),0_8px_30px_rgba(0,0,0,0.35)] sm:p-6">
+          <span className="absolute inset-y-0 left-0 w-1 bg-accent-primary" />
+          <div className="mb-3 flex items-center gap-3">
+            <h2 className="text-[15px] font-semibold tracking-tight text-foreground">
+              Recommended angle
+            </h2>
+            <span className="h-px flex-1 bg-gradient-to-r from-default to-transparent" />
+          </div>
+          {fitReport.recommendedAngle && (
+            <p className="text-sm text-secondary-foreground">
+              {fitReport.recommendedAngle}
             </p>
           )}
-          <ScoreMatrix metrics={metrics} />
-        </CardContent>
-      </Card>
-
-      {/* Recommendation */}
-      {(fitReport.bestUseCases.length > 0 ||
-        fitReport.weakUseCases.length > 0 ||
-        fitReport.recommendedAngle) && (
-        <Card>
-          <CardContent className="space-y-5 pt-6">
-            {fitReport.bestUseCases.length > 0 && (
-              <ReportSection title="Best use cases">
-                <BulletList items={fitReport.bestUseCases} />
-              </ReportSection>
-            )}
-            {fitReport.weakUseCases.length > 0 && (
-              <>
-                <Separator />
-                <ReportSection title="Weak use cases">
-                  <BulletList items={fitReport.weakUseCases} />
-                </ReportSection>
-              </>
-            )}
-            {fitReport.recommendedAngle && (
-              <>
-                <Separator />
-                <ReportSection title="Recommended campaign angle">
-                  <p className="rounded-lg border border-accent/30 bg-elevated px-3 py-2.5 text-sm text-secondary-foreground">
-                    {fitReport.recommendedAngle}
-                  </p>
-                </ReportSection>
-              </>
-            )}
-          </CardContent>
-        </Card>
+          {fitReport.bestUseCases.length > 0 && (
+            <div className="mt-4">
+              <Chips items={fitReport.bestUseCases} />
+            </div>
+          )}
+        </section>
       )}
 
-      {/* Audience */}
-      {(fitReport.audienceMatch || fitReport.audienceBreakdown) && (
-        <Card>
-          <CardContent className="space-y-5 pt-6">
-            {fitReport.audienceMatch && (
-              <ReportSection title="Audience match">
-                <p className="text-sm text-secondary-foreground">
-                  {fitReport.audienceMatch.summary}
-                </p>
-                {metrics.engaged_audience_match && (
-                  <ScoreMeter
-                    label="Engaged audience match"
-                    score={metrics.engaged_audience_match}
-                    showReasons
-                  />
-                )}
-              </ReportSection>
-            )}
-            {fitReport.audienceBreakdown && (
-              <>
-                {fitReport.audienceMatch && <Separator />}
-                <ReportSection title="Audience breakdown">
-                  <AudienceBars distribution={fitReport.audienceBreakdown} />
-                </ReportSection>
-              </>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Content & engagement */}
+      {/* CONTENT & ENGAGEMENT */}
       {(fitReport.contentAnalysis || fitReport.engagementQuality) && (
-        <Card>
-          <CardContent className="space-y-5 pt-6">
+        <Panel title="Content & engagement">
+          <div className="grid gap-5 sm:grid-cols-2">
             {fitReport.contentAnalysis && (
-              <ReportSection title="KOL content analysis">
-                <div className="space-y-2">
-                  <ChipRow
+              <div>
+                <h3 className="mb-2 text-[13px] font-semibold text-foreground">
+                  Content
+                </h3>
+                <div className="mb-2.5">
+                  <Chips
                     items={[
                       ...fitReport.contentAnalysis.classification.themes,
                       ...fitReport.contentAnalysis.classification.verticals,
                     ]}
                   />
-                  <p className="text-sm text-secondary-foreground">
-                    {fitReport.contentAnalysis.narrative}
-                  </p>
                 </div>
-              </ReportSection>
+                <p className="text-[13.5px] text-secondary-foreground">
+                  {fitReport.contentAnalysis.narrative}
+                </p>
+              </div>
             )}
             {fitReport.engagementQuality && (
-              <>
-                {fitReport.contentAnalysis && <Separator />}
-                <ReportSection title="Engagement quality">
-                  <p className="text-sm text-secondary-foreground">
-                    {fitReport.engagementQuality.narrative}
-                  </p>
-                  <ChipRow items={fitReport.engagementQuality.signals} />
-                </ReportSection>
-              </>
+              <div>
+                <h3 className="mb-2 text-[13px] font-semibold text-foreground">
+                  Engagement quality
+                </h3>
+                <p className="text-[13.5px] text-secondary-foreground">
+                  {fitReport.engagementQuality.narrative}
+                </p>
+                {fitReport.engagementQuality.signals.length > 0 && (
+                  <ul className="mt-2.5 grid gap-1.5">
+                    {fitReport.engagementQuality.signals.map((s, i) => (
+                      <li
+                        key={i}
+                        className="grid grid-cols-[14px_1fr] gap-2 text-[12.5px] text-muted-foreground"
+                      >
+                        <span>›</span>
+                        <span>{s}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </Panel>
       )}
 
-      {/* Risk & safety */}
-      {(fitReport.paidPromo ||
-        fitReport.botFarmRisk ||
-        fitReport.brandSafety ||
-        fitReport.geoLanguageFit) && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm text-foreground">
-              Risk &amp; safety
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-5">
+      {/* RISK & SAFETY */}
+      {(fitReport.paidPromo || fitReport.botFarmRisk || fitReport.brandSafety) && (
+        <Panel title="Risk & safety">
+          <div className="grid gap-3.5">
             {fitReport.paidPromo && metrics.paid_promo_risk && (
-              <ReportSection title="Paid promo detection">
-                <p className="text-sm text-secondary-foreground">
-                  {fitReport.paidPromo.narrative}
-                </p>
-                <ScoreMeter
-                  label="Paid promo risk"
-                  score={metrics.paid_promo_risk}
-                  kind="risk"
-                  showReasons
-                />
-              </ReportSection>
+              <RiskCard
+                title="Paid-promo risk"
+                score={metrics.paid_promo_risk.value}
+                isRisk
+                narrative={fitReport.paidPromo.narrative}
+              />
             )}
             {fitReport.botFarmRisk && metrics.bot_farm_risk && (
-              <>
-                <Separator />
-                <ReportSection title="Bot / farm risk">
-                  <p className="text-sm text-secondary-foreground">
-                    {fitReport.botFarmRisk.narrative}
-                  </p>
-                  <ScoreMeter
-                    label="Bot / farm risk"
-                    score={metrics.bot_farm_risk}
-                    kind="risk"
-                    showReasons
-                  />
-                </ReportSection>
-              </>
+              <RiskCard
+                title="Bot / farm risk"
+                score={metrics.bot_farm_risk.value}
+                isRisk
+                narrative={fitReport.botFarmRisk.narrative}
+              />
             )}
             {fitReport.brandSafety && metrics.brand_safety && (
-              <>
-                <Separator />
-                <ReportSection title="Brand safety">
-                  <p className="text-sm text-secondary-foreground">
-                    {fitReport.brandSafety.narrative}
-                  </p>
-                  <ScoreMeter
-                    label="Brand safety"
-                    score={metrics.brand_safety}
-                    showReasons
-                  />
-                </ReportSection>
-              </>
+              <RiskCard
+                title="Brand safety"
+                score={metrics.brand_safety.value}
+                narrative={fitReport.brandSafety.narrative}
+              />
             )}
-            {fitReport.geoLanguageFit && metrics.geo_language_fit && (
-              <>
-                <Separator />
-                <ReportSection title="Geo / language fit">
-                  <p className="text-sm text-secondary-foreground">
-                    {fitReport.geoLanguageFit.narrative}
-                  </p>
-                  <ScoreMeter
-                    label="Geo / language fit"
-                    score={metrics.geo_language_fit}
-                    showReasons
-                  />
-                </ReportSection>
-              </>
-            )}
-          </CardContent>
-        </Card>
+          </div>
+        </Panel>
       )}
 
-      {/* Evidence & confidence */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm text-foreground">
-            Evidence &amp; sample size
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {Object.keys(fitReport.evidence.sampleSizes).length > 0 && (
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-3">
-              {Object.entries(fitReport.evidence.sampleSizes).map(([k, v]) => (
-                <div key={k} className="space-y-0.5">
-                  <dt className="text-xs text-muted-foreground">
-                    {humanizeKey(k)}
-                  </dt>
-                  <dd className="font-mono text-sm text-foreground">{v}</dd>
-                </div>
-              ))}
-            </dl>
-          )}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">
-              Overall confidence:
+      {/* EVIDENCE */}
+      <Panel title="Evidence & sample">
+        {Object.keys(ss).length > 0 && (
+          <dl className="mb-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+            {Object.entries(ss).map(([k, val]) => (
+              <div
+                key={k}
+                className="rounded-lg border border-default bg-elevated p-3"
+              >
+                <dt className="text-[10.5px] uppercase tracking-wide text-muted-foreground">
+                  {humanizeKey(k)}
+                </dt>
+                <dd className="mt-0.5 font-mono text-lg font-semibold text-foreground">
+                  {val}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        )}
+        {fitReport.evidence.notes.length > 0 && (
+          <ul className="grid gap-1.5">
+            {fitReport.evidence.notes.map((n, i) => (
+              <li
+                key={i}
+                className="relative pl-3.5 text-xs text-muted-foreground before:absolute before:left-0 before:content-['–']"
+              >
+                {n}
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-default pt-3">
+          <span className="text-xs text-muted-foreground">Overall confidence:</span>
+          <ConfidenceChip level={confidence} />
+          {meta.generatedAt && (
+            <span className="ml-auto text-[11.5px] text-muted-foreground">
+              Generated {new Date(meta.generatedAt).toLocaleString()}
             </span>
-            <ConfidenceChip level={confidence} />
-          </div>
-          {fitReport.evidence.notes.length > 0 && (
-            <ul className="space-y-1 text-xs text-muted-foreground">
-              {fitReport.evidence.notes.map((n, i) => (
-                <li key={i} className="flex gap-1.5">
-                  <span className="text-muted-foreground/60">•</span>
-                  <span>{n}</span>
-                </li>
-              ))}
-            </ul>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </Panel>
+    </div>
+  );
+}
+
+function RiskCard({
+  title,
+  score,
+  narrative,
+  isRisk,
+}: {
+  title: string;
+  score: number;
+  narrative: string;
+  isRisk?: boolean;
+}) {
+  const color = isRisk
+    ? score >= 60
+      ? "var(--state-error)"
+      : score >= 35
+        ? "var(--state-warning)"
+        : "var(--state-success)"
+    : score >= 65
+      ? "var(--state-success)"
+      : score >= 45
+        ? "var(--state-warning)"
+        : "var(--state-error)";
+  return (
+    <div
+      className="rounded-xl border border-default bg-elevated p-4"
+      style={{ borderLeft: `3px solid ${color}` }}
+    >
+      <div className="mb-1.5 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-[13.5px] font-semibold text-foreground">
+          <span style={{ color }}>◆</span> {title}
+        </div>
+        <div className="font-mono text-[15px] font-semibold" style={{ color }}>
+          {score} <span className="text-xs font-normal text-muted-foreground">/ 100</span>
+        </div>
+      </div>
+      <p className="text-[13px] text-secondary-foreground">{narrative}</p>
     </div>
   );
 }

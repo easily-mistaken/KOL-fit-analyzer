@@ -121,3 +121,14 @@ body {
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
+
+/* Indeterminate progress bar for in-flight analyses (no fake percentage). */
+@keyframes kf-indeterminate {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(320%); }
+}
+.indeterminate { animation: kf-indeterminate 1.5s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .indeterminate { animation: none; width: 100%; }
+}

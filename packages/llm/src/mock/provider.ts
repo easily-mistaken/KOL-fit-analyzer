@@ -84,11 +84,43 @@ export class MockLlmProvider implements LlmProvider {
       (a, b) => (b[1]?.count ?? 0) - (a[1]?.count ?? 0)
     )[0]?.[0];
 
+    const verdictPhrase: Record<string, string> = {
+      STRONG: "a strong fit",
+      GOOD: "a good fit",
+      OKAY: "a moderate fit",
+      WEAK: "a weak fit",
+      AVOID: "a poor fit",
+    };
+    const themes = input.kol.content.themes.join(", ") || "general crypto topics";
+    const summary =
+      `${input.kol.handle} looks like ${verdictPhrase[verdict] ?? "an uncertain fit"} for ` +
+      `${input.org.handle}. Its content centers on ${themes}, and the engaged audience ` +
+      `${topBucket ? `skews toward ${topBucket}` : "could not be characterised from the sample"}, ` +
+      `which drives the overall assessment. ` +
+      `${
+        verdict === "STRONG" || verdict === "GOOD"
+          ? "The audience overlap supports running a campaign here, with the recommended angle below."
+          : "Weigh the weak use cases and risk sections below before committing budget."
+      }`;
+
+    const keyTakeaways = [
+      `${input.kol.handle} is ${verdictPhrase[verdict] ?? "an uncertain fit"} for ${input.org.handle}.`,
+      topBucket
+        ? `The engaged audience skews toward ${topBucket}.`
+        : "No engaged audience could be characterised from the sample.",
+      `Content centers on ${themes}.`,
+      input.kol.content.promoPatterns.length > 0
+        ? "Promotional patterns detected — weigh brand/compliance risk."
+        : "No strong paid-promo patterns detected.",
+    ];
+
     const report: FitReport = {
       schemaVersion: REPORT_SCHEMA_VERSION,
       overallScore,
       verdict,
       confidence: input.scores?.confidence ?? "low",
+      summary,
+      keyTakeaways,
       evidence: {
         sampleSizes: input.sampleSizes ?? {
           engagedAccounts: distribution.sampleSize,

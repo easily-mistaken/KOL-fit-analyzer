@@ -282,17 +282,35 @@ function StatusBadge({ status }: { status: JobStatus }) {
 }
 
 function ProgressBody({ status }: { status: JobStatus }) {
+  const running = status === "RUNNING";
   return (
-    <div className="flex items-center gap-3 py-2">
-      <Activity className="h-5 w-5 text-accent-hover" />
-      <div className="space-y-0.5">
-        <p className="text-sm font-medium text-foreground">
-          {status === "QUEUED" ? "Waiting to start" : "Analysis in progress"}
-        </p>
-        <p className="text-xs text-muted-foreground">
-          This page updates automatically.
-        </p>
+    <div className="space-y-4 py-1">
+      <div className="flex items-center gap-3">
+        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-elevated text-accent-hover">
+          {running ? (
+            <Activity className="h-5 w-5" />
+          ) : (
+            <Clock className="h-5 w-5" />
+          )}
+        </span>
+        <div className="space-y-0.5">
+          <p className="text-sm font-medium text-foreground">
+            {running ? "Analysis in progress" : "Waiting to start"}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            This page updates automatically — no need to refresh.
+          </p>
+        </div>
       </div>
+
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-inset">
+        <div className="indeterminate h-full w-1/3 rounded-full bg-accent-hover" />
+      </div>
+
+      <p className="text-xs text-muted-foreground">
+        Fetching posts &amp; engagement, then classifying the audience. Live
+        analyses typically take a few minutes.
+      </p>
     </div>
   );
 }
