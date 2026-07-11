@@ -146,10 +146,23 @@ export async function runAnalysis(
     },
   });
 
+  // Compact profile snapshots for presentation (avatar/name/followers).
+  const snapshot = (u: typeof orgProfile) =>
+    u
+      ? {
+          handle: u.handle,
+          displayName: u.displayName,
+          avatarUrl: u.avatarUrl,
+          followersCount: u.followersCount,
+          verified: u.verified,
+        }
+      : null;
+
   // Annotate evidence (sample sizes + provider/ingestion notes) and re-validate
   // the final report before it leaves the pipeline (Invariant 12).
   const report = FitReportSchema.parse({
     ...baseReport,
+    profiles: { org: snapshot(orgProfile), kol: snapshot(kolProfile) },
     evidence: {
       sampleSizes: {
         ...baseReport.evidence.sampleSizes,

@@ -10,6 +10,10 @@
 :root {
   color-scheme: dark;
 
+  /* Type — Geist (self-hosted via the `geist` package). */
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
   /* Surfaces */
   --bg-base: #080a0f;
   --bg-surface: #10131a;

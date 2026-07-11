@@ -6,6 +6,17 @@ import { ReportVerdictSchema } from "./enums.js";
 import { KolContentClassificationSchema } from "./llm.js";
 import { ConfidenceLevelSchema, ScoreValueSchema } from "./scores.js";
 
+// Compact org/KOL profile snapshot for report presentation (avatar, name,
+// follower count). Populated by the pipeline from the fetched Twitter profile.
+export const ProfileSnapshotSchema = z.object({
+  handle: z.string(),
+  displayName: z.string().optional(),
+  avatarUrl: z.string().optional(),
+  followersCount: z.number().int().min(0).optional(),
+  verified: z.boolean().optional(),
+});
+export type ProfileSnapshot = z.infer<typeof ProfileSnapshotSchema>;
+
 // The 15-section fit report. This is the structured LLM output validated before
 // saving (Report.report JSON) and rendered by Unit 15.
 //
@@ -33,6 +44,15 @@ export const FitReportSchema = z.object({
   // Key takeaways — the summary as 3-5 punchy one-line points for fast scanning.
   // Optional/additive; the UI falls back to sentence-splitting `summary`.
   keyTakeaways: z.array(z.string()).default([]),
+
+  // Org/KOL profile snapshots (avatar/name/followers) for presentation.
+  // Optional/additive so older reports still validate.
+  profiles: z
+    .object({
+      org: ProfileSnapshotSchema.nullable(),
+      kol: ProfileSnapshotSchema.nullable(),
+    })
+    .optional(),
 
   // narrative sections (optional -> degrade gracefully)
   bestUseCases: z.array(z.string()).default([]), // 3. Best Use Cases

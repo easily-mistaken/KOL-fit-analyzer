@@ -11,6 +11,7 @@ import {
 import type { JobStatus, ReportVerdict } from "@kol-fit/shared";
 
 import { cn } from "@/lib/utils";
+import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { VerdictBadge } from "@/components/report/verdict-badge";
 import type { AnalysisListResponse } from "@/lib/analyses-list";
@@ -51,15 +52,6 @@ function scoreColor(v: number): string {
   return v >= 65 ? "text-success" : v >= 50 ? "text-warning" : "text-error";
 }
 
-function Avatar({ handle }: { handle: string }) {
-  const letter = handle.replace(/^@/, "").charAt(0).toUpperCase() || "?";
-  return (
-    <span className="grid h-7 w-7 flex-none place-content-center rounded-lg border border-default bg-elevated font-mono text-xs text-secondary-foreground">
-      {letter}
-    </span>
-  );
-}
-
 export function AnalysesList({ data }: { data: AnalysisListResponse }) {
   if (data.items.length === 0) return <EmptyState />;
 
@@ -88,7 +80,7 @@ export function AnalysesList({ data }: { data: AnalysisListResponse }) {
                 >
                   <td className="px-5 py-3.5">
                     <Link href={`/analyses/${item.id}`} className="flex items-center gap-3">
-                      <Avatar handle={item.kolHandle} />
+                      <Avatar handle={item.kolHandle} size={32} />
                       <span className="min-w-0">
                         <span className="block truncate font-medium text-foreground">
                           @{item.kolHandle}

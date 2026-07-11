@@ -16,6 +16,7 @@ import type {
 
 import { cn } from "@/lib/utils";
 import { METRIC_INFO } from "@/lib/metric-info";
+import { Avatar } from "@/components/ui/avatar";
 import { ConfidenceChip } from "@/components/report/score-meter";
 import { ScoreGauge } from "@/components/report/score-gauge";
 import { AudienceDonut } from "@/components/report/audience-donut";
@@ -44,6 +45,44 @@ const SAMPLE_LABELS: Record<string, string> = {
 const humanizeKey = (key: string): string =>
   SAMPLE_LABELS[key] ??
   key.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, (c) => c.toUpperCase());
+
+function formatFollowers(n: number | undefined): string | null {
+  if (typeof n !== "number") return null;
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(/\.0$/, "")}K`;
+  return `${n}`;
+}
+
+function Party({
+  handle,
+  role,
+  profile,
+}: {
+  handle: string;
+  role: string;
+  profile?: { displayName?: string; avatarUrl?: string; followersCount?: number; verified?: boolean } | null;
+}) {
+  const followers = formatFollowers(profile?.followersCount);
+  return (
+    <div className="flex min-w-0 items-center gap-2.5">
+      <Avatar
+        handle={handle}
+        avatarUrl={profile?.avatarUrl}
+        verified={profile?.verified}
+        size={40}
+      />
+      <div className="min-w-0">
+        <div className="truncate text-sm font-semibold text-foreground">
+          @{handle}
+        </div>
+        <div className="truncate text-xs text-muted-foreground">
+          {role}
+          {followers ? ` · ${followers} followers` : ""}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ---- text helpers ---------------------------------------------------------
 function splitSentences(s: string | undefined): string[] {
@@ -218,12 +257,12 @@ export function FitReportView({
         />
         <div className="relative grid items-center gap-6 p-6 pl-7 sm:grid-cols-[1fr_auto]">
           <div>
-            <div className="flex flex-wrap items-center gap-2 text-[15px]">
-              <span className="font-semibold text-foreground">@{meta.orgHandle}</span>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <Party handle={meta.orgHandle} role="Org" profile={fitReport.profiles?.org} />
               <span className="text-xs uppercase tracking-wider text-muted-foreground">
                 vs
               </span>
-              <span className="font-semibold text-foreground">@{meta.kolHandle}</span>
+              <Party handle={meta.kolHandle} role="KOL" profile={fitReport.profiles?.kol} />
             </div>
             <div
               className="my-2.5 text-[clamp(38px,7vw,56px)] font-bold leading-none tracking-tight"
