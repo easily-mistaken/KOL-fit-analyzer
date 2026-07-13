@@ -5,6 +5,7 @@ import { z } from "zod";
 
 export const ApiErrorCodeSchema = z.enum([
   "validation_error",
+  "unauthorized", // failed an auth gate (Unit 27: the admin password)
   "not_found",
   "conflict",
   "rate_limited",

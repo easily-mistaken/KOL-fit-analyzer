@@ -7,6 +7,7 @@ import {
 } from "@kol-fit/shared";
 import { prisma } from "@kol-fit/db";
 
+import { isAdminRequest } from "@/lib/admin/auth";
 import type { AnalysisStatusResponse } from "@/lib/analysis-status";
 import { getOwnerId } from "@/lib/owner";
 
@@ -48,8 +49,11 @@ export async function GET(
 
     // Owner scoping (Unit 25): only the browser that created it may view it.
     // 404 (not 403) so a non-owner can't even confirm the analysis exists.
+    // Unit 27: a valid admin session bypasses owner scoping — the operator can
+    // open any report from the admin panel.
     const ownerId = await getOwnerId();
-    if (!request.ownerId || request.ownerId !== ownerId) {
+    const isOwner = Boolean(request.ownerId) && request.ownerId === ownerId;
+    if (!isOwner && !(await isAdminRequest())) {
       return json(err("not_found", "Analysis not found."), 404);
     }
 

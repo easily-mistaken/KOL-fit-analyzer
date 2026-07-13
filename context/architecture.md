@@ -218,6 +218,23 @@ Even though auth is skipped initially, the database schema must not block adding
 - `AnalysisRequest` and `AnalysisReport` should carry a nullable `workspaceId` (or equivalent) field from the first schema onward, even though it is unused/always-null in the first build.
 - No query logic should assume a hardcoded single-tenant shortcut that would need to be rewritten; it should simply filter by `workspaceId IS NULL` or a default workspace row until real workspaces exist.
 
+**Admin panel (Unit 27):** a read-only operator surface at `/admin` (overview,
+analyses across **all** owners, captured email/Telegram leads, provider spend).
+It is gated by a **single shared password** read from `ADMIN_PASSWORD`, not by a
+user system: `POST /api/admin/session` verifies the password in constant time and
+sets an httpOnly `kolfit_admin` cookie holding
+`sha256("kolfit-admin-v1:" + ADMIN_PASSWORD)`; every admin page/route re-derives
+and compares that token (`apps/web/lib/admin/auth.ts`). **Fail-closed:** with
+`ADMIN_PASSWORD` unset the panel is disabled entirely (pages render a "not
+configured" notice, the session route 404s), so it is never open by default;
+rotating the password invalidates all sessions. A valid admin session is the one
+documented exception to Unit 25 owner scoping — it may read any report via
+`GET /api/analyses/[id]` (a non-owner without it still gets 404). The panel adds
+**no new data collection**: it only reads `AnalysisRequest`, `AnalysisJob`,
+`Report`, `ReportDelivery`, and `ProviderUsageLog`, and performs **no mutations**
+(no delete/re-run/export). This is a shared-secret gate for an internal tool, not
+an identity system — real accounts/roles remain the future auth unit.
+
 ### Future SaaS/Agency Version
 
 When auth is added:
