@@ -209,7 +209,9 @@ ReportExport
 
 Auth is out of scope for the first build. Do not install Clerk, Supabase Auth, or any auth library yet.
 
-Assume a single internal workspace for now — there is no login, no multi-tenant isolation, and no per-user access control.
+Assume a single internal workspace for now — there is no login, no multi-tenant isolation.
+
+**Anonymous per-browser ownership (Unit 25):** as a pre-auth stand-in for "see only your own reports," each `AnalysisRequest` carries a nullable `ownerId` set from a private `kolfit_owner` cookie (a random id created on first submit, `apps/web/lib/owner.ts`). The reports list and each report/deliver route are scoped to the cookie's owner; a non-owner (or no cookie) gets an empty list / a 404 (404 not 403, so existence isn't leaked). Limits (honest, pre-auth): per-browser/device only — clearing cookies or switching devices loses visibility, and pre-Unit-25 reports (null `ownerId`) are not shown. Real cross-device ownership is the future auth unit; `ownerId` maps cleanly onto a real user id then. The **caches (`ProviderCache`) are deliberately NOT owner-scoped** — they key on handle/inputs and are shared across everyone (public-account classifications; no user-private data), so cost savings are shared while report *visibility* is scoped.
 
 Even though auth is skipped initially, the database schema must not block adding users/workspaces later:
 

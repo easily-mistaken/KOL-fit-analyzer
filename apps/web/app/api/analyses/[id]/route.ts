@@ -8,6 +8,7 @@ import {
 import { prisma } from "@kol-fit/db";
 
 import type { AnalysisStatusResponse } from "@/lib/analysis-status";
+import { getOwnerId } from "@/lib/owner";
 
 // Prisma requires the Node.js runtime; status must never be cached/prerendered.
 export const runtime = "nodejs";
@@ -42,6 +43,13 @@ export async function GET(
     });
 
     if (!request || !request.job) {
+      return json(err("not_found", "Analysis not found."), 404);
+    }
+
+    // Owner scoping (Unit 25): only the browser that created it may view it.
+    // 404 (not 403) so a non-owner can't even confirm the analysis exists.
+    const ownerId = await getOwnerId();
+    if (!request.ownerId || request.ownerId !== ownerId) {
       return json(err("not_found", "Analysis not found."), 404);
     }
 

@@ -7,6 +7,8 @@ import {
 import { prisma } from "@kol-fit/db";
 import { enqueueReportDeliver } from "@kol-fit/queue";
 
+import { getOwnerId } from "@/lib/owner";
+
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -54,6 +56,11 @@ export async function POST(
       include: { report: true },
     });
     if (!request || !request.report) {
+      return json(err("not_found", "Report not found."), 404);
+    }
+    // Only the owner may deliver their own report.
+    const ownerId = await getOwnerId();
+    if (!request.ownerId || request.ownerId !== ownerId) {
       return json(err("not_found", "Report not found."), 404);
     }
     if (request.report.status !== "COMPLETED") {

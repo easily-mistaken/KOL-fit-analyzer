@@ -42,13 +42,18 @@ export function clampLimit(raw: unknown): number {
 export async function listAnalyses({
   limit = DEFAULT_LIST_LIMIT,
   cursor,
+  ownerId,
 }: {
   limit?: number;
   cursor?: string | null;
+  ownerId?: string | null;
 } = {}): Promise<AnalysisListResponse> {
+  // Scoped to the owner (Unit 25). No owner → owns nothing → empty list.
+  if (!ownerId) return { items: [], nextCursor: null };
   const take = Math.min(Math.max(1, Math.trunc(limit)), MAX_LIST_LIMIT);
 
   const rows = await prisma.analysisRequest.findMany({
+    where: { ownerId },
     orderBy: { createdAt: "desc" },
     take: take + 1, // +1 sentinel to detect a next page
     ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),

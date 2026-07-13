@@ -50,6 +50,9 @@ model Workspace {
 model AnalysisRequest {
   id          String  @id @default(cuid())
   workspaceId String?
+  // Anonymous per-browser owner (Unit 25). Set from a private cookie; scopes
+  // report visibility to the browser that created the analysis (pre-auth).
+  ownerId     String?
 
   orgHandle String
   kolHandle String
@@ -73,6 +76,7 @@ model AnalysisRequest {
   usageLogs  ProviderUsageLog[]
 
   @@index([workspaceId, createdAt])
+  @@index([ownerId, createdAt])
   @@index([orgHandle])
   @@index([kolHandle])
   @@index([createdAt])

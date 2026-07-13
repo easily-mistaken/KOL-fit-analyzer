@@ -13,6 +13,7 @@ import {
   listAnalyses,
   type AnalysisListResponse,
 } from "@/lib/analyses-list";
+import { ensureOwnerId, getOwnerId } from "@/lib/owner";
 
 // Prisma + the pg driver adapter require the Node.js runtime (not Edge).
 export const runtime = "nodejs";
@@ -33,7 +34,8 @@ export async function GET(req: Request): Promise<Response> {
   const cursor = url.searchParams.get("cursor") || undefined;
 
   try {
-    const data = await listAnalyses({ limit, cursor });
+    const ownerId = await getOwnerId();
+    const data = await listAnalyses({ limit, cursor, ownerId });
     return Response.json(ok(data) as ApiResponse<AnalysisListResponse>, {
       status: 200,
     });
@@ -93,8 +95,13 @@ export async function POST(req: Request): Promise<Response> {
   const input = parsed.data;
 
   try {
+    // Tag the analysis with the browser's anonymous owner (sets the cookie on
+    // first submit), so it can be scoped to them later.
+    const ownerId = await ensureOwnerId();
+
     const created = await prisma.analysisRequest.create({
       data: {
+        ownerId,
         orgHandle: input.orgHandle,
         kolHandle: input.kolHandle,
         websiteUrl: input.websiteUrl ?? null,

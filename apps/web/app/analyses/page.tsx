@@ -6,6 +6,7 @@ import {
   listAnalyses,
   type AnalysisListResponse,
 } from "@/lib/analyses-list";
+import { getOwnerId } from "@/lib/owner";
 
 // The list reflects live job state; always render fresh from the DB.
 export const runtime = "nodejs";
@@ -25,7 +26,8 @@ export default async function AnalysesListPage({
 
   let data: AnalysisListResponse | null = null;
   try {
-    data = await listAnalyses({ limit: clampLimit(limit), cursor });
+    const ownerId = await getOwnerId();
+    data = await listAnalyses({ limit: clampLimit(limit), cursor, ownerId });
   } catch (error) {
     console.error("[/analyses] failed to load analyses:", error);
   }
