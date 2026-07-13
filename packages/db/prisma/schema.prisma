@@ -36,6 +36,18 @@ enum EngagementSource {
   FOLLOWER
 }
 
+// Real per-user identity (Unit 28). Additive: ownership ids on AnalysisRequest
+// stay a free string that holds EITHER an anonymous cookie id OR a User.id, so
+// there is deliberately NO foreign key from AnalysisRequest.ownerId to User
+// (existing cookie-owned rows would violate it). In dev mode `id` is a cuid; in
+// Supabase mode it is the Supabase auth UUID (mirror-upserted on login).
+model User {
+  id          String    @id @default(cuid())
+  email       String    @unique
+  createdAt   DateTime  @default(now())
+  lastLoginAt DateTime?
+}
+
 model Workspace {
   id        String   @id @default(cuid())
   name      String

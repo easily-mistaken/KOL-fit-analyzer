@@ -10,9 +10,10 @@ import { Badge } from "@/components/ui/badge";
 
 /**
  * Top navigation bar: product mark (links home), primary links with an
- * active-route indicator, and a build-stage marker.
+ * active-route indicator, a build-stage marker, and the user menu (Unit 28),
+ * which is resolved on the server and passed in as `userMenu`.
  */
-export function TopNav() {
+export function TopNav({ userMenu }: { userMenu?: React.ReactNode }) {
   const pathname = usePathname();
   const isReports = pathname?.startsWith("/analyses");
   const isNew = pathname === "/";
@@ -46,6 +47,11 @@ export function TopNav() {
           >
             Internal
           </Badge>
+          {userMenu ? (
+            <span className="ml-1 flex items-center border-l border-default pl-1">
+              {userMenu}
+            </span>
+          ) : null}
         </nav>
       </div>
     </header>

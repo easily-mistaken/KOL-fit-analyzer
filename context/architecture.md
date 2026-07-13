@@ -235,6 +235,63 @@ documented exception to Unit 25 owner scoping — it may read any report via
 (no delete/re-run/export). This is a shared-secret gate for an internal tool, not
 an identity system — real accounts/roles remain the future auth unit.
 
+### User Authentication (Unit 28)
+
+Real per-user identity now exists behind a small **auth seam**, mirroring the
+Twitter/LLM provider abstractions. The seam has two modes selected purely by env
+(`resolveAuthMode`, `@kol-fit/auth`): **dev** (default) and **supabase**.
+
+- **`@kol-fit/auth`** is the pure, framework-agnostic security core (no Next,
+  Prisma, Supabase, or zod — only `node:crypto`; dist-testable like
+  `resolveAbuseLimits`). It owns the stateless dev-session token
+  (`signSessionToken`/`verifySessionToken`: `${userId}.${base64url(hmacSHA256(userId, secret))}`,
+  compared with `crypto.timingSafeEqual`, never throws), `resolveAuthMode`
+  (→ `supabase` iff both `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+  are set, else `dev`), and `devLoginAllowed` (fail-closed: no passwordless login
+  in production unless `AUTH_DEV_LOGIN=true`).
+- **Dev mode (default, fully local + live-verifiable):** a passwordless email
+  login. `POST /api/auth/session` upserts a `User` by email, sets an httpOnly
+  HMAC session cookie (`kolfit_session`, 30d, secret from `AUTH_SESSION_SECRET`;
+  if the secret is unset, sessions are simply disabled → treated as logged out),
+  and claims the anonymous history. `DELETE` signs out. `apps/web/lib/auth/*`
+  holds the web glue (`session`, `current-user`, `claim`, `index`).
+- **Supabase mode (deploy-activated — NOT yet live-verified):** the
+  `apps/web/lib/auth/supabase.ts` adapter + `apps/web/middleware.ts` are built to
+  the current official `@supabase/ssr` App-Router pattern
+  (`createServerClient({ cookies: { getAll, setAll } })`; the server user is read
+  via **`getClaims()`**, never `getSession()`; middleware refreshes the session).
+  It is fully **isolated behind `resolveAuthMode()`** — `@supabase/ssr` is only
+  ever reached via dynamic `import()` inside supabase-mode branches, so the dev
+  runtime never loads it, and the middleware is a **no-op in dev mode**. This
+  adapter cannot run locally (no Supabase project); it is typechecked and marked
+  "activate + verify at deploy." Flipping to it needs no app-code change.
+- **Anonymous + claim (not hard-gated):** anonymous use stays. The key elegance
+  is that **the ownership id simply *becomes* the user id when signed in**:
+  `apps/web/lib/owner.ts` (`getOwnerId`/`ensureOwnerId`, same names) now returns
+  the signed-in user id when present, else the anonymous `kolfit_owner` cookie —
+  so all six existing call sites (list/read/deliver + per-owner rate limit) get
+  per-user scoping and per-user rate limiting automatically. Logging in **claims**
+  the current cookie's reports: `claimAnonymousReports` re-assigns
+  `AnalysisRequest.ownerId` from the cookie id to the user id (best-effort, logs
+  count only). Clearing the anon cookie no longer resets the per-user rate limit
+  once signed in.
+- **Schema:** an additive `User` model (`id` cuid in dev / the Supabase auth UUID
+  in supabase mode, unique `email`, `createdAt`, `lastLoginAt`).
+  `AnalysisRequest.ownerId` stays a **nullable free string** holding *either* a
+  cookie id or a `User.id` — deliberately **no foreign key** (existing
+  cookie-owned rows would violate it). Applying it is a `prisma db push` the
+  operator must run against their own DB.
+- **UI:** a `/login` page + `login-form` (dev = email field; supabase = minimal
+  magic-link/OAuth entry, verified at deploy) branching on a server-provided
+  mode, and a user menu (signed-in email + Sign out, or a Sign in link) slotted
+  into the top nav. The nav resolves the user server-side, so the app shell
+  renders per-request (the root layout is `force-dynamic`).
+
+The **admin** panel (Unit 27) is a **separate operator gate** (a shared
+`ADMIN_PASSWORD`), unchanged by this unit — it is not part of the user identity
+system. Secrets (`AUTH_SESSION_SECRET`, Supabase keys) are read only from env and
+never logged or returned.
+
 ### Future SaaS/Agency Version
 
 When auth is added:
