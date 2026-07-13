@@ -2,6 +2,7 @@
 // enums, vocabularies, and constants shared across the system.
 export * from "./constants.js";
 export * from "./caps.js";
+export * from "./limits.js";
 export * from "./enums.js";
 export * from "./vocab.js";
 export * from "./handle.js";

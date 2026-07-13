@@ -4,10 +4,17 @@ import {
   type AnalysisRequestData,
 } from "@kol-fit/analysis";
 import { Prisma, prisma } from "@kol-fit/db";
-import { AnalysisRunPayloadSchema } from "@kol-fit/queue";
+import { AnalysisRunPayloadSchema, enqueueAnalysisRun } from "@kol-fit/queue";
 
 import { buildProviders, logProviderUsage } from "../providers.js";
-import { classifyAnalysisError } from "../errors.js";
+import { classifyAnalysisError, decideRetry } from "../errors.js";
+
+// Positive integer parse with a floor: valid finite >= min -> truncated int;
+// else the default. Mirrors the env idiom used elsewhere in the repo.
+function posIntMin(v: string | undefined, def: number, min: number): number {
+  const n = Number(v);
+  return Number.isFinite(n) && Math.trunc(n) >= min ? Math.trunc(n) : def;
+}
 
 /**
  * Processes one `analysis.run` job: validates the payload, loads the job +
@@ -57,8 +64,10 @@ export async function processAnalysisRun(
   }
 
   try {
-    // QUEUED -> RUNNING (increment attempts as retry metadata)
-    await prisma.analysisJob.update({
+    // QUEUED -> RUNNING (increment attempts as retry metadata). Capture the
+    // incremented value onto the in-memory job so the retry decision below sees
+    // the post-increment count (first run = 1), not the stale loaded value.
+    const running = await prisma.analysisJob.update({
       where: { id: jobId },
       data: {
         status: "RUNNING",
@@ -66,6 +75,7 @@ export async function processAnalysisRun(
         attempts: { increment: 1 },
       },
     });
+    job.attempts = running.attempts;
 
     // Run the mock analysis pipeline. Report-building lives entirely in
     // @kol-fit/analysis; the worker only persists the validated result.
@@ -150,8 +160,45 @@ export async function processAnalysisRun(
       `[worker] processing failed for request ${requestId} (job ${jobId}): ${code}:`,
       error instanceof Error ? error.message : String(error)
     );
+
+    // Transient-failure retry (Unit 26). job.attempts was already incremented at
+    // the QUEUED->RUNNING transition (first run = 1). For a retryable code with
+    // attempts left, re-enqueue with a linear backoff and leave the job QUEUED;
+    // the delayed delivery re-enters processAnalysisRun (COMPLETED short-circuits
+    // + upsert-by-requestId keep it idempotent). Never re-throw — that would risk
+    // the whole pg-boss batch; retry is driven only by the explicit re-enqueue.
+    const maxAttempts = posIntMin(process.env.ANALYSIS_MAX_ATTEMPTS, 3, 1);
+    const retryDelaySeconds = posIntMin(
+      process.env.ANALYSIS_RETRY_DELAY_SECONDS,
+      60,
+      1
+    );
+
+    if (decideRetry({ code, attempts: job.attempts, maxAttempts }).retry) {
+      try {
+        await prisma.analysisJob.update({
+          where: { id: jobId },
+          data: { status: "QUEUED", errorCode: code, errorMessage: message },
+        });
+        await enqueueAnalysisRun(
+          { requestId, jobId },
+          { startAfterSeconds: retryDelaySeconds * job.attempts } // linear backoff
+        );
+        console.warn(
+          `[worker] analysis.run for request ${requestId} failed (${code}); retry ${job.attempts}/${maxAttempts} scheduled.`
+        );
+        return; // ack this delivery; the delayed job drives the retry
+      } catch (reEnqueueError) {
+        console.error(
+          `[worker] failed to schedule retry for job ${jobId}; marking FAILED:`,
+          reEnqueueError
+        );
+        // fall through to terminal FAILED
+      }
+    }
+
     try {
-      // RUNNING -> FAILED
+      // terminal (non-retryable OR attempts exhausted OR re-enqueue failed)
       await prisma.analysisJob.update({
         where: { id: jobId },
         data: {

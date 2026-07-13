@@ -261,6 +261,42 @@ Failures are made understandable and safe without leaking internals:
 - **Retry metadata:** `AnalysisJob.attempts` is incremented on each QUEUED→RUNNING transition. Per-job errors stay isolated (a failure marks that job FAILED and is ack'd, so one bad job can't sink the pg-boss batch) and processing is idempotent (a COMPLETED job short-circuits). Automatic retry/backoff is **not** enabled yet (the handler does not re-throw to pg-boss) — deferred to a future `analysis.retry`.
 - The failed report page renders the friendly message + code + attempt count + `failedAt`, and offers "start a new analysis" / "back to reports" (no re-enqueue endpoint yet).
 
+### Abuse & Cost Controls (Unit 26)
+
+`POST /api/analyses` is public and unauthenticated, yet each run fans out to real
+paid TwitterAPI.io + OpenAI spend. Two DB-backed caps bound worst-case
+denial-of-wallet exposure without new infrastructure (no Redis; matches the
+"database-backed first" principle):
+
+- **Per-owner cap** and **global (spend-ceiling) cap** — before creating an
+  analysis, `checkAnalysisRateLimit(ownerId)` (`apps/web/lib/rate-limit.ts`)
+  counts `AnalysisRequest`s over a rolling 24h window: per `ownerId` cookie
+  (default 10 = `MAX_ANALYSES_PER_OWNER_PER_DAY`) and across all owners (default
+  200 = `MAX_ANALYSES_PER_DAY`). At/over either cap the route returns **HTTP 429**
+  `rate_limited` with a safe message; the check is two `count()` reads (not
+  analysis work), kept inside the route `try` so DB errors fall to the generic
+  500 path. Limits resolve from env via `resolveAbuseLimits` (`packages/shared`).
+- **Optional spend cap** — when `MAX_DAILY_SPEND_USD > 0` (default 0 = disabled),
+  the check also sums `ProviderUsageLog.costUsd` over the same window and refuses
+  once it reaches the budget.
+- **Transient-failure retry** — the worker now retries transient provider
+  failures (rate-limit/timeout/outage: `RETRYABLE_CODES` in
+  `apps/worker/src/errors.ts`; auth/config/not_found/invalid_output/analysis_failed
+  are terminal). On a retryable failure with attempts left
+  (`ANALYSIS_MAX_ATTEMPTS`, default 3), the handler sets the job back to QUEUED and
+  re-enqueues via a **delayed** `analysis.run` (`enqueueAnalysisRun(..,
+  {startAfterSeconds})`, linear backoff of `ANALYSIS_RETRY_DELAY_SECONDS` ×
+  attempt, default 60s) then acks the current delivery. It never re-throws out of
+  the pg-boss batch, so per-job isolation and idempotency (COMPLETED
+  short-circuits; upsert-by-`requestId`) are preserved. Exhausted/non-retryable/
+  re-enqueue-failed cases mark the job FAILED as before.
+- **Provider-safety signposting** — the worker logs a one-line startup warning
+  when LIVE providers (`TWITTER_PROVIDER=twitterapi` / `LLM_PROVIDER=openai`) are
+  active; `.env.example` documents all caps with a public-endpoint warning.
+
+Real per-user auth (not per-browser-cookie) and per-IP limiting remain the future
+fix; `ownerId` maps onto a real user id then.
+
 ### Report Delivery & Lead Capture (Unit 24)
 
 The report is fully viewable on screen; to **take a copy** the user leaves an

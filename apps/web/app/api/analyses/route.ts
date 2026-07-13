@@ -14,6 +14,7 @@ import {
   type AnalysisListResponse,
 } from "@/lib/analyses-list";
 import { ensureOwnerId, getOwnerId } from "@/lib/owner";
+import { checkAnalysisRateLimit } from "@/lib/rate-limit";
 
 // Prisma + the pg driver adapter require the Node.js runtime (not Edge).
 export const runtime = "nodejs";
@@ -98,6 +99,14 @@ export async function POST(req: Request): Promise<Response> {
     // Tag the analysis with the browser's anonymous owner (sets the cookie on
     // first submit), so it can be scoped to them later.
     const ownerId = await ensureOwnerId();
+
+    // Abuse & cost controls (Unit 26): refuse over-limit creations before doing
+    // any work. Two count() reads (+ optional spend sum) against saved records —
+    // not analysis work. Kept inside the try so DB errors fall to the 500 path.
+    const decision = await checkAnalysisRateLimit(ownerId);
+    if (!decision.allowed) {
+      return json(err("rate_limited", decision.message), 429);
+    }
 
     const created = await prisma.analysisRequest.create({
       data: {

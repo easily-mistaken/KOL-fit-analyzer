@@ -12,6 +12,21 @@ import { processReportDelivery } from "./handlers/report-deliver.js";
 async function main(): Promise<void> {
   console.log(`${APP_NAME} worker booted`);
 
+  // Provider-safety signpost (Unit 26). Warn loudly when LIVE paid providers are
+  // active so real third-party spend is never a surprise. No secrets in the log.
+  const liveProviders: string[] = [];
+  if (process.env.TWITTER_PROVIDER === "twitterapi") {
+    liveProviders.push("TwitterAPI.io");
+  }
+  if (process.env.LLM_PROVIDER === "openai") {
+    liveProviders.push("OpenAI");
+  }
+  if (liveProviders.length > 0) {
+    console.warn(
+      `[worker] LIVE providers active (${liveProviders.join(", ")}); analyses will incur real third-party spend. Abuse/cost caps (Unit 26) bound worst-case usage.`
+    );
+  }
+
   const boss = await getBoss();
 
   // pg-boss 12 delivers jobs in a batch array; iterate and isolate per-job

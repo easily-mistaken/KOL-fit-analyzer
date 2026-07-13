@@ -82,6 +82,37 @@ function providerCode(error: unknown, name: string): string | undefined {
   return undefined;
 }
 
+// Transient-failure retry classification (Unit 26). Only provider-side timeouts,
+// rate limits, and outages are worth retrying; auth/config/not_found/
+// invalid_output/analysis_failed are terminal (a retry cannot fix them).
+export const RETRYABLE_CODES: ReadonlySet<AnalysisErrorCode> = new Set([
+  "twitter_rate_limited",
+  "twitter_timeout",
+  "twitter_unavailable",
+  "llm_rate_limited",
+  "llm_timeout",
+  "llm_unavailable",
+]);
+
+/** True when `code` is a transient failure worth retrying. */
+export function isRetryable(code: AnalysisErrorCode): boolean {
+  return RETRYABLE_CODES.has(code);
+}
+
+/**
+ * Pure retry decision (no IO): retry iff the code is retryable AND we have not
+ * yet exhausted attempts. `attempts` is the count already spent (first run = 1).
+ */
+export function decideRetry(args: {
+  code: AnalysisErrorCode;
+  attempts: number;
+  maxAttempts: number;
+}): { retry: boolean } {
+  return {
+    retry: isRetryable(args.code) && args.attempts < args.maxAttempts,
+  };
+}
+
 /**
  * Maps any thrown error from the analysis pipeline to a stable, user-facing
  * `{ code, message }`. Provider errors (TwitterApiError/OpenAiError) map by
