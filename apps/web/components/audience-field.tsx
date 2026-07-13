@@ -54,24 +54,24 @@ export function AudienceField({ className }: { className?: string }) {
       canvas!.style.height = `${h}px`;
       ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      const count = Math.min(90, Math.max(34, Math.round((w * h) / 9000)));
+      const count = Math.min(140, Math.max(52, Math.round((w * h) / 6200)));
       particles = Array.from({ length: count }, () => {
-        const engaged = Math.random() < 0.28;
+        const engaged = Math.random() < 0.34;
         return {
           x: rand(0, w),
           y: rand(0, h),
-          vx: rand(-0.18, 0.18),
-          vy: rand(-0.18, 0.18),
-          r: engaged ? rand(1.8, 2.8) : rand(1.1, 1.9),
+          vx: rand(-0.2, 0.2),
+          vy: rand(-0.2, 0.2),
+          r: engaged ? rand(2.2, 3.6) : rand(1.3, 2.1),
           engaged,
-          glow: engaged ? rand(0.5, 1) : 0,
+          glow: engaged ? rand(0.6, 1) : 0,
         };
       });
     }
 
     function draw() {
       ctx!.clearRect(0, 0, w, h);
-      const linkDist = 118;
+      const linkDist = 138;
 
       // Connections between lit/engaged particles (subtle network).
       for (let i = 0; i < particles.length; i++) {
@@ -85,7 +85,7 @@ export function AudienceField({ className }: { className?: string }) {
           const dy = a.y - b.y;
           const d = Math.hypot(dx, dy);
           if (d < linkDist) {
-            const alpha = (1 - d / linkDist) * 0.22 * Math.min(1, (a.glow + b.glow) / 1.4 + 0.35);
+            const alpha = (1 - d / linkDist) * 0.32 * Math.min(1, (a.glow + b.glow) / 1.4 + 0.4);
             ctx!.strokeStyle = `rgba(87,146,255,${alpha})`;
             ctx!.lineWidth = 1;
             ctx!.beginPath();
@@ -101,8 +101,8 @@ export function AudienceField({ className }: { className?: string }) {
         for (const p of particles) {
           if (p.glow <= 0.2) continue;
           const d = Math.hypot(p.x - pointer.x, p.y - pointer.y);
-          if (d < 150) {
-            ctx!.strokeStyle = `rgba(41,115,255,${(1 - d / 150) * 0.4 * p.glow})`;
+          if (d < 190) {
+            ctx!.strokeStyle = `rgba(41,115,255,${(1 - d / 190) * 0.5 * p.glow})`;
             ctx!.lineWidth = 1;
             ctx!.beginPath();
             ctx!.moveTo(p.x, p.y);
@@ -118,13 +118,13 @@ export function AudienceField({ className }: { className?: string }) {
         if (lit > 0.02) {
           const [r, g, b] = lit > 0.6 ? ENGAGED_HI : ENGAGED_COLOR;
           // soft halo
-          ctx!.fillStyle = `rgba(${r},${g},${b},${0.12 * lit})`;
+          ctx!.fillStyle = `rgba(${r},${g},${b},${0.18 * lit})`;
           ctx!.beginPath();
-          ctx!.arc(p.x, p.y, p.r + 5 * lit, 0, Math.PI * 2);
+          ctx!.arc(p.x, p.y, p.r + 8 * lit, 0, Math.PI * 2);
           ctx!.fill();
-          ctx!.fillStyle = `rgba(${r},${g},${b},${0.55 + 0.45 * lit})`;
+          ctx!.fillStyle = `rgba(${r},${g},${b},${0.62 + 0.38 * lit})`;
         } else {
-          ctx!.fillStyle = "rgba(126,129,132,0.5)";
+          ctx!.fillStyle = "rgba(139,143,148,0.62)";
         }
         ctx!.beginPath();
         ctx!.arc(p.x, p.y, p.r, 0, Math.PI * 2);
@@ -143,16 +143,16 @@ export function AudienceField({ className }: { className?: string }) {
         else if (p.y > h + 10) p.y = -10;
 
         // cursor energizes + gently attracts nearby accounts.
-        let target = p.engaged ? 0.6 : 0;
+        let target = p.engaged ? 0.7 : 0;
         if (pointer.active) {
           const dx = pointer.x - p.x;
           const dy = pointer.y - p.y;
           const d = Math.hypot(dx, dy);
-          if (d < 150) {
-            const f = 1 - d / 150;
-            target = Math.max(target, 0.4 + 0.6 * f);
-            p.vx += (dx / (d || 1)) * f * 0.02;
-            p.vy += (dy / (d || 1)) * f * 0.02;
+          if (d < 190) {
+            const f = 1 - d / 190;
+            target = Math.max(target, 0.45 + 0.55 * f);
+            p.vx += (dx / (d || 1)) * f * 0.028;
+            p.vy += (dy / (d || 1)) * f * 0.028;
           }
         }
         p.glow += (target - p.glow) * 0.08;

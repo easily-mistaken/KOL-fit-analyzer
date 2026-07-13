@@ -3,17 +3,22 @@
 import * as React from "react";
 import Link from "next/link";
 import {
-  Activity,
   AlertTriangle,
   ArrowLeft,
+  BarChart3,
+  Check,
   CheckCircle2,
   Clock,
   Loader2,
+  Radar,
+  Search,
+  Sparkles,
 } from "lucide-react";
 import type { ApiResponse, JobStatus } from "@kol-fit/shared";
 
 import { cn } from "@/lib/utils";
 import type { AnalysisStatusResponse } from "@/lib/analysis-status";
+import { AudienceField } from "@/components/audience-field";
 import { FitReportView } from "@/components/report/fit-report-view";
 import { VerdictBadge } from "@/components/report/verdict-badge";
 import { Badge } from "@/components/ui/badge";
@@ -169,6 +174,15 @@ export function AnalysisStatus({ id }: { id: string }) {
     );
   }
 
+  // In-flight: the immersive "what's happening & why it's worth the wait" view.
+  if (job.status === "QUEUED" || job.status === "RUNNING") {
+    return (
+      <StatusShell>
+        <RunningExperience data={data} />
+      </StatusShell>
+    );
+  }
+
   return (
     <StatusShell>
       <Card>
@@ -188,9 +202,6 @@ export function AnalysisStatus({ id }: { id: string }) {
           </div>
         </CardHeader>
         <CardContent>
-          {(job.status === "QUEUED" || job.status === "RUNNING") && (
-            <ProgressBody status={job.status} />
-          )}
           {job.status === "COMPLETED" &&
             (report ? (
               <CompletedBody data={data} />
@@ -281,36 +292,180 @@ function StatusBadge({ status }: { status: JobStatus }) {
   );
 }
 
-function ProgressBody({ status }: { status: JobStatus }) {
-  const running = status === "RUNNING";
+// The real pipeline stages, with why each takes time. `until` = cumulative
+// seconds by which a typical run has usually reached the *next* stage; used only
+// to estimate which stage is likely active (the elapsed timer is the truthful
+// anchor — we never claim a precise percentage).
+const STAGES: {
+  icon: React.ReactNode;
+  title: string;
+  why: string;
+  until: number;
+}[] = [
+  {
+    icon: <Search className="h-4 w-4" />,
+    title: "Reading profiles & recent posts",
+    why: "Pulling the org and KOL profiles and the KOL's latest ~100 posts to see what they actually talk about.",
+    until: 35,
+  },
+  {
+    icon: <Radar className="h-4 w-4" />,
+    title: "Measuring real engagement",
+    why: "Fetching everyone who replies, quotes and retweets the top posts — often 100+ API calls. This is the slow part, and the whole point: we measure the audience that actually engages, not follower counts.",
+    until: 210,
+  },
+  {
+    icon: <Sparkles className="h-4 w-4" />,
+    title: "Classifying the audience with AI",
+    why: "Labeling up to 300 engaged accounts into audience types and flagging bots and farmers — done in AI batches.",
+    until: 330,
+  },
+  {
+    icon: <BarChart3 className="h-4 w-4" />,
+    title: "Scoring fit & writing the report",
+    why: "Deterministic scoring across nine metrics, then the written analysis and recommendation.",
+    until: Number.POSITIVE_INFINITY,
+  },
+];
+
+function mmss(total: number): string {
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+function RunningExperience({ data }: { data: AnalysisStatusResponse }) {
+  const { job } = data;
+  const queued = job.status === "QUEUED";
+
+  // Live elapsed clock (ticks every second, independent of the 2.5s poll).
+  const [nowMs, setNowMs] = React.useState(() => Date.now());
+  React.useEffect(() => {
+    const id = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  const startedAt = job.startedAt ? new Date(job.startedAt).getTime() : null;
+  const elapsed = startedAt ? Math.max(0, Math.floor((nowMs - startedAt) / 1000)) : 0;
+  const activeIdx = queued
+    ? -1
+    : Math.min(STAGES.findIndex((s) => elapsed < s.until), STAGES.length - 1);
+  const overrun = elapsed > 430; // past the usual window
+
   return (
-    <div className="space-y-4 py-1">
-      <div className="flex items-center gap-3">
-        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-elevated text-accent-hover">
-          {running ? (
-            <Activity className="h-5 w-5" />
-          ) : (
-            <Clock className="h-5 w-5" />
-          )}
-        </span>
-        <div className="space-y-0.5">
-          <p className="text-sm font-medium text-foreground">
-            {running ? "Analysis in progress" : "Waiting to start"}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            This page updates automatically — no need to refresh.
-          </p>
+    <div className="relative overflow-hidden rounded-2xl border border-default bg-surface shadow-card">
+      {/* the audience being sifted, quietly alive behind the panel */}
+      <div className="pointer-events-none absolute inset-0 opacity-50">
+        <AudienceField className="h-full w-full" />
+      </div>
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(to bottom, rgba(21,24,26,0.55), rgba(21,24,26,0.82))",
+        }}
+      />
+
+      <div className="relative p-6 sm:p-7">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="text-sm font-semibold text-foreground">
+              @{data.orgHandle}{" "}
+              <span className="text-muted-foreground">vs</span> @{data.kolHandle}
+            </div>
+            <div className="mt-0.5 font-mono text-xs text-muted-foreground">
+              {data.id}
+            </div>
+          </div>
+          <StatusBadge status={job.status} />
         </div>
-      </div>
 
-      <div className="h-1.5 w-full overflow-hidden rounded-full bg-inset">
-        <div className="indeterminate h-full w-1/3 rounded-full bg-accent-hover" />
-      </div>
+        {/* timer + estimate */}
+        <div className="mt-6 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <div className="text-xs uppercase tracking-wide text-muted-foreground">
+              {queued ? "Waiting to start" : "Elapsed"}
+            </div>
+            <div className="font-mono text-4xl font-semibold text-foreground">
+              {queued ? "—" : mmss(elapsed)}
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-secondary-foreground">
+            <Clock className="h-4 w-4 text-accent-hover" />
+            {queued
+              ? "Queued — a worker will pick this up shortly."
+              : overrun
+                ? "Taking a little longer than usual — hang tight."
+                : "Most analyses finish in about 5–7 minutes."}
+          </div>
+        </div>
 
-      <p className="text-xs text-muted-foreground">
-        Fetching posts &amp; engagement, then classifying the audience. Live
-        analyses typically take a few minutes.
-      </p>
+        <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-inset">
+          <div className="indeterminate h-full w-1/3 rounded-full bg-accent-primary" />
+        </div>
+
+        {/* staged walkthrough — what's happening & why it's worth the wait */}
+        <ol className="mt-7 space-y-1.5">
+          {STAGES.map((stage, i) => {
+            const done = activeIdx > i;
+            const active = activeIdx === i;
+            return (
+              <li
+                key={i}
+                className={cn(
+                  "rounded-xl border px-3.5 py-3 transition-colors",
+                  active
+                    ? "border-accent-primary/40 bg-elevated/70"
+                    : "border-transparent"
+                )}
+              >
+                <div className="flex items-center gap-2.5">
+                  <span
+                    className={cn(
+                      "flex h-7 w-7 shrink-0 items-center justify-center rounded-lg",
+                      done
+                        ? "bg-success/15 text-success"
+                        : active
+                          ? "bg-accent-primary/15 text-accent-hover"
+                          : "bg-elevated text-muted-foreground"
+                    )}
+                  >
+                    {done ? (
+                      <Check className="h-4 w-4" />
+                    ) : active ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      stage.icon
+                    )}
+                  </span>
+                  <span
+                    className={cn(
+                      "text-sm font-medium",
+                      active || done ? "text-foreground" : "text-muted-foreground"
+                    )}
+                  >
+                    {stage.title}
+                  </span>
+                </div>
+                {active && (
+                  <p className="mt-2 pl-[38px] text-[13px] leading-relaxed text-secondary-foreground">
+                    {stage.why}
+                  </p>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+
+        <p className="mt-6 text-xs text-muted-foreground">
+          This page updates automatically — no need to refresh. You can leave and
+          come back from{" "}
+          <Link href="/analyses" className="text-accent-hover hover:underline">
+            Reports
+          </Link>
+          .
+        </p>
+      </div>
     </div>
   );
 }
