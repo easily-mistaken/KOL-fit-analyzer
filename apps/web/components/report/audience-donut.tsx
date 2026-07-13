@@ -19,24 +19,24 @@ const LOW_QUALITY = new Set<AudienceBucket>([
 // Curated palette harmonising with the violet/blue accent world. Low-quality
 // buckets always render in the error tone regardless of this map.
 const BUCKET_COLOR: Record<AudienceBucket, string> = {
-  community_managers: "#6D5EF7",
-  kols_creators: "#8175FF",
-  non_crypto: "#5A6478",
-  developers: "#4DA3FF",
-  founders: "#5B8DEF",
-  ai_crypto: "#3FB6C9",
-  traders: "#35D07F",
-  infra_research: "#6E7B9E",
-  meme_degens: "#B08CFF",
-  nft_gaming: "#9B8CFF",
-  investors_vcs: "#4A6FE0",
-  defi_users: "#2FB477",
-  bots_spam: "#FF5C6C",
-  airdrop_farmers: "#FF7A86",
-  giveaway_hunters: "#FF9AA3",
+  community_managers: "#2973FF",
+  kols_creators: "#5792FF",
+  non_crypto: "#5B6169",
+  developers: "#7FA8FF",
+  founders: "#3E62D6",
+  ai_crypto: "#4FC3D6",
+  traders: "#3DD68C",
+  infra_research: "#8C93A0",
+  meme_degens: "#A9C3FF",
+  nft_gaming: "#6E86C4",
+  investors_vcs: "#2E56C0",
+  defi_users: "#3DD68C",
+  bots_spam: "#FF6470",
+  airdrop_farmers: "#FF8590",
+  giveaway_hunters: "#FFAAB2",
 };
 
-const LOW_QUALITY_COLOR = "#FF5C6C";
+const LOW_QUALITY_COLOR = "#FF6470";
 
 type Entry = {
   bucket: AudienceBucket;

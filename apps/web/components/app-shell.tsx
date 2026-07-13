@@ -12,7 +12,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       className="flex min-h-screen flex-col bg-base"
       style={{
         backgroundImage:
-          "radial-gradient(1100px 520px at 50% -280px, rgba(109,94,247,0.10), transparent 70%)",
+          "radial-gradient(1200px 560px at 50% -300px, rgba(41,115,255,0.14), transparent 72%)",
         backgroundRepeat: "no-repeat",
       }}
     >

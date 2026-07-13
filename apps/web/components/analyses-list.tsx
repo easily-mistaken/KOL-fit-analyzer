@@ -57,7 +57,7 @@ export function AnalysesList({ data }: { data: AnalysisListResponse }) {
 
   return (
     <div className="space-y-4">
-      <div className="overflow-x-auto rounded-2xl border border-default bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.4),0_8px_30px_rgba(0,0,0,0.35)]">
+      <div className="overflow-x-auto rounded-2xl border border-default bg-surface shadow-card">
         <table className="w-full min-w-[680px] border-collapse text-sm">
           <thead>
             <tr className="border-b border-default text-left text-[11px] uppercase tracking-wider text-muted-foreground">

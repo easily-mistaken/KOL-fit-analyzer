@@ -14,34 +14,34 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
-  /* Surfaces */
-  --bg-base: #080a0f;
-  --bg-surface: #10131a;
-  --bg-elevated: #171b24;
-  --bg-muted: #1d2230;
+  /* Surfaces — Morpho-style warm charcoal neutrals. */
+  --bg-base: #15181a;
+  --bg-surface: #1a1d20;
+  --bg-elevated: #222529;
+  --bg-muted: #2c3034;
 
   /* Text */
-  --text-primary: #f4f7fb;
-  --text-secondary: #b8c0cc;
-  --text-muted: #7d8794;
+  --text-primary: #f7f8f8;
+  --text-secondary: #b4b7ba;
+  --text-muted: #7e8184;
 
-  /* Accent */
-  --accent-primary: #6d5ef7;
-  --accent-hover: #8175ff;
+  /* Accent — Morpho electric blue. */
+  --accent-primary: #2973ff;
+  --accent-hover: #5792ff;
 
-  /* State */
-  --state-success: #35d07f;
+  /* State (semantic — kept separate from the brand accent). */
+  --state-success: #3dd68c;
   --state-warning: #f5b84b;
-  --state-error: #ff5c6c;
-  --state-info: #4da3ff;
+  --state-error: #ff6470;
+  --state-info: #5792ff;
 
   /* Borders + shadow */
-  --border-default: #252b38;
-  --border-strong: #353d4d;
-  --shadow-card: rgba(0, 0, 0, 0.35);
+  --border-default: #262a2e;
+  --border-strong: #383b3e;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.24), 0 16px 40px rgba(0, 0, 0, 0.2);
 
-  /* Radius scale baseline (inputs/buttons = rounded-lg). */
-  --radius: 0.5rem;
+  /* Radius scale baseline (inputs/buttons = rounded-lg). Morpho leans rounder. */
+  --radius: 0.625rem;
 
   /* shadcn semantic variables, mapped onto the raw palette above. */
   --background: var(--bg-base);
@@ -79,6 +79,9 @@
   --radius-md: var(--radius);
   --radius-lg: calc(var(--radius) + 2px);
   --radius-xl: calc(var(--radius) + 6px);
+
+  /* Soft card shadow (Morpho-style) -> `shadow-card` utility. */
+  --shadow-card: var(--shadow-card);
 
   /* shadcn semantic tokens */
   --color-background: var(--background);

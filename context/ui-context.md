@@ -2,18 +2,18 @@
 
 ## Theme
 
-The product should feel like a serious crypto intelligence dashboard, not a playful social media tool. The visual language is dark, sharp, analytical, and information-dense. It should look suitable for an internal agency research tool and later a SaaS dashboard for crypto growth teams.
+The product should feel like a serious crypto intelligence dashboard, not a playful social media tool. The visual language is **Morpho-inspired** (see brand.morpho.org): a dark, premium, editorial fintech look — warm charcoal neutrals, a single electric-blue brand accent, generous whitespace, soft shadows, and rounded surfaces. Analytical and information-dense, but calm and confident. Suitable for an internal agency research tool and a client/brand-facing SaaS dashboard. We take Morpho's design *language*, not its identity (no butterfly / logo clone — our own mark and gradients).
 
 Use a dark technical workspace:
 
-- near-black page background
-- layered dark surfaces
-- subtle borders
+- warm-charcoal page background (Morpho neutral, not blue-black)
+- layered dark surfaces with soft, diffuse shadows
+- subtle borders, generous padding, rounded corners
 - high-contrast text
-- restrained accent color
+- a single restrained electric-blue brand accent
+- semantic score colors (green/amber/red) kept **separate** from the blue accent
 - score cards and report sections
 - minimal decorative elements
-- no flashy crypto gradients unless intentionally used in small accents
 
 The UI should make the report easy to scan. Prioritize clarity, hierarchy, and evidence over visual noise.
 
@@ -23,24 +23,26 @@ All components should use semantic tokens. Avoid hardcoded random hex values ins
 
 Suggested CSS variables:
 
+Morpho-inspired palette (implemented in `apps/web/app/globals.css`):
+
 | Role | CSS Variable | Value |
 | --- | --- | --- |
-| Page background | `--bg-base` | `#080A0F` |
-| Main surface | `--bg-surface` | `#10131A` |
-| Raised surface | `--bg-elevated` | `#171B24` |
-| Muted surface | `--bg-muted` | `#1D2230` |
-| Primary text | `--text-primary` | `#F4F7FB` |
-| Secondary text | `--text-secondary` | `#B8C0CC` |
-| Muted text | `--text-muted` | `#7D8794` |
-| Primary accent | `--accent-primary` | `#6D5EF7` |
-| Accent hover | `--accent-hover` | `#8175FF` |
-| Positive | `--state-success` | `#35D07F` |
+| Page background | `--bg-base` | `#15181A` |
+| Main surface | `--bg-surface` | `#1A1D20` |
+| Raised surface | `--bg-elevated` | `#222529` |
+| Muted surface | `--bg-muted` | `#2C3034` |
+| Primary text | `--text-primary` | `#F7F8F8` |
+| Secondary text | `--text-secondary` | `#B4B7BA` |
+| Muted text | `--text-muted` | `#7E8184` |
+| Primary accent (Morpho blue) | `--accent-primary` | `#2973FF` |
+| Accent hover | `--accent-hover` | `#5792FF` |
+| Positive | `--state-success` | `#3DD68C` |
 | Warning | `--state-warning` | `#F5B84B` |
-| Error | `--state-error` | `#FF5C6C` |
-| Info | `--state-info` | `#4DA3FF` |
-| Border default | `--border-default` | `#252B38` |
-| Border strong | `--border-strong` | `#353D4D` |
-| Card shadow | `--shadow-card` | `rgba(0, 0, 0, 0.35)` |
+| Error | `--state-error` | `#FF6470` |
+| Info | `--state-info` | `#5792FF` |
+| Border default | `--border-default` | `#262A2E` |
+| Border strong | `--border-strong` | `#383B3E` |
+| Card shadow | `--shadow-card` | `0 1px 2px rgba(0,0,0,.24), 0 16px 40px rgba(0,0,0,.2)` (→ `shadow-card` utility) |
 
 Score color usage:
 

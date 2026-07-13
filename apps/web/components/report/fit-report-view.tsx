@@ -152,7 +152,7 @@ function Panel({
   return (
     <section
       className={cn(
-        "rounded-2xl border border-default bg-surface p-5 shadow-[0_1px_2px_rgba(0,0,0,0.4),0_8px_30px_rgba(0,0,0,0.35)] sm:p-6",
+        "rounded-2xl border border-default bg-surface p-5 shadow-card sm:p-6",
         className
       )}
     >
@@ -242,7 +242,7 @@ export function FitReportView({
       {/* HERO / verdict band */}
       <section
         style={heroStyle}
-        className="relative overflow-hidden rounded-2xl border border-default bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.4),0_8px_30px_rgba(0,0,0,0.35)]"
+        className="relative overflow-hidden rounded-2xl border border-default bg-surface shadow-card"
       >
         <span
           className="absolute inset-y-0 left-0 w-1"
@@ -418,7 +418,7 @@ export function FitReportView({
 
       {/* RECOMMENDATION */}
       {(fitReport.recommendedAngle || fitReport.bestUseCases.length > 0) && (
-        <section className="relative overflow-hidden rounded-2xl border border-accent-primary/30 bg-surface p-5 shadow-[0_1px_2px_rgba(0,0,0,0.4),0_8px_30px_rgba(0,0,0,0.35)] sm:p-6">
+        <section className="relative overflow-hidden rounded-2xl border border-accent-primary/30 bg-surface p-5 shadow-card sm:p-6">
           <span className="absolute inset-y-0 left-0 w-1 bg-accent-primary" />
           <div className="mb-3 flex items-center gap-3">
             <h2 className="text-[15px] font-semibold tracking-tight text-foreground">
