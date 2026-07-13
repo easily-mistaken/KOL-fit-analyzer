@@ -33,6 +33,7 @@ async function createStartedBoss() {
   await boss.start();
   // Idempotent (INSERT ... ON CONFLICT DO NOTHING); safe on every process init.
   await boss.createQueue(QUEUE_NAMES.ANALYSIS_RUN);
+  await boss.createQueue(QUEUE_NAMES.REPORT_DELIVER);
   return boss;
 }
 

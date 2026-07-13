@@ -21,6 +21,7 @@ import { ConfidenceChip } from "@/components/report/score-meter";
 import { ScoreGauge } from "@/components/report/score-gauge";
 import { AudienceDonut } from "@/components/report/audience-donut";
 import { MetricGroups, type MetricMap } from "@/components/report/metric-groups";
+import { GetReport } from "@/components/report/get-report";
 
 // ---- verdict presentation -------------------------------------------------
 const VERDICT: Record<ReportVerdict, { word: string; tone: string }> = {
@@ -294,6 +295,9 @@ export function FitReportView({
           <ScoreGauge value={overall.value} color={v.tone} />
         </div>
       </section>
+
+      {/* Lead capture — email the PDF */}
+      <GetReport requestId={meta.requestId} />
 
       {/* KEY TAKEAWAYS */}
       {points.length > 0 && (

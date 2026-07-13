@@ -259,6 +259,22 @@ Failures are made understandable and safe without leaking internals:
 - **Retry metadata:** `AnalysisJob.attempts` is incremented on each QUEUED→RUNNING transition. Per-job errors stay isolated (a failure marks that job FAILED and is ack'd, so one bad job can't sink the pg-boss batch) and processing is idempotent (a COMPLETED job short-circuits). Automatic retry/backoff is **not** enabled yet (the handler does not re-throw to pg-boss) — deferred to a future `analysis.retry`.
 - The failed report page renders the friendly message + code + attempt count + `failedAt`, and offers "start a new analysis" / "back to reports" (no re-enqueue endpoint yet).
 
+### Report Delivery & Lead Capture (Unit 24)
+
+The report is fully viewable on screen; to **take a copy** the user leaves an
+**email and/or Telegram** ("Get the full report"). Each submission is stored as
+a `ReportDelivery` row (the leads table) with per-channel status. **Email**
+delivers a generated **PDF**: `POST /api/analyses/[id]/deliver` (thin — validates
+via `ReportDeliverInputSchema`, creates the row, enqueues) → a pg-boss
+`report.deliver` job → the worker renders the PDF (`@kol-fit/report-pdf`, via
+`@react-pdf/renderer`, no browser) and sends it through a **mail-provider
+abstraction** (`@kol-fit/mail`): **mock** logs by default (no credentials);
+**resend** sends for real behind `MAIL_PROVIDER=resend` + `RESEND_API_KEY` +
+`MAIL_FROM`. **Telegram** is captured/stored only — bots can't DM a handle that
+hasn't started the bot, so real Telegram delivery is deferred. Delivery is
+best-effort/idempotent (a SENT row short-circuits; failures mark the row FAILED
+but never lose the captured lead), and addresses/secrets are never logged.
+
 ## Analysis Depth and Cost Controls
 
 Report depth is configurable, not hardcoded inline in pipeline stages. Centralize the following caps as named config constants (owned by `packages/shared` or a dedicated `packages/analysis` config module), with environment variable overrides where useful for local tuning:

@@ -7,6 +7,7 @@ import { getBoss, stopBoss, QUEUE_NAMES } from "@kol-fit/queue";
 import { APP_NAME } from "@kol-fit/shared";
 
 import { processAnalysisRun } from "./handlers/analysis-run.js";
+import { processReportDelivery } from "./handlers/report-deliver.js";
 
 async function main(): Promise<void> {
   console.log(`${APP_NAME} worker booted`);
@@ -24,7 +25,18 @@ async function main(): Promise<void> {
     }
   );
 
-  console.log(`[worker] listening on ${QUEUE_NAMES.ANALYSIS_RUN}`);
+  await boss.work(
+    QUEUE_NAMES.REPORT_DELIVER,
+    async (jobs: { id: string; data: unknown }[]) => {
+      for (const job of jobs) {
+        await processReportDelivery(job.data, job.id);
+      }
+    }
+  );
+
+  console.log(
+    `[worker] listening on ${QUEUE_NAMES.ANALYSIS_RUN}, ${QUEUE_NAMES.REPORT_DELIVER}`
+  );
 }
 
 let shuttingDown = false;

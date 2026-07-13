@@ -8,3 +8,10 @@ export const AnalysisRunPayloadSchema = z.object({
 });
 
 export type AnalysisRunPayload = z.infer<typeof AnalysisRunPayloadSchema>;
+
+// Payload for the `report.deliver` job (Unit 24). Validated on enqueue + consume.
+export const ReportDeliverPayloadSchema = z.object({
+  deliveryId: z.string(), // ReportDelivery.id
+});
+
+export type ReportDeliverPayload = z.infer<typeof ReportDeliverPayloadSchema>;

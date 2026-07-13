@@ -19,3 +19,29 @@ export const AnalysisRequestInputSchema = z.object({
   region: z.string().trim().min(1).max(120).optional(),
 });
 export type AnalysisRequestInput = z.infer<typeof AnalysisRequestInputSchema>;
+
+// Report delivery / lead capture (Unit 24). Email and/or Telegram; ≥1 required.
+export const ReportDeliverInputSchema = z
+  .object({
+    email: z
+      .string()
+      .trim()
+      .email("Enter a valid email address.")
+      .optional()
+      .or(z.literal("").transform(() => undefined)),
+    telegramHandle: z
+      .string()
+      .trim()
+      .transform((s) => s.replace(/^@/, ""))
+      .pipe(
+        z
+          .string()
+          .regex(/^[a-zA-Z0-9_]{3,32}$/, "Enter a valid Telegram handle.")
+      )
+      .optional()
+      .or(z.literal("").transform(() => undefined)),
+  })
+  .refine((d) => Boolean(d.email || d.telegramHandle), {
+    message: "Provide an email or a Telegram handle.",
+  });
+export type ReportDeliverInput = z.infer<typeof ReportDeliverInputSchema>;

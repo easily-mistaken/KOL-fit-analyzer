@@ -178,6 +178,7 @@ model Report {
   evidence       ReportEvidence?
   engagedSamples EngagedAccountSample[]
   usageLogs      ProviderUsageLog[]
+  deliveries     ReportDelivery[]
 
   @@index([workspaceId, createdAt])
   @@index([status])
@@ -250,4 +251,38 @@ model ProviderCache {
   expiresAt DateTime @db.Timestamptz
 
   @@index([expiresAt])
+}
+
+enum DeliveryStatus {
+  PENDING
+  SENT
+  FAILED
+  SKIPPED
+}
+
+// Lead capture + report delivery (Unit 24). One row per "get the report"
+// submission — the leads table — with per-channel delivery state. Email
+// delivers a PDF; Telegram is captured/stored now, delivery deferred.
+model ReportDelivery {
+  id          String  @id @default(cuid())
+  reportId    String
+  requestId   String?
+  workspaceId String?
+
+  email          String?
+  telegramHandle String?
+
+  emailStatus    DeliveryStatus @default(PENDING)
+  telegramStatus DeliveryStatus @default(PENDING)
+
+  sentAt       DateTime? @db.Timestamptz
+  errorCode    String?
+  errorMessage String?
+  createdAt    DateTime  @default(now()) @db.Timestamptz
+
+  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@index([reportId])
+  @@index([email])
+  @@index([createdAt])
 }
