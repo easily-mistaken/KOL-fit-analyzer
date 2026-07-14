@@ -41,6 +41,9 @@ const arrayField =
 const authorOf = (raw: unknown): unknown =>
   raw && typeof raw === "object" ? (raw as Raw).author : undefined;
 
+const textOf = (raw: unknown): unknown =>
+  raw && typeof raw === "object" ? (raw as Raw).text : undefined;
+
 /**
  * Live TwitterAPI.io provider behind the shared TwitterProvider interface. All
  * HTTP + normalization stays here; the pipeline sees only the interface. The
@@ -107,7 +110,7 @@ export class TwitterApiProvider implements TwitterProvider {
       { tweetId },
       limit,
       arrayField("tweets"),
-      (raw) => normalizeEngaged(authorOf(raw), tweetId, "REPLY"),
+      (raw) => normalizeEngaged(authorOf(raw), tweetId, "REPLY", textOf(raw)),
       "tweets"
     );
   }
@@ -121,7 +124,7 @@ export class TwitterApiProvider implements TwitterProvider {
       { tweetId },
       limit,
       arrayField("tweets"),
-      (raw) => normalizeEngaged(authorOf(raw), tweetId, "QUOTE"),
+      (raw) => normalizeEngaged(authorOf(raw), tweetId, "QUOTE", textOf(raw)),
       "tweets"
     );
   }

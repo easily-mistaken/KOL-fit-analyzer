@@ -12,6 +12,7 @@ import {
   makeKolReplies,
   makeProfile,
   selectAccounts,
+  selectPool,
 } from "./fixtures.js";
 
 /**
@@ -61,16 +62,18 @@ export class MockTwitterProvider implements TwitterProvider {
     return SEARCH_RESULTS.slice(0, Math.max(0, limit));
   }
 
-  /** Deterministic engaged accounts for a tweet + source. */
+  /** Deterministic engaged accounts for a tweet + source. REPLY/QUOTE carry
+   *  the engagement text (Unit 29A); retweets have no text. */
   private engagers(
     tweetId: string,
     source: EngagementSource,
     limit: number
   ): EngagedAccountRaw[] {
-    return selectAccounts(`${source}:${tweetId}`, limit).map((user) => ({
-      user,
+    return selectPool(`${source}:${tweetId}`, limit).map((p) => ({
+      user: p.user,
       tweetId,
       source,
+      ...(source === "RETWEET" ? {} : { text: p.replyText }),
     }));
   }
 }

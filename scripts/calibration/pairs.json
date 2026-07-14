@@ -1,0 +1,12 @@
+{
+  "description": "Ground-truth org×KOL calibration pairs for scoring v2 (Unit 29E). Expected verdicts come from the user; the calibration runner compares pipeline output against these.",
+  "pairs": [
+    {
+      "orgHandle": "Uniswap",
+      "kolHandle": "haydenzadams",
+      "expected": "STRONG",
+      "notes": "Uniswap's own founder — the canonical strong fit. Scored 40/WEAK under scoring v1 (2026-07-10 live run), which motivated the Unit 29 overhaul.",
+      "addedAt": "2026-07-14"
+    }
+  ]
+}

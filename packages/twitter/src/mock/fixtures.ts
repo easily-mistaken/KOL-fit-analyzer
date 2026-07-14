@@ -1,4 +1,4 @@
-import type { Tweet, TwitterUser } from "@kol-fit/shared";
+import type { Tweet, TweetMedia, TwitterUser } from "@kol-fit/shared";
 
 // Deterministic mock fixtures. No Math.random / Date.now anywhere — identical
 // inputs always produce deep-equal outputs, so the Unit 13 pipeline gets stable
@@ -24,15 +24,25 @@ function isoAt(offsetDays: number): string {
 
 /**
  * Engaged-account pool spanning audience-bucket signals. The bio/handle of each
- * account is the classification signal used later (Unit 11/13/17); the mock
- * only produces the raw accounts, it does not classify them. `bucketSignal` is
- * documentation/testing metadata and is NOT part of the returned TwitterUser.
+ * account is the classification signal used later (Unit 11/13/17); since Unit
+ * 29A each account also carries a deterministic `replyText` (the reply/quote
+ * body a REPLY/QUOTE engagement surfaces — substantive for real users, junk
+ * for bots/farmers) so engagement-quality analysis is testable offline. The
+ * mock only produces the raw accounts, it does not classify them.
+ * `bucketSignal` is documentation/testing metadata and is NOT part of the
+ * returned TwitterUser.
  */
-type PoolAccount = { bucketSignal: string; user: TwitterUser };
+export type PoolAccount = {
+  bucketSignal: string;
+  replyText: string;
+  user: TwitterUser;
+};
 
 export const ENGAGED_ACCOUNT_POOL: PoolAccount[] = [
   {
     bucketSignal: "developers",
+    replyText:
+      "read the contracts before replying — the batching design is genuinely clever. good thread.",
     user: {
       id: "mock:acct:1",
       handle: "0xbuildoor",
@@ -47,6 +57,8 @@ export const ENGAGED_ACCOUNT_POOL: PoolAccount[] = [
   },
   {
     bucketSignal: "developers",
+    replyText:
+      "we integrated this last sprint. docs were rough but the sdk holds up under load.",
     user: {
       id: "mock:acct:2",
       handle: "rustacean_eth",
@@ -61,6 +73,8 @@ export const ENGAGED_ACCOUNT_POOL: PoolAccount[] = [
   },
   {
     bucketSignal: "founders",
+    replyText:
+      "this matches what we saw raising our seed — sharing with the team.",
     user: {
       id: "mock:acct:3",
       handle: "founder_jane",
@@ -75,6 +89,7 @@ export const ENGAGED_ACCOUNT_POOL: PoolAccount[] = [
   },
   {
     bucketSignal: "founders",
+    replyText: "strong take. we're building in exactly this direction.",
     user: {
       id: "mock:acct:4",
       handle: "0xceo",
@@ -89,6 +104,8 @@ export const ENGAGED_ACCOUNT_POOL: PoolAccount[] = [
   },
   {
     bucketSignal: "defi_users",
+    replyText:
+      "been LPing this pool for months, the fee tier math here checks out.",
     user: {
       id: "mock:acct:5",
       handle: "curve_lp_life",
@@ -103,6 +120,8 @@ export const ENGAGED_ACCOUNT_POOL: PoolAccount[] = [
   },
   {
     bucketSignal: "defi_users",
+    replyText:
+      "moved my stables after reading this. the delta-neutral leg is the underrated part.",
     user: {
       id: "mock:acct:6",
       handle: "stablefarmer",
@@ -117,6 +136,8 @@ export const ENGAGED_ACCOUNT_POOL: PoolAccount[] = [
   },
   {
     bucketSignal: "traders",
+    replyText:
+      "funding flipped negative right as you posted this lol. good call on the basis trade.",
     user: {
       id: "mock:acct:7",
       handle: "perps_degen",
@@ -131,6 +152,7 @@ export const ENGAGED_ACCOUNT_POOL: PoolAccount[] = [
   },
   {
     bucketSignal: "traders",
+    replyText: "chart agrees. watching the range high — liquidity is stacked there.",
     user: {
       id: "mock:acct:8",
       handle: "chart_wizard",
@@ -145,6 +167,7 @@ export const ENGAGED_ACCOUNT_POOL: PoolAccount[] = [
   },
   {
     bucketSignal: "airdrop_farmers",
+    replyText: "wen airdrop ser 🪂 already did all the quests",
     user: {
       id: "mock:acct:9",
       handle: "airdrop_hunter",
@@ -159,6 +182,7 @@ export const ENGAGED_ACCOUNT_POOL: PoolAccount[] = [
   },
   {
     bucketSignal: "airdrop_farmers",
+    replyText: "done ✅ retweeted + joined. wallet in bio. next quest?",
     user: {
       id: "mock:acct:10",
       handle: "sybil_szn",
@@ -173,6 +197,7 @@ export const ENGAGED_ACCOUNT_POOL: PoolAccount[] = [
   },
   {
     bucketSignal: "meme_degens",
+    replyText: "🚀🚀🚀 wagmi",
     user: {
       id: "mock:acct:11",
       handle: "wenmoon_ser",
@@ -187,6 +212,7 @@ export const ENGAGED_ACCOUNT_POOL: PoolAccount[] = [
   },
   {
     bucketSignal: "meme_degens",
+    replyText: "ser this is the way 🐶 sending it",
     user: {
       id: "mock:acct:12",
       handle: "dogwifstuff",
@@ -201,6 +227,7 @@ export const ENGAGED_ACCOUNT_POOL: PoolAccount[] = [
   },
   {
     bucketSignal: "bots_spam",
+    replyText: "Great project! 💯💯 Check my profile for FREE signals",
     user: {
       id: "mock:acct:13",
       handle: "user8372641",
@@ -215,6 +242,7 @@ export const ENGAGED_ACCOUNT_POOL: PoolAccount[] = [
   },
   {
     bucketSignal: "bots_spam",
+    replyText: "🎁 GIVEAWAY!! DM me to claim — send 0.1 get 1 back!!",
     user: {
       id: "mock:acct:14",
       handle: "giveaway_x_free",
@@ -229,6 +257,7 @@ export const ENGAGED_ACCOUNT_POOL: PoolAccount[] = [
   },
   {
     bucketSignal: "bots_spam",
+    replyText: "gm",
     user: {
       id: "mock:acct:15",
       handle: "cryptoNews4471",
@@ -243,6 +272,8 @@ export const ENGAGED_ACCOUNT_POOL: PoolAccount[] = [
   },
   {
     bucketSignal: "investors_vcs",
+    replyText:
+      "interesting — we've been tracking this vertical all year. dms open if you're raising.",
     user: {
       id: "mock:acct:16",
       handle: "seed_investor",
@@ -257,16 +288,21 @@ export const ENGAGED_ACCOUNT_POOL: PoolAccount[] = [
   },
 ];
 
-/** Deterministic subset of the account pool for a seed (e.g. tweetId+source). */
-export function selectAccounts(seed: string, limit: number): TwitterUser[] {
+/** Deterministic subset of the pool (full entries) for a seed (tweetId+source). */
+export function selectPool(seed: string, limit: number): PoolAccount[] {
   const pool = ENGAGED_ACCOUNT_POOL;
   const count = Math.max(0, Math.min(limit, pool.length));
   const start = hashString(seed) % pool.length;
-  const out: TwitterUser[] = [];
+  const out: PoolAccount[] = [];
   for (let i = 0; i < count; i++) {
-    out.push(pool[(start + i) % pool.length].user);
+    out.push(pool[(start + i) % pool.length]);
   }
   return out;
+}
+
+/** Deterministic subset of the account pool for a seed (users only). */
+export function selectAccounts(seed: string, limit: number): TwitterUser[] {
+  return selectPool(seed, limit).map((p) => p.user);
 }
 
 // Richer "known" profiles for a plausible org and KOL; any other handle gets a
@@ -316,14 +352,33 @@ export function makeProfile(handle: string): TwitterUser {
 }
 
 // Varied post templates so top-post-by-engagement selection is meaningful.
-const POST_TEMPLATES: { text: string; engagement: number }[] = [
-  { text: "Perps are eating spot. Here's why onchain order books win long term. 🧵", engagement: 100 },
+// Some carry deterministic media fixtures (Unit 29A): substantive charts on
+// analysis posts, a meme image, one video — so media-aware classification
+// (Unit 29B) is testable offline.
+const POST_TEMPLATES: { text: string; engagement: number; media?: TweetMedia[] }[] = [
+  {
+    text: "Perps are eating spot. Here's why onchain order books win long term. 🧵",
+    engagement: 100,
+    media: [{ type: "photo", url: "https://mock.local/media/perps-orderbook-chart.png" }],
+  },
   { text: "gm. audience quality > follower count. always has been.", engagement: 40 },
-  { text: "New thread: how to tell real yield from farmed TVL. Bookmark this.", engagement: 90 },
+  {
+    text: "New thread: how to tell real yield from farmed TVL. Bookmark this.",
+    engagement: 90,
+    media: [{ type: "photo", url: "https://mock.local/media/real-yield-dashboard.png" }],
+  },
   { text: "Airdrop farmers are not your users. Change my mind.", engagement: 75 },
-  { text: "The memecoin supercycle is a distraction from real product. Or is it?", engagement: 85 },
+  {
+    text: "The memecoin supercycle is a distraction from real product. Or is it?",
+    engagement: 85,
+    media: [{ type: "photo", url: "https://mock.local/media/supercycle-meme.jpg" }],
+  },
   { text: "Shipping > shilling. Small update but a good one.", engagement: 20 },
-  { text: "Market structure 101: liquidity, funding, and why your fills are bad.", engagement: 60 },
+  {
+    text: "Market structure 101: liquidity, funding, and why your fills are bad.",
+    engagement: 60,
+    media: [{ type: "video", previewUrl: "https://mock.local/media/market-structure-thumb.jpg" }],
+  },
   { text: "If your KOL's replies are all 🚀🚀🚀, that's a signal (a bad one).", engagement: 70 },
   { text: "Devs are the real leading indicator. Watch where they build.", engagement: 55 },
   { text: "Quick take on L2 fragmentation and what it means for users.", engagement: 45 },
@@ -349,6 +404,7 @@ export function makeKolPosts(handle: string): Tweet[] {
       isReply: false,
       isQuote: false,
       lang: "en",
+      ...(t.media ? { media: t.media } : {}),
     };
   });
 }

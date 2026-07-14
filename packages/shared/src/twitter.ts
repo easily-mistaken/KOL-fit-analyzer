@@ -23,6 +23,16 @@ export const TwitterUserSchema = z.object({
 });
 export type TwitterUser = z.infer<typeof TwitterUserSchema>;
 
+// Compact media attachment metadata (Unit 29A). For photos `url` is the image
+// itself; for video/animated_gif `previewUrl` is the thumbnail (the compact,
+// vision-usable representation — full video variants are never stored).
+export const TweetMediaSchema = z.object({
+  type: z.enum(["photo", "video", "animated_gif"]),
+  url: z.string().optional(),
+  previewUrl: z.string().optional(),
+});
+export type TweetMedia = z.infer<typeof TweetMediaSchema>;
+
 export const TweetSchema = z.object({
   id: z.string(),
   authorId: z.string().optional(),
@@ -37,14 +47,20 @@ export const TweetSchema = z.object({
   isReply: z.boolean().optional(),
   isQuote: z.boolean().optional(),
   lang: z.string().optional(),
+  media: z.array(TweetMediaSchema).optional(),
 });
 export type Tweet = z.infer<typeof TweetSchema>;
 
 // A raw engager tied to a tweet, before audience classification. The
-// pre-classification counterpart of AudienceAccount.
+// pre-classification counterpart of AudienceAccount. `text` is the reply/quote
+// body (absent for retweets; bounded + sanitized at normalization) and
+// `appearances` counts how many analyzed posts this account engaged with
+// (set by collectEngagedAccounts) — both Unit 29A enrichment fields.
 export const EngagedAccountRawSchema = z.object({
   user: TwitterUserSchema,
   tweetId: z.string(),
   source: EngagementSourceSchema,
+  text: z.string().optional(),
+  appearances: z.number().int().min(1).optional(),
 });
 export type EngagedAccountRaw = z.infer<typeof EngagedAccountRawSchema>;

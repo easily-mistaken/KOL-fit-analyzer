@@ -8,7 +8,9 @@ import type { TwitterProvider, UsageStats } from "@kol-fit/twitter";
 import type { CacheConfig } from "./config.js";
 import type { CacheStore } from "./store.js";
 
-const KEY_PREFIX = "tw:v1";
+// v2: Unit 29A enriched normalization (reply/quote text, media). Bumped so
+// pre-enrichment cached payloads can't silently starve an enriched analysis.
+const KEY_PREFIX = "tw:v2";
 const norm = (s: string): string => s.trim().toLowerCase();
 
 export interface CacheHitStats {
