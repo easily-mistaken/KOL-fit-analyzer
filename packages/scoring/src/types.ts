@@ -1,5 +1,6 @@
 import type {
   AudienceClassification,
+  ContentFitAssessment,
   KolContentClassification,
   OrgClassification,
   ReportVerdict,
@@ -15,6 +16,12 @@ export type ScoringSampleMeta = {
   kolRepliesSampled: number;
   topPostsAnalyzed: number;
   engagedAccountsSampled: number;
+  /** LLM-classified count (may be < sampled under the classification cap).
+   *  Confidence keys off this when present (Unit 29C). */
+  engagedAccountsClassified?: number;
+  /** Share of unique engaged accounts that engaged >=2 analyzed posts
+   *  (from 29A `appearances`; computed by the pipeline). */
+  repeatEngagerShare?: number;
 };
 
 // Provider-neutral ingestion evidence as plain booleans — the pipeline maps its
@@ -23,6 +30,9 @@ export type ScoringSampleMeta = {
 export type ScoringEvidence = {
   websiteFetched: boolean;
   docsFetched: boolean;
+  /** True when reply/quote text was available for audience classification
+   *  (29A enrichment) — raises confidence (Unit 29C). */
+  hasEngagementText?: boolean;
 };
 
 export type ScoringBrief = {
@@ -40,6 +50,10 @@ export type ScoringInput = {
   sample: ScoringSampleMeta;
   evidence: ScoringEvidence;
   brief: ScoringBrief;
+  /** 29B semantic content-fit rubric; absent -> token-overlap fallback. */
+  contentFitAssessment?: ContentFitAssessment;
+  /** `Tweet.lang` values of the sampled KOL posts (geo/language v2). */
+  kolPostLangs?: string[];
 };
 
 export type ScoringResult = {

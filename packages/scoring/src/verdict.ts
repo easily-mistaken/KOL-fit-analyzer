@@ -1,8 +1,21 @@
 import type { ReportVerdict } from "@kol-fit/shared";
 
-import { RISK_GATE_THRESHOLD, VERDICT_THRESHOLDS } from "./weights.js";
+import {
+  BOT_GATE_OKAY,
+  BOT_GATE_WEAK,
+  PROMO_GATE_OKAY,
+  PROMO_GATE_UNRELATED_SHARE,
+  VERDICT_THRESHOLDS,
+} from "./weights.js";
 
 const RANK: ReportVerdict[] = ["AVOID", "WEAK", "OKAY", "GOOD", "STRONG"];
+
+export type RiskGateInput = {
+  paidPromoRisk: number;
+  botFarmRisk: number;
+  /** Share of promo posts outside the KOL's domain (from paidPromoRisk v2). */
+  promoUnrelatedShare: number;
+};
 
 function baseVerdict(overall: number): ReportVerdict {
   if (overall >= VERDICT_THRESHOLDS.STRONG) return "STRONG";
@@ -12,29 +25,40 @@ function baseVerdict(overall: number): ReportVerdict {
   return "AVOID";
 }
 
-/**
- * Map overall_fit -> verdict, then apply the risk gate: a high paid-promo or
- * bot/farm risk (>= RISK_GATE_THRESHOLD) caps the verdict at WEAK (never
- * OKAY/GOOD/STRONG). Deterministic.
- */
+/** The verdict cap the v2 risk gates impose, or null when no gate fires.
+ *  Softened vs v1 (bots are endemic; promo is the KOL business model):
+ *  - bot/farm risk >= BOT_GATE_WEAK (majority-fake engagement) -> cap WEAK;
+ *    >= BOT_GATE_OKAY -> cap OKAY.
+ *  - paid-promo risk gates ONLY when high AND mostly unrelated shilling
+ *    (> PROMO_GATE_UNRELATED_SHARE) -> cap OKAY. */
+function gateCap(risks: RiskGateInput): ReportVerdict | null {
+  let cap: ReportVerdict | null = null;
+  if (risks.botFarmRisk >= BOT_GATE_WEAK) cap = "WEAK";
+  else if (risks.botFarmRisk >= BOT_GATE_OKAY) cap = "OKAY";
+  if (
+    risks.paidPromoRisk >= PROMO_GATE_OKAY &&
+    risks.promoUnrelatedShare > PROMO_GATE_UNRELATED_SHARE
+  ) {
+    if (cap === null || RANK.indexOf("OKAY") < RANK.indexOf(cap)) cap = "OKAY";
+  }
+  return cap;
+}
+
+/** Map overall_fit -> verdict, then apply the v2 risk gates. Deterministic. */
 export function verdictFromScore(
   overall: number,
-  risks: { paidPromoRisk: number; botFarmRisk: number }
+  risks: RiskGateInput
 ): ReportVerdict {
   const verdict = baseVerdict(overall);
-  const highRisk =
-    risks.botFarmRisk >= RISK_GATE_THRESHOLD ||
-    risks.paidPromoRisk >= RISK_GATE_THRESHOLD;
-  if (highRisk && RANK.indexOf(verdict) > RANK.indexOf("WEAK")) {
-    return "WEAK";
-  }
+  const cap = gateCap(risks);
+  if (cap !== null && RANK.indexOf(verdict) > RANK.indexOf(cap)) return cap;
   return verdict;
 }
 
-/** True when the risk gate would lower the base verdict. For reason text. */
+/** True when a risk gate lowered the base verdict. For reason text. */
 export function riskGateApplied(
   overall: number,
-  risks: { paidPromoRisk: number; botFarmRisk: number }
+  risks: RiskGateInput
 ): boolean {
   return baseVerdict(overall) !== verdictFromScore(overall, risks);
 }

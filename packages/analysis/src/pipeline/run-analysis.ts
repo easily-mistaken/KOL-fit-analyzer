@@ -98,9 +98,26 @@ export async function runAnalysis(
     posts: kolPosts,
     replies: kolReplies,
   });
-  const audience = await llm.classifyAudienceAccounts({
-    accounts: engagedAccounts,
-  });
+  // Audience classification and the pair-specific content-fit rubric (29B) are
+  // independent — run them in parallel. A rubric failure degrades scoring to
+  // its token-overlap fallback instead of failing the analysis (Invariant 8).
+  const [audience, contentFitAssessment] = await Promise.all([
+    llm.classifyAudienceAccounts({ accounts: engagedAccounts }),
+    llm
+      .assessContentFit({
+        org: { handle: request.orgHandle, classification: orgClassification },
+        kol: { handle: request.kolHandle, content: kolContent },
+      })
+      .catch(() => undefined),
+  ]);
+
+  // Repeat-engager share from 29A `appearances` (accounts engaging >=2
+  // analyzed posts) — feeds the audience-quality community bonus.
+  const repeatEngagerShare =
+    engagedAccounts.length > 0
+      ? engagedAccounts.filter((a) => (a.appearances ?? 1) >= 2).length /
+        engagedAccounts.length
+      : 0;
 
   // 4. Deterministic scoring (packages/scoring). Numbers are computed here /
   // there — never by the LLM.
@@ -108,15 +125,22 @@ export async function runAnalysis(
     org: orgClassification,
     content: kolContent,
     audience,
+    contentFitAssessment,
+    kolPostLangs: kolPosts
+      .map((t) => t.lang)
+      .filter((l): l is string => Boolean(l)),
     sample: {
       kolPostsSampled: kolPosts.length,
       kolRepliesSampled: kolReplies.length,
       topPostsAnalyzed: topPosts.length,
       engagedAccountsSampled: engagedAccounts.length,
+      engagedAccountsClassified: audience.distribution.sampleSize,
+      repeatEngagerShare,
     },
     evidence: {
       websiteFetched: orgContext.website.status === "fetched",
       docsFetched: orgContext.docs.status === "fetched",
+      hasEngagementText: engagedAccounts.some((a) => Boolean(a.text)),
     },
     brief: {
       campaignGoal: request.campaignGoal,

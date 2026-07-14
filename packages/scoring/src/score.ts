@@ -13,11 +13,12 @@ import {
   campaignGoalFit,
   clampRound,
   contentFit,
-  deriveTargetBuckets,
   engagedAudienceMatch,
   geoLanguageFit,
+  normalizeGoal,
   paidPromoRisk,
   resolveGoal,
+  resolveTargets,
 } from "./metrics.js";
 import type { ScoringInput, ScoringResult } from "./types.js";
 import { riskGateApplied, verdictFromScore } from "./verdict.js";
@@ -33,10 +34,11 @@ const METRIC_LABELS: Record<keyof typeof OVERALL_WEIGHTS, string> = {
 };
 
 /**
- * Deterministic, explainable scoring. Computes the 9 metrics, the weighted
- * overall, a verdict (with risk gate), and confidence — all from the pipeline's
- * structured classifications/evidence. Numbers are computed here, never by the
- * LLM. Output validated against ScoreBreakdownSchema before returning.
+ * Deterministic, explainable scoring (v2, Unit 29C). Computes the 9 metrics
+ * through calibration curves + baselines (weights.ts), the weighted overall,
+ * a verdict (with the softened risk gates), and confidence — all from the
+ * pipeline's structured classifications/evidence. Numbers are computed here,
+ * never by the LLM. Output validated against ScoreBreakdownSchema.
  */
 export function scoreAnalysis(input: ScoringInput): ScoringResult {
   const dist = input.audience.distribution;
@@ -44,19 +46,42 @@ export function scoreAnalysis(input: ScoringInput): ScoringResult {
   const avgBot = avgBotScore(accounts);
   const sampleLevel = confidenceFromEvidence(input.sample, input.evidence);
 
-  const goal = resolveGoal(input.org, input.brief);
-  const targetBuckets = deriveTargetBuckets(input.org, input.brief, goal);
+  const goalRaw = resolveGoal(input.org, input.brief);
+  const goalKey = normalizeGoal(goalRaw);
+  const targets = resolveTargets(input.org, input.brief, goalKey);
 
-  // Risks first — they feed audience_quality / brand_safety and the verdict gate.
+  // Risks first — bot risk feeds the verdict gate; promo risk carries the
+  // unrelated-share the promo gate needs.
   const ppr = paidPromoRisk(input.content, sampleLevel);
   const bfr = botFarmRisk(dist, avgBot, sampleLevel);
 
-  const eam = engagedAudienceMatch(dist, targetBuckets, sampleLevel);
-  const aq = audienceQuality(dist, avgBot, sampleLevel);
-  const cf = contentFit(input.content, input.org, input.brief, sampleLevel);
-  const cgf = campaignGoalFit(dist, goal, eam.value, sampleLevel);
-  const bs = brandSafety(dist, ppr.value);
-  const glf = geoLanguageFit(input.brief.region ?? input.org.region);
+  const eam = engagedAudienceMatch(accounts, dist, targets, sampleLevel);
+  const aq = audienceQuality(
+    dist,
+    input.sample.repeatEngagerShare ?? 0,
+    sampleLevel
+  );
+  const cf = contentFit(
+    input.contentFitAssessment,
+    input.content,
+    input.org,
+    input.brief,
+    sampleLevel
+  );
+  const cgf = campaignGoalFit(
+    accounts,
+    dist,
+    goalRaw,
+    goalKey,
+    targets,
+    eam.value,
+    sampleLevel
+  );
+  const bs = brandSafety(input.content);
+  const glf = geoLanguageFit(
+    input.brief.region ?? input.org.region,
+    input.kolPostLangs
+  );
 
   const weighted: Record<keyof typeof OVERALL_WEIGHTS, ScoreValue> = {
     engaged_audience_match: eam,
@@ -74,10 +99,12 @@ export function scoreAnalysis(input: ScoringInput): ScoringResult {
     )
   );
 
-  const verdict = verdictFromScore(overallValue, {
-    paidPromoRisk: ppr.value,
+  const gateInput = {
+    paidPromoRisk: ppr.value.value,
     botFarmRisk: bfr.value,
-  });
+    promoUnrelatedShare: ppr.unrelatedShare,
+  };
+  const verdict = verdictFromScore(overallValue, gateInput);
 
   // Overall reasons: top weighted drivers + any risk-gate note.
   const drivers = (Object.keys(OVERALL_WEIGHTS) as (keyof typeof OVERALL_WEIGHTS)[])
@@ -97,9 +124,11 @@ export function scoreAnalysis(input: ScoringInput): ScoringResult {
     `Weighted fit ${overallValue}/100 → ${verdict}.`,
     `Top drivers: ${drivers.join(", ")}.`,
   ];
-  if (riskGateApplied(overallValue, { paidPromoRisk: ppr.value, botFarmRisk: bfr.value })) {
+  if (riskGateApplied(overallValue, gateInput)) {
     overallReasons.push(
-      `Verdict capped at WEAK: paid-promo risk ${ppr.value}, bot/farm risk ${bfr.value}.`
+      `Verdict capped by risk gate: paid-promo risk ${ppr.value.value} (unrelated share ${Math.round(
+        ppr.unrelatedShare * 100
+      )}%), bot/farm risk ${bfr.value}.`
     );
   }
 
@@ -116,7 +145,7 @@ export function scoreAnalysis(input: ScoringInput): ScoringResult {
     campaign_goal_fit: cgf,
     brand_safety: bs,
     geo_language_fit: glf,
-    paid_promo_risk: ppr,
+    paid_promo_risk: ppr.value,
     bot_farm_risk: bfr,
   };
 
