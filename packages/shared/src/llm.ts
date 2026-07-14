@@ -94,9 +94,21 @@ export type KolContentClassification = z.infer<
   typeof KolContentClassificationSchema
 >;
 
+// The KOL's relationship to the org (Unit 29F) — a separate authority signal,
+// not a weighted metric. Drives verdict floors/caps in scoring.
+export const KolRelationshipSchema = z.enum([
+  "founder_or_core_team",
+  "adjacent_ecosystem_authority",
+  "independent_specialist",
+  "media_or_news",
+  "none",
+]);
+export type KolRelationship = z.infer<typeof KolRelationshipSchema>;
+
 // Output of assessContentFit (Unit 29B): a bounded pair-specific semantic
 // rubric — labels on an ordinal 0-5 scale with rationale. The deterministic
 // scoring module (29C) maps these to a 0-100 metric; the LLM never scores.
+// 29F adds the org↔KOL relationship classification (additive optional).
 export const ContentFitAssessmentSchema = z.object({
   /** How close the KOL's usual topics are to the org's domain. */
   topicalAdjacency: z.number().int().min(0).max(5),
@@ -106,6 +118,8 @@ export const ContentFitAssessmentSchema = z.object({
   naturalMentionFit: z.number().int().min(0).max(5),
   sharedTopics: z.array(z.string()).default([]),
   rationale: z.string(),
+  relationship: KolRelationshipSchema.optional(),
+  relationshipEvidence: z.string().optional(),
 });
 export type ContentFitAssessment = z.infer<typeof ContentFitAssessmentSchema>;
 

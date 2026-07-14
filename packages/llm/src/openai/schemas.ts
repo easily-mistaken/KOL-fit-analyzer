@@ -126,6 +126,7 @@ export const KOL_CONTENT_SCHEMA = {
 
 // Unit 29B: pair-specific content-fit rubric — bounded ordinal ratings only.
 // The shared Zod schema enforces integer 0-5 (strict mode can't express min/max).
+// 29F adds the org↔KOL relationship classification.
 export const CONTENT_FIT_SCHEMA = {
   type: "object",
   additionalProperties: false,
@@ -135,6 +136,17 @@ export const CONTENT_FIT_SCHEMA = {
     naturalMentionFit: { type: "integer" },
     sharedTopics: stringArray,
     rationale: { type: "string" },
+    relationship: {
+      type: "string",
+      enum: [
+        "founder_or_core_team",
+        "adjacent_ecosystem_authority",
+        "independent_specialist",
+        "media_or_news",
+        "none",
+      ],
+    },
+    relationshipEvidence: { type: "string" },
   },
   required: [
     "topicalAdjacency",
@@ -142,6 +154,8 @@ export const CONTENT_FIT_SCHEMA = {
     "naturalMentionFit",
     "sharedTopics",
     "rationale",
+    "relationship",
+    "relationshipEvidence",
   ],
 } as const;
 

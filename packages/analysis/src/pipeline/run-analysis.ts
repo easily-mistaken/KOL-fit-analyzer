@@ -150,7 +150,11 @@ export async function runAnalysis(
     llm
       .assessContentFit({
         org: { handle: request.orgHandle, classification: orgClassification },
-        kol: { handle: request.kolHandle, content: kolContent },
+        kol: {
+          handle: request.kolHandle,
+          content: kolContent,
+          profile: kolProfile,
+        },
       })
       .catch(() => undefined),
   ]);

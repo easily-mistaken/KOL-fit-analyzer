@@ -139,8 +139,16 @@ const pad = (s, n) => String(s).padEnd(n);
 
   const results = [];
   let misses = 0;
+  let skipped = 0;
   for (const pair of selected) {
     const label = `${pair.orgHandle} × ${pair.kolHandle}`;
+    if (pair.synthetic) {
+      // Negative-control PATTERNS, not real accounts — encoded as scoring
+      // fixtures in scripts/checks/negative-controls.regression.cjs.
+      console.log(`── ${label}  [SYNTHETIC] skipped (covered by negative-controls regression)\n`);
+      skipped++;
+      continue;
+    }
     process.stdout.write(`── ${label}  (expected ${pair.expected})\n`);
     const t0 = Date.now();
     try {
@@ -178,8 +186,12 @@ const pad = (s, n) => String(s).padEnd(n);
   }
 
   const passed = results.filter((r) => r.pass).length;
+  const ran = selected.length - skipped;
   console.log("=".repeat(76));
-  console.log(`CALIBRATION: ${passed}/${selected.length} pairs in expected range${isLive ? "" : "  [MOCK — not meaningful]"}`);
+  console.log(
+    `CALIBRATION: ${passed}/${ran} pairs in expected range` +
+      `${skipped > 0 ? ` (${skipped} synthetic controls skipped)` : ""}${isLive ? "" : "  [MOCK — not meaningful]"}`
+  );
   fs.writeFileSync(
     LAST_RUN_PATH,
     JSON.stringify(

@@ -4,7 +4,10 @@ export { scoreAnalysis } from "./score.js";
 export {
   verdictFromScore,
   riskGateApplied,
+  applyAuthorityRules,
   type RiskGateInput,
+  type AuthorityContext,
+  type AuthorityAdjustment,
 } from "./verdict.js";
 export { confidenceFromEvidence } from "./confidence.js";
 export { curve } from "./metrics.js";
@@ -19,8 +22,12 @@ export {
   LOWQ_BASELINE,
   BOT_GATE_OKAY,
   BOT_GATE_WEAK,
+  BOT_GATE_AVOID,
   PROMO_GATE_OKAY,
+  PROMO_GATE_WEAK,
   PROMO_GATE_UNRELATED_SHARE,
+  BRAND_GATE_WEAK,
+  BRAND_GATE_AVOID,
   BRAND_SAFETY_DEDUCTIONS,
 } from "./weights.js";
 export type {

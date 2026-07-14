@@ -65,7 +65,13 @@ export type ClassifyAudienceInput = {
 
 export type AssessContentFitInput = {
   org: { handle: string; classification: OrgClassification };
-  kol: { handle: string; content: KolContentClassification };
+  kol: {
+    handle: string;
+    content: KolContentClassification;
+    /** KOL profile — the bio is the primary relationship evidence (Unit 29F:
+     *  "inventor of X", "co-founder of Y", "crypto news"). */
+    profile?: TwitterUser | null;
+  };
 };
 
 export type GenerateFitReportInput = {

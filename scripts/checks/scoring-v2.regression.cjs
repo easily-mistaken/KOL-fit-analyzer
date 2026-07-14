@@ -114,7 +114,7 @@ ck("curve interpolates linearly", Math.abs(s.curve(0.225, s.EAM_ANCHORS) - 65) <
 
 // --- 6. verdict gates (softened) ---------------------------------------------
 {
-  const none = { paidPromoRisk: 0, botFarmRisk: 0, promoUnrelatedShare: 0 };
+  const none = { paidPromoRisk: 0, botFarmRisk: 0, promoUnrelatedShare: 0, brandSafety: 100 };
   ck("no gate: 90 -> STRONG", s.verdictFromScore(90, none) === "STRONG");
   ck("bot risk 84 does NOT gate", s.verdictFromScore(90, { ...none, botFarmRisk: 84 }) === "STRONG");
   ck("bot risk 86 caps at OKAY", s.verdictFromScore(90, { ...none, botFarmRisk: 86 }) === "OKAY");

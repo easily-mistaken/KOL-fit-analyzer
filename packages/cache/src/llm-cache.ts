@@ -185,7 +185,13 @@ export class CachingLlmProvider implements LlmProvider {
   assessContentFit(input: AssessContentFitInput): Promise<ContentFitAssessment> {
     const key = `${NS}:fit:${hash({
       org: { handle: norm(input.org.handle), classification: input.org.classification },
-      kol: { handle: norm(input.kol.handle), content: input.kol.content },
+      kol: {
+        handle: norm(input.kol.handle),
+        content: input.kol.content,
+        // 29F: the bio drives the relationship classification.
+        profileId: input.kol.profile?.id ?? null,
+        bio: input.kol.profile?.bio ?? null,
+      },
       model: this.inner.model,
     })}`;
     return this.cached(

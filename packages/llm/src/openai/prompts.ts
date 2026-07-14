@@ -141,9 +141,13 @@ export function buildAudiencePrompt(batch: EngagedAccountRaw[]): string {
 export function buildContentFitPrompt(input: AssessContentFitInput): string {
   const org = input.org.classification;
   const kol = input.kol.content;
+  const p = input.kol.profile;
   return [
     `Rate the SEMANTIC content fit between org @${input.org.handle} and KOL @${input.kol.handle}.`,
     `Org: productCategory=${org.productCategory ?? "(unknown)"}, targetUser="${truncate(org.targetUser ?? "", 200)}", keywords=${(org.keywords ?? []).join(", ") || "(none)"}.`,
+    p
+      ? `KOL profile: name="${truncate(p.displayName ?? "", 80)}", bio="${truncate(p.bio ?? "", 240)}".`
+      : "KOL profile: unavailable.",
     `KOL content: themes=${kol.themes.join(", ") || "(n/a)"}, verticals=${kol.verticals.join(", ") || "(n/a)"}, style=${kol.style ?? "(n/a)"}, depth=${kol.depth ?? "(n/a)"}.`,
     "Rate three dimensions as INTEGERS 0-5 (0 = unrelated, 3 = clearly adjacent domains, 5 = same domain):",
     "- topicalAdjacency: how close the KOL's usual topics are to the org's domain. Adjacent counts: a " +
@@ -151,6 +155,15 @@ export function buildContentFitPrompt(input: AssessContentFitInput): string {
     "- audienceOverlapPotential: how plausibly the KOL's audience contains the org's target users.",
     "- naturalMentionFit: would this KOL talking about this org feel natural (not forced) to their audience?",
     "Also list sharedTopics (concrete overlapping topics, may be empty) and a 1-3 sentence rationale.",
+    "Classify `relationship` — the KOL's relationship to THIS ORG specifically (use the bio and public knowledge; " +
+      "when unsure, choose the weaker category):",
+    "- founder_or_core_team: founder/inventor/CEO/core team of THIS org itself.",
+    "- adjacent_ecosystem_authority: founder or major figure of the underlying chain/ecosystem the org builds on, " +
+      "but NOT this org (e.g. a chain co-founder vs an app on that chain).",
+    "- independent_specialist: respected independent analyst/investigator/researcher in the org's domain.",
+    "- media_or_news: a media, news, or aggregator account rather than an individual voice.",
+    "- none: an ordinary KOL with no special relationship.",
+    "Give `relationshipEvidence`: one sentence naming what grounds the call (bio claim or public role).",
     "Output ONLY the ratings/labels — no scores out of 100, no verdicts, no recommendations.",
   ].join("\n");
 }

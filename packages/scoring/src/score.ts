@@ -21,7 +21,11 @@ import {
   resolveTargets,
 } from "./metrics.js";
 import type { ScoringInput, ScoringResult } from "./types.js";
-import { riskGateApplied, verdictFromScore } from "./verdict.js";
+import {
+  applyAuthorityRules,
+  riskGateApplied,
+  verdictFromScore,
+} from "./verdict.js";
 import { OVERALL_WEIGHTS } from "./weights.js";
 
 const METRIC_LABELS: Record<keyof typeof OVERALL_WEIGHTS, string> = {
@@ -103,8 +107,20 @@ export function scoreAnalysis(input: ScoringInput): ScoringResult {
     paidPromoRisk: ppr.value.value,
     botFarmRisk: bfr.value,
     promoUnrelatedShare: ppr.unrelatedShare,
+    brandSafety: bs.value,
   };
-  const verdict = verdictFromScore(overallValue, gateInput);
+  const gated = verdictFromScore(overallValue, gateInput);
+  const gateFired = riskGateApplied(overallValue, gateInput);
+
+  // Authority modifier (Unit 29F): relationship-driven floor/cap after gates.
+  const relationship = input.contentFitAssessment?.relationship;
+  const authority = applyAuthorityRules(gated, {
+    relationship,
+    eam: eam.value,
+    brandSafety: bs.value,
+    riskGateFired: gateFired,
+  });
+  const verdict = authority.verdict;
 
   // Overall reasons: top weighted drivers + any risk-gate note.
   const drivers = (Object.keys(OVERALL_WEIGHTS) as (keyof typeof OVERALL_WEIGHTS)[])
@@ -124,11 +140,26 @@ export function scoreAnalysis(input: ScoringInput): ScoringResult {
     `Weighted fit ${overallValue}/100 → ${verdict}.`,
     `Top drivers: ${drivers.join(", ")}.`,
   ];
-  if (riskGateApplied(overallValue, gateInput)) {
+  if (gateFired) {
     overallReasons.push(
       `Verdict capped by risk gate: paid-promo risk ${ppr.value.value} (unrelated share ${Math.round(
         ppr.unrelatedShare * 100
-      )}%), bot/farm risk ${bfr.value}.`
+      )}%), bot/farm risk ${bfr.value}, brand safety ${bs.value}.`
+    );
+  }
+  if (relationship && relationship !== "none") {
+    const evidence = input.contentFitAssessment?.relationshipEvidence;
+    overallReasons.push(
+      `KOL relationship to the org: ${relationship.replace(/_/g, " ")}${evidence ? ` — ${evidence}` : "."}`
+    );
+  }
+  if (authority.applied === "founder_floor") {
+    overallReasons.push(
+      `Founder/core-team authority floor applied (${gated} → ${verdict}): noisy engagement lowers confidence, not a founder pair's verdict.`
+    );
+  } else if (authority.applied === "media_cap") {
+    overallReasons.push(
+      `Media/news cap applied (${gated} → ${verdict}): broad reach is not product fit, and engaged-audience match ${eam.value} did not clear the exemption bar.`
     );
   }
 

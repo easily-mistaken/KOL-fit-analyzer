@@ -125,10 +125,36 @@ export const PROMO_FALLBACK_CAP = 60;
 export const BOT_GATE_OKAY = 85;
 /** Bot/farm risk at/above this (majority-fake engagement) caps at WEAK. */
 export const BOT_GATE_WEAK = 95;
-/** Paid-promo gate: risk at/above this AND unrelatedShare above
- *  PROMO_GATE_UNRELATED_SHARE caps the verdict at OKAY. */
+/** Bot/farm risk at/above this (overwhelming fake/farmed engagement — raid
+ *  rings, farm hubs, giveaway audiences; ~80%+ fake share) caps at AVOID
+ *  (Unit 29G, severe tier). */
+export const BOT_GATE_AVOID = 97;
+/** Paid-promo gate: risk at/above these AND unrelatedShare above
+ *  PROMO_GATE_UNRELATED_SHARE caps the verdict (OKAY / WEAK tiers). Promo
+ *  saturation alone never reaches AVOID — promo-heavy accounts retain
+ *  awareness value (v26 calibration rule 14). */
 export const PROMO_GATE_OKAY = 85;
+export const PROMO_GATE_WEAK = 95;
 export const PROMO_GATE_UNRELATED_SHARE = 0.5;
+/** Brand-safety gates (Unit 29G): confirmed severe safety findings cap the
+ *  verdict regardless of fit — below WEAK-gate caps WEAK; below AVOID-gate
+ *  (casino mismatch, deceptive claims, phishing, impersonation) caps AVOID. */
+export const BRAND_GATE_WEAK = 40;
+export const BRAND_GATE_AVOID = 20;
+
+// --- Authority modifier (Unit 29F): relationship is a verdict floor/cap, ------
+// NOT a weighted metric (per the user's 12-pair calibration doc).
+
+/** Founder/inventor/CEO/core-team of THIS org: verdict floor. Noisy public
+ *  engagement lowers confidence, it must not collapse a founder pair. */
+export const AUTHORITY_FLOOR_FOUNDER = "GOOD" as const;
+/** The founder floor only applies when brand safety is at least this (severe
+ *  brand-safety risk always wins) and no risk gate fired. */
+export const AUTHORITY_MIN_BRAND_SAFETY = 60;
+/** Media/news accounts: reach is not fit — capped unless the engaged-audience
+ *  match itself proves quality (EAM at/above the exemption). */
+export const MEDIA_CAP = "OKAY" as const;
+export const MEDIA_CAP_EAM_EXEMPT = 75;
 
 // --- Brand safety (29B flags; severity deductions, floor 0, no flags = 100) --
 

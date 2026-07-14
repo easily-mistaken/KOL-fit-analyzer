@@ -1,10 +1,18 @@
-import type { ReportVerdict } from "@kol-fit/shared";
+import type { KolRelationship, ReportVerdict } from "@kol-fit/shared";
 
 import {
+  AUTHORITY_FLOOR_FOUNDER,
+  AUTHORITY_MIN_BRAND_SAFETY,
+  BOT_GATE_AVOID,
   BOT_GATE_OKAY,
   BOT_GATE_WEAK,
+  BRAND_GATE_AVOID,
+  BRAND_GATE_WEAK,
+  MEDIA_CAP,
+  MEDIA_CAP_EAM_EXEMPT,
   PROMO_GATE_OKAY,
   PROMO_GATE_UNRELATED_SHARE,
+  PROMO_GATE_WEAK,
   VERDICT_THRESHOLDS,
 } from "./weights.js";
 
@@ -15,6 +23,9 @@ export type RiskGateInput = {
   botFarmRisk: number;
   /** Share of promo posts outside the KOL's domain (from paidPromoRisk v2). */
   promoUnrelatedShare: number;
+  /** brand_safety metric value — severe confirmed safety findings gate the
+   *  verdict (Unit 29G). */
+  brandSafety: number;
 };
 
 function baseVerdict(overall: number): ReportVerdict {
@@ -25,22 +36,35 @@ function baseVerdict(overall: number): ReportVerdict {
   return "AVOID";
 }
 
-/** The verdict cap the v2 risk gates impose, or null when no gate fires.
- *  Softened vs v1 (bots are endemic; promo is the KOL business model):
- *  - bot/farm risk >= BOT_GATE_WEAK (majority-fake engagement) -> cap WEAK;
- *    >= BOT_GATE_OKAY -> cap OKAY.
- *  - paid-promo risk gates ONLY when high AND mostly unrelated shilling
- *    (> PROMO_GATE_UNRELATED_SHARE) -> cap OKAY. */
+/** The lower (more severe) of two verdict caps. */
+function lowerCap(
+  a: ReportVerdict | null,
+  b: ReportVerdict
+): ReportVerdict {
+  return a === null || RANK.indexOf(b) < RANK.indexOf(a) ? b : a;
+}
+
+/** The verdict cap the risk gates impose, or null when no gate fires
+ *  (severity tiers per the v26 calibration set, Unit 29G):
+ *  - bot/farm risk: >= OKAY-gate caps OKAY; >= WEAK-gate (majority fake)
+ *    caps WEAK; >= AVOID-gate (overwhelming fake/farmed) caps AVOID.
+ *  - paid promo: gates ONLY when high AND mostly unrelated shilling —
+ *    OKAY tier, then WEAK tier. Never AVOID on saturation alone
+ *    (promo-heavy accounts retain awareness value).
+ *  - brand safety: severe confirmed findings gate independently —
+ *    < WEAK-gate caps WEAK; < AVOID-gate caps AVOID.
+ *  Caps combine as the minimum. */
 function gateCap(risks: RiskGateInput): ReportVerdict | null {
   let cap: ReportVerdict | null = null;
-  if (risks.botFarmRisk >= BOT_GATE_WEAK) cap = "WEAK";
-  else if (risks.botFarmRisk >= BOT_GATE_OKAY) cap = "OKAY";
-  if (
-    risks.paidPromoRisk >= PROMO_GATE_OKAY &&
-    risks.promoUnrelatedShare > PROMO_GATE_UNRELATED_SHARE
-  ) {
-    if (cap === null || RANK.indexOf("OKAY") < RANK.indexOf(cap)) cap = "OKAY";
+  if (risks.botFarmRisk >= BOT_GATE_AVOID) cap = lowerCap(cap, "AVOID");
+  else if (risks.botFarmRisk >= BOT_GATE_WEAK) cap = lowerCap(cap, "WEAK");
+  else if (risks.botFarmRisk >= BOT_GATE_OKAY) cap = lowerCap(cap, "OKAY");
+  if (risks.promoUnrelatedShare > PROMO_GATE_UNRELATED_SHARE) {
+    if (risks.paidPromoRisk >= PROMO_GATE_WEAK) cap = lowerCap(cap, "WEAK");
+    else if (risks.paidPromoRisk >= PROMO_GATE_OKAY) cap = lowerCap(cap, "OKAY");
   }
+  if (risks.brandSafety < BRAND_GATE_AVOID) cap = lowerCap(cap, "AVOID");
+  else if (risks.brandSafety < BRAND_GATE_WEAK) cap = lowerCap(cap, "WEAK");
   return cap;
 }
 
@@ -61,4 +85,50 @@ export function riskGateApplied(
   risks: RiskGateInput
 ): boolean {
   return baseVerdict(overall) !== verdictFromScore(overall, risks);
+}
+
+// --- Authority rules (Unit 29F) ----------------------------------------------
+
+export type AuthorityContext = {
+  relationship?: KolRelationship;
+  /** engaged_audience_match value — exempts media accounts from the cap. */
+  eam: number;
+  brandSafety: number;
+  /** True when a risk gate already capped the verdict (floors never override). */
+  riskGateFired: boolean;
+};
+
+export type AuthorityAdjustment = {
+  verdict: ReportVerdict;
+  applied: "founder_floor" | "media_cap" | null;
+};
+
+/**
+ * Relationship-driven verdict floor/cap (Unit 29F) — applied AFTER the risk
+ * gates. Founder/core-team pairs get a floor (noisy engagement must not
+ * collapse them) unless a risk gate fired or brand safety is severe.
+ * Media/news accounts cap at OKAY unless the engaged-audience match itself
+ * proves quality. Adjacent authority and independent specialists earn their
+ * verdict through the metrics (no floor/cap).
+ */
+export function applyAuthorityRules(
+  verdict: ReportVerdict,
+  ctx: AuthorityContext
+): AuthorityAdjustment {
+  if (
+    ctx.relationship === "founder_or_core_team" &&
+    !ctx.riskGateFired &&
+    ctx.brandSafety >= AUTHORITY_MIN_BRAND_SAFETY &&
+    RANK.indexOf(verdict) < RANK.indexOf(AUTHORITY_FLOOR_FOUNDER)
+  ) {
+    return { verdict: AUTHORITY_FLOOR_FOUNDER, applied: "founder_floor" };
+  }
+  if (
+    ctx.relationship === "media_or_news" &&
+    ctx.eam < MEDIA_CAP_EAM_EXEMPT &&
+    RANK.indexOf(verdict) > RANK.indexOf(MEDIA_CAP)
+  ) {
+    return { verdict: MEDIA_CAP, applied: "media_cap" };
+  }
+  return { verdict, applied: null };
 }
