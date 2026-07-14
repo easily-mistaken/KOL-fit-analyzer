@@ -7,6 +7,7 @@ export type {
   ClassifyOrgInput,
   ClassifyKolContentInput,
   ClassifyAudienceInput,
+  AssessContentFitInput,
   GenerateFitReportInput,
 } from "./provider.js";
 export { createLlmProvider } from "./factory.js";

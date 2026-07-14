@@ -50,6 +50,10 @@ export type RespondParams = {
   schema: object;
   system: string;
   user: string;
+  /** Optional image URLs attached as input_image parts after the user text
+   *  (Unit 29B multimodal content classification). Requires a vision-capable
+   *  model. */
+  images?: string[];
   maxOutputTokens: number;
 };
 
@@ -131,11 +135,24 @@ export class OpenAiClient {
     this.usage.requests++;
     this.usage.byMethod[params.method] = (this.usage.byMethod[params.method] ?? 0) + 1;
 
+    // Plain string content for text-only calls; structured content parts when
+    // images are attached (Responses API: input_text + input_image).
+    const userContent =
+      params.images && params.images.length > 0
+        ? [
+            { type: "input_text", text: params.user },
+            ...params.images.map((url) => ({
+              type: "input_image",
+              image_url: url,
+            })),
+          ]
+        : params.user;
+
     const payload: Record<string, unknown> = {
       model: this.model,
       input: [
         { role: "system", content: params.system },
-        { role: "user", content: params.user },
+        { role: "user", content: userContent },
       ],
       text: {
         format: {

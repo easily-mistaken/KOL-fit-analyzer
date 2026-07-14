@@ -1,11 +1,13 @@
 import {
   AudienceAccountSchema,
   AudienceClassificationSchema,
+  ContentFitAssessmentSchema,
   FitReportSchema,
   KolContentClassificationSchema,
   OrgClassificationSchema,
   type AudienceAccount,
   type AudienceClassification,
+  type ContentFitAssessment,
   type EngagedAccountRaw,
   type FitReport,
   type KolContentClassification,
@@ -13,6 +15,7 @@ import {
 } from "@kol-fit/shared";
 
 import type {
+  AssessContentFitInput,
   ClassifyAudienceInput,
   ClassifyKolContentInput,
   ClassifyOrgInput,
@@ -32,16 +35,20 @@ import {
   deepNullToUndefined,
 } from "./normalize.js";
 import {
+  KOL_CONTENT_POST_SAMPLE,
   SYSTEM_PROMPT,
   buildAudiencePrompt,
+  buildContentFitPrompt,
   buildKolContentPrompt,
   buildOrgPrompt,
   buildReportPrompt,
   repairNote,
+  selectPostImages,
 } from "./prompts.js";
 import { sampleAudienceAccounts } from "./sampling.js";
 import {
   AUDIENCE_BATCH_SCHEMA,
+  CONTENT_FIT_SCHEMA,
   KOL_CONTENT_SCHEMA,
   ORG_CLASSIFICATION_SCHEMA,
   REPORT_NARRATIVE_SCHEMA,
@@ -51,25 +58,54 @@ export const DEFAULT_AUDIENCE_LIMIT = 300;
 // Smaller batches → faster per-call structured output (a 100-account batch on a
 // reasoning model can exceed the request timeout).
 const AUDIENCE_BATCH_SIZE = 40;
+// Audience batches run concurrently (Unit 29B latency); results stay ordered.
+const AUDIENCE_BATCH_CONCURRENCY = 3;
 const DEFAULT_MAX_RETRIES = 1;
+// Post images attached to the content classification (Unit 29B multimodal).
+export const DEFAULT_MEDIA_IMAGE_LIMIT = 12;
 
 // Caps (billed only for tokens actually generated). Generous headroom so
-// reasoning-model overhead + the structured JSON output both fit.
+// reasoning-model overhead + the structured JSON output both fit. kolContent
+// grew in 29B: ~40 per-post labels + safety flags + media labels.
 const MAX_TOKENS = {
   org: 2000,
-  kolContent: 2000,
+  kolContent: 6000,
   audience: 8000,
+  contentFit: 1500,
   report: 4000,
 } as const;
 
 export interface OpenAiProviderOptions {
   apiKey: string;
   model: string;
+  /** Cheaper/faster model for bulk per-account audience batches (Unit 29B
+   *  tiering). Defaults to `model`. */
+  fastModel?: string;
   baseUrl?: string;
   timeoutMs?: number;
   fetchImpl?: FetchImpl;
   maxRetries?: number;
   audienceLimit?: number;
+  mediaImageLimit?: number;
+}
+
+/** Bounded-concurrency map; results are input-ordered. */
+async function mapConcurrent<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let next = 0;
+  const worker = async (): Promise<void> => {
+    for (let i = next++; i < items.length; i = next++) {
+      results[i] = await fn(items[i], i);
+    }
+  };
+  await Promise.all(
+    Array.from({ length: Math.max(1, Math.min(limit, items.length)) }, worker)
+  );
+  return results;
 }
 
 type Validated<T> = { ok: true; data: T } | { ok: false; errorSummary: string };
@@ -105,27 +141,54 @@ function parseLimit(raw: string | undefined): number | undefined {
 export class OpenAiLlmProvider implements LlmProvider {
   readonly model: string;
   private readonly client: OpenAiClient;
+  /** Separate client for bulk audience batches when fastModel is configured;
+   *  otherwise the same instance as `client`. */
+  private readonly fastClient: OpenAiClient;
   private readonly maxRetries: number;
   private readonly audienceLimit: number;
+  private readonly mediaImageLimit: number;
 
   constructor(options: OpenAiProviderOptions) {
     this.client = new OpenAiClient(options);
+    const fastModel = options.fastModel?.trim();
+    this.fastClient =
+      fastModel && fastModel !== options.model
+        ? new OpenAiClient({ ...options, model: fastModel })
+        : this.client;
     this.model = options.model;
     this.maxRetries = options.maxRetries ?? DEFAULT_MAX_RETRIES;
     this.audienceLimit =
       options.audienceLimit ??
       parseLimit(process.env.OPENAI_AUDIENCE_CLASSIFICATION_LIMIT) ??
       DEFAULT_AUDIENCE_LIMIT;
+    this.mediaImageLimit =
+      options.mediaImageLimit ??
+      parseLimit(process.env.OPENAI_MEDIA_IMAGE_LIMIT) ??
+      DEFAULT_MEDIA_IMAGE_LIMIT;
   }
 
   getUsageStats(): LlmUsageStats {
-    return this.client.getUsageStats();
+    const main = this.client.getUsageStats();
+    if (this.fastClient === this.client) return main;
+    const fast = this.fastClient.getUsageStats();
+    const byMethod = { ...main.byMethod };
+    for (const [k, v] of Object.entries(fast.byMethod)) {
+      byMethod[k] = (byMethod[k] ?? 0) + v;
+    }
+    return {
+      requests: main.requests + fast.requests,
+      inputTokens: main.inputTokens + fast.inputTokens,
+      outputTokens: main.outputTokens + fast.outputTokens,
+      totalTokens: main.totalTokens + fast.totalTokens,
+      byMethod,
+    };
   }
 
   /** Request → parse JSON → validate; bounded repair-retry, then typed error. */
   private async requestValidated<T>(
     base: RespondParams,
-    validate: (parsed: unknown) => Validated<T>
+    validate: (parsed: unknown) => Validated<T>,
+    client: OpenAiClient = this.client
   ): Promise<T> {
     let lastError = "";
     for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
@@ -133,7 +196,7 @@ export class OpenAiLlmProvider implements LlmProvider {
         attempt === 0
           ? base
           : { ...base, user: base.user + repairNote(lastError) };
-      const { text, refusal } = await this.client.respond(params);
+      const { text, refusal } = await client.respond(params);
 
       if (refusal) {
         if (attempt === this.maxRetries) {
@@ -185,13 +248,21 @@ export class OpenAiLlmProvider implements LlmProvider {
   async classifyKolContent(
     input: ClassifyKolContentInput
   ): Promise<KolContentClassification> {
+    // Multimodal (Unit 29B): attach a bounded set of post images (photo urls /
+    // video thumbnails) from the SAME sample the prompt lists, so mediaLabels
+    // postIds always refer to listed posts.
+    const { urls, postIds } = selectPostImages(
+      input.posts.slice(0, KOL_CONTENT_POST_SAMPLE),
+      this.mediaImageLimit
+    );
     return this.requestValidated<KolContentClassification>(
       {
         method: "classifyKolContent",
         schemaName: "kol_content",
         schema: KOL_CONTENT_SCHEMA,
         system: SYSTEM_PROMPT,
-        user: buildKolContentPrompt(input),
+        user: buildKolContentPrompt(input, postIds),
+        images: urls,
         maxOutputTokens: MAX_TOKENS.kolContent,
       },
       (parsed) => {
@@ -205,14 +276,37 @@ export class OpenAiLlmProvider implements LlmProvider {
     input: ClassifyAudienceInput
   ): Promise<AudienceClassification> {
     // Cap: classify a representative deterministic sample (proportional by
-    // engagement source, evenly spread within each), then batch at <=100.
+    // engagement source, evenly spread within each), then batch. Batches run
+    // with bounded concurrency (Unit 29B latency); output stays input-ordered.
     const slice = sampleAudienceAccounts(input.accounts, this.audienceLimit);
-    const accounts: AudienceAccount[] = [];
-    for (const batch of chunk(slice, AUDIENCE_BATCH_SIZE)) {
-      accounts.push(...(await this.classifyAudienceBatch(batch)));
-    }
+    const batches = chunk(slice, AUDIENCE_BATCH_SIZE);
+    const perBatch = await mapConcurrent(
+      batches,
+      AUDIENCE_BATCH_CONCURRENCY,
+      (batch) => this.classifyAudienceBatch(batch)
+    );
+    const accounts: AudienceAccount[] = perBatch.flat();
     const distribution = buildAudienceDistribution(accounts);
     return AudienceClassificationSchema.parse({ accounts, distribution });
+  }
+
+  async assessContentFit(
+    input: AssessContentFitInput
+  ): Promise<ContentFitAssessment> {
+    return this.requestValidated<ContentFitAssessment>(
+      {
+        method: "assessContentFit",
+        schemaName: "content_fit",
+        schema: CONTENT_FIT_SCHEMA,
+        system: SYSTEM_PROMPT,
+        user: buildContentFitPrompt(input),
+        maxOutputTokens: MAX_TOKENS.contentFit,
+      },
+      (parsed) => {
+        const r = ContentFitAssessmentSchema.safeParse(deepNullToUndefined(parsed));
+        return r.success ? { ok: true, data: r.data } : { ok: false, errorSummary: summarize(r.error) };
+      }
+    );
   }
 
   private async classifyAudienceBatch(
@@ -250,7 +344,9 @@ export class OpenAiLlmProvider implements LlmProvider {
         }
         const r = AudienceAccountSchema.array().safeParse(candidates);
         return r.success ? { ok: true, data: r.data } : { ok: false, errorSummary: summarize(r.error) };
-      }
+      },
+      // Bulk per-account labeling runs on the fast tier when configured.
+      this.fastClient
     );
   }
 

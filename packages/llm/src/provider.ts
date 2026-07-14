@@ -1,5 +1,6 @@
 import type {
   AudienceClassification,
+  ContentFitAssessment,
   EngagedAccountRaw,
   FitReport,
   KolContentClassification,
@@ -13,7 +14,8 @@ import type {
 // The LLM provider interface. All LLM calls in the system go through this
 // interface (Invariant 3); implementations return the shared provider-neutral
 // schemas, validated before use (Invariants 9, 12). Capabilities match
-// architecture.md -> LLM Provider Interface (four, no more).
+// architecture.md -> LLM Provider Interface (four classification/synthesis
+// calls + the Unit 29B pair-specific content-fit rubric).
 export interface LlmProvider {
   /** Configured model id (from LLM_MODEL). Recorded with reports; never hardcoded. */
   readonly model: string;
@@ -25,6 +27,9 @@ export interface LlmProvider {
   classifyAudienceAccounts(
     input: ClassifyAudienceInput
   ): Promise<AudienceClassification>;
+  /** Pair-specific semantic content-fit rubric (Unit 29B). Bounded 0-5
+   *  ordinal ratings + rationale — never a 0-100 score. */
+  assessContentFit(input: AssessContentFitInput): Promise<ContentFitAssessment>;
   generateFitReport(input: GenerateFitReportInput): Promise<FitReport>;
 }
 
@@ -56,6 +61,11 @@ export type ClassifyKolContentInput = {
 
 export type ClassifyAudienceInput = {
   accounts: EngagedAccountRaw[];
+};
+
+export type AssessContentFitInput = {
+  org: { handle: string; classification: OrgClassification };
+  kol: { handle: string; content: KolContentClassification };
 };
 
 export type GenerateFitReportInput = {

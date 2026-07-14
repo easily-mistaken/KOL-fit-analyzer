@@ -1,7 +1,9 @@
 import {
   AudienceBucketSchema,
+  BrandSafetyFlagKindSchema,
   ConfidenceLevelSchema,
   EngagementSourceSchema,
+  MediaLabelSchema,
 } from "@kol-fit/shared";
 
 // Hand-authored strict JSON Schemas for OpenAI Structured Outputs. Strict mode
@@ -16,6 +18,13 @@ const stringArray = { type: "array", items: { type: "string" } } as const;
 const BUCKETS = [...AudienceBucketSchema.options];
 const SOURCES = [...EngagementSourceSchema.options];
 const CONFIDENCE = [...ConfidenceLevelSchema.options];
+const SAFETY_FLAGS = [...BrandSafetyFlagKindSchema.options];
+const MEDIA_KINDS = [...MediaLabelSchema.shape.kind.options];
+
+const bucketArray = {
+  type: "array",
+  items: { type: "string", enum: BUCKETS },
+} as const;
 
 export const ORG_CLASSIFICATION_SCHEMA = {
   type: "object",
@@ -27,6 +36,14 @@ export const ORG_CLASSIFICATION_SCHEMA = {
     campaignGoal: nullableString,
     region: nullableString,
     keywords: stringArray,
+    // The org's wanted audience buckets (Unit 29B) — drives scoring v2's
+    // engaged-audience match instead of regex keyword derivation.
+    targetBuckets: {
+      type: "object",
+      additionalProperties: false,
+      properties: { primary: bucketArray, secondary: bucketArray },
+      required: ["primary", "secondary"],
+    },
     confidence: { type: "string", enum: CONFIDENCE },
   },
   required: [
@@ -36,6 +53,7 @@ export const ORG_CLASSIFICATION_SCHEMA = {
     "campaignGoal",
     "region",
     "keywords",
+    "targetBuckets",
     "confidence",
   ],
 } as const;
@@ -50,8 +68,81 @@ export const KOL_CONTENT_SCHEMA = {
     depth: nullableString,
     promoPatterns: stringArray,
     repeatedTickers: stringArray,
+    // Unit 29B: per-post promo labels (saturation computed in scoring, not here).
+    postLabels: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          postId: { type: "string" },
+          isPromo: { type: "boolean" },
+          promoRelated: { type: ["boolean", "null"] },
+          promoQuality: { type: ["string", "null"], enum: ["low", "ok", null] },
+        },
+        required: ["postId", "isPromo", "promoRelated", "promoQuality"],
+      },
+    },
+    // Unit 29B: explicit brand-safety flags with severity + post evidence.
+    brandSafetyFlags: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          flag: { type: "string", enum: SAFETY_FLAGS },
+          severity: { type: "string", enum: ["low", "medium", "high"] },
+          evidence: { type: "string" },
+        },
+        required: ["flag", "severity", "evidence"],
+      },
+    },
+    // Unit 29B: one label per ATTACHED image (aggregation happens downstream).
+    mediaLabels: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          postId: { type: "string" },
+          kind: { type: "string", enum: MEDIA_KINDS },
+        },
+        required: ["postId", "kind"],
+      },
+    },
   },
-  required: ["themes", "verticals", "style", "depth", "promoPatterns", "repeatedTickers"],
+  required: [
+    "themes",
+    "verticals",
+    "style",
+    "depth",
+    "promoPatterns",
+    "repeatedTickers",
+    "postLabels",
+    "brandSafetyFlags",
+    "mediaLabels",
+  ],
+} as const;
+
+// Unit 29B: pair-specific content-fit rubric — bounded ordinal ratings only.
+// The shared Zod schema enforces integer 0-5 (strict mode can't express min/max).
+export const CONTENT_FIT_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    topicalAdjacency: { type: "integer" },
+    audienceOverlapPotential: { type: "integer" },
+    naturalMentionFit: { type: "integer" },
+    sharedTopics: stringArray,
+    rationale: { type: "string" },
+  },
+  required: [
+    "topicalAdjacency",
+    "audienceOverlapPotential",
+    "naturalMentionFit",
+    "sharedTopics",
+    "rationale",
+  ],
 } as const;
 
 // The model labels each account; it does NOT emit counts/percentages.

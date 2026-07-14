@@ -34,7 +34,9 @@ export function createLlmProvider(options?: {
       if (!model || model.trim().length === 0) {
         throw new OpenAiError("config_error", "LLM_MODEL is not set; cannot use the openai provider.");
       }
-      return createOpenAiLlmProvider({ apiKey, model: model.trim() });
+      // Optional cheaper/faster tier for bulk audience batches (Unit 29B).
+      const fastModel = process.env.LLM_MODEL_FAST?.trim() || undefined;
+      return createOpenAiLlmProvider({ apiKey, model: model.trim(), fastModel });
     }
     default:
       throw new Error(`Unknown LLM_PROVIDER: ${String(kind)}`);

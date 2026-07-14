@@ -1,10 +1,12 @@
 import {
   AudienceClassificationSchema,
+  ContentFitAssessmentSchema,
   FitReportSchema,
   KolContentClassificationSchema,
   OrgClassificationSchema,
   REPORT_SCHEMA_VERSION,
   type AudienceClassification,
+  type ContentFitAssessment,
   type FitReport,
   type KolContentClassification,
   type OrgClassification,
@@ -13,6 +15,7 @@ import {
 } from "@kol-fit/shared";
 
 import type {
+  AssessContentFitInput,
   ClassifyAudienceInput,
   ClassifyKolContentInput,
   ClassifyOrgInput,
@@ -20,6 +23,7 @@ import type {
   LlmProvider,
 } from "../provider.js";
 import {
+  assessContentFitMock,
   buildDistribution,
   extractKolContent,
   inferOrgClassification,
@@ -62,6 +66,14 @@ export class MockLlmProvider implements LlmProvider {
     const accounts = input.accounts.map(toAudienceAccount);
     const distribution = buildDistribution(accounts);
     return AudienceClassificationSchema.parse({ accounts, distribution });
+  }
+
+  async assessContentFit(
+    input: AssessContentFitInput
+  ): Promise<ContentFitAssessment> {
+    return ContentFitAssessmentSchema.parse(
+      assessContentFitMock(input.org.classification, input.kol.content)
+    );
   }
 
   async generateFitReport(input: GenerateFitReportInput): Promise<FitReport> {

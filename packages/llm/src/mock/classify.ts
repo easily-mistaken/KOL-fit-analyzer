@@ -2,9 +2,14 @@ import type {
   AudienceAccount,
   AudienceBucket,
   AudienceDistribution,
+  BrandSafetyFlag,
+  ContentFitAssessment,
   EngagedAccountRaw,
   KolContentClassification,
+  MediaLabel,
   OrgClassification,
+  PostLabel,
+  TargetBuckets,
   Tweet,
   TwitterUser,
 } from "@kol-fit/shared";
@@ -101,6 +106,51 @@ const THEME_RULES: { re: RegExp; theme: string; vertical: string }[] = [
   { re: /ship|product|build|dev/i, theme: "product & building", vertical: "infra" },
 ];
 
+// Per-post promo detection (mock stand-in for the 29B LLM post labels).
+const PROMO_POST_RE = /giveaway|dm me|claim|sponsored|presale|wen token|🎁/i;
+
+/** Deterministic per-post promo labels (Unit 29B). */
+export function labelPosts(posts: Tweet[]): PostLabel[] {
+  return posts.map((t) => {
+    const isPromo = PROMO_POST_RE.test(t.text);
+    return isPromo
+      ? { postId: t.id, isPromo, promoRelated: true, promoQuality: "ok" as const }
+      : { postId: t.id, isPromo };
+  });
+}
+
+/** Deterministic brand-safety scan (Unit 29B); normally empty for fixtures. */
+export function scanBrandSafety(corpus: string): BrandSafetyFlag[] {
+  const flags: BrandSafetyFlag[] = [];
+  if (/\brug(ged|pull)?\b|\bscam\b|\bponzi\b/i.test(corpus)) {
+    flags.push({
+      flag: "scam_or_rug_association",
+      severity: "medium",
+      evidence: "Posts reference rug/scam/ponzi language.",
+    });
+  }
+  return flags;
+}
+
+/** Deterministic media labels from fixture URL hints (Unit 29B). */
+export function labelMedia(posts: Tweet[]): MediaLabel[] {
+  const labels: MediaLabel[] = [];
+  for (const post of posts) {
+    for (const m of post.media ?? []) {
+      const url = (m.url ?? m.previewUrl ?? "").toLowerCase();
+      const kind: MediaLabel["kind"] = /chart|dashboard|data|structure/.test(url)
+        ? "chart_or_data"
+        : /meme/.test(url)
+          ? "meme"
+          : /promo|banner/.test(url)
+            ? "promo_graphic"
+            : "photo_other";
+      labels.push({ postId: post.id, kind });
+    }
+  }
+  return labels;
+}
+
 export function extractKolContent(
   posts: Tweet[],
   replies: Tweet[] = []
@@ -132,7 +182,86 @@ export function extractKolContent(
     depth: themes.length >= 3 ? "high" : "medium",
     promoPatterns,
     repeatedTickers: tickers,
+    postLabels: labelPosts(posts),
+    brandSafetyFlags: scanBrandSafety(corpus),
+    mediaLabels: labelMedia(posts),
   };
+}
+
+// --- Content-fit rubric (mock stand-in for the 29B assessContentFit call) ---
+
+function orgTerms(org: OrgClassification): Set<string> {
+  return new Set(
+    [org.productCategory, org.targetUser, ...(org.keywords ?? [])]
+      .filter((s): s is string => Boolean(s))
+      .join(" ")
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, " ")
+      .split(/\s+/)
+      .filter((w) => w.length > 2)
+  );
+}
+
+/** Deterministic 0-5 rubric from token overlap (bounded, never a 0-100 score). */
+export function assessContentFitMock(
+  org: OrgClassification,
+  content: KolContentClassification
+): ContentFitAssessment {
+  const kolTerms = new Set<string>([
+    ...content.verticals.map((v) => v.toLowerCase()),
+    ...content.themes
+      .join(" ")
+      .toLowerCase()
+      .split(/\s+/)
+      .filter((w) => w.length > 2),
+  ]);
+  const shared = [...orgTerms(org)].filter((t) => kolTerms.has(t)).sort();
+  const m = shared.length;
+  const cryptoKol = content.verticals.length > 0;
+  const adjacency = m >= 3 ? 5 : m === 2 ? 4 : m === 1 ? 3 : cryptoKol ? 2 : 0;
+  return {
+    topicalAdjacency: adjacency,
+    audienceOverlapPotential: Math.min(5, adjacency + (cryptoKol ? 1 : 0)),
+    naturalMentionFit: adjacency,
+    sharedTopics: shared,
+    rationale:
+      m > 0
+        ? `Overlapping topics: ${shared.join(", ")}.`
+        : cryptoKol
+          ? "No direct topic overlap, but both operate in crypto."
+          : "No meaningful topical relationship detected.",
+  };
+}
+
+// --- Org target buckets (mock stand-in for the 29B LLM inference) -----------
+
+const TARGET_RULES: { re: RegExp; buckets: AudienceBucket[] }[] = [
+  { re: /perp|derivativ|trading|trader/i, buckets: ["traders"] },
+  { re: /defi|yield|lend|stablecoin|liquidity|amm|dex/i, buckets: ["defi_users"] },
+  { re: /\bdev\b|sdk|api|infra|protocol|\bl2\b|rollup|settlement/i, buckets: ["developers", "infra_research"] },
+  { re: /nft|gaming/i, buckets: ["nft_gaming"] },
+  { re: /\bai\b|agent/i, buckets: ["ai_crypto"] },
+];
+
+export function inferTargetBuckets(org: {
+  productCategory?: string;
+  targetUser?: string;
+  keywords?: string[];
+}): TargetBuckets {
+  const text = [org.productCategory, org.targetUser, ...(org.keywords ?? [])]
+    .filter(Boolean)
+    .join(" ");
+  const primary: AudienceBucket[] = [];
+  for (const rule of TARGET_RULES) {
+    if (rule.re.test(text)) {
+      for (const b of rule.buckets) if (!primary.includes(b)) primary.push(b);
+    }
+  }
+  if (primary.length === 0) primary.push("defi_users", "traders");
+  const secondary: AudienceBucket[] = ["founders", "investors_vcs"].filter(
+    (b) => !primary.includes(b as AudienceBucket)
+  ) as AudienceBucket[];
+  return { primary, secondary };
 }
 
 // --- Org classification (respects manual brief; infers the rest) ---
@@ -165,14 +294,19 @@ export function inferOrgClassification(
 ): OrgClassification {
   const brief = input.manualBrief ?? {};
   const bio = input.profile?.bio ?? "";
+  // Manual brief fields OVERRIDE inferred fields (Invariant 7).
+  const productCategory = brief.productCategory ?? inferCategory(bio);
+  const targetUser =
+    brief.targetUser ?? "Crypto-native users, traders, and builders";
+  const keywords = extractKeywords(bio);
   return {
-    // Manual brief fields OVERRIDE inferred fields (Invariant 7).
-    productCategory: brief.productCategory ?? inferCategory(bio),
-    targetUser: brief.targetUser ?? "Crypto-native users, traders, and builders",
+    productCategory,
+    targetUser,
     stage: brief.stage ?? "growth",
     campaignGoal: brief.campaignGoal ?? "awareness",
     region: brief.region ?? "Global / English",
-    keywords: extractKeywords(bio),
+    keywords,
+    targetBuckets: inferTargetBuckets({ productCategory, targetUser, keywords }),
     confidence: input.profile ? "medium" : "low",
   };
 }

@@ -1,6 +1,11 @@
-import { AUDIENCE_BUCKET_LABELS, type EngagedAccountRaw } from "@kol-fit/shared";
+import {
+  AUDIENCE_BUCKET_LABELS,
+  type EngagedAccountRaw,
+  type Tweet,
+} from "@kol-fit/shared";
 
 import type {
+  AssessContentFitInput,
   ClassifyKolContentInput,
   ClassifyOrgInput,
   GenerateFitReportInput,
@@ -50,21 +55,53 @@ export function buildOrgPrompt(input: ClassifyOrgInput): string {
     "Manual brief fields (these OVERRIDE anything you infer; echo them verbatim when present):",
     `  productCategory=${brief.productCategory ?? "(none)"}, targetUser=${brief.targetUser ?? "(none)"}, stage=${brief.stage ?? "(none)"}, campaignGoal=${brief.campaignGoal ?? "(none)"}, region=${brief.region ?? "(none)"}.`,
     "Fill each field (use null for unknown optionals), a short keywords list, and a confidence of low|medium|high.",
+    "Also fill targetBuckets — the audience buckets this org actually WANTS to reach:",
+    `  primary = the core target users (usually 1-3 buckets), secondary = adjacent-but-valuable (0-3 buckets).`,
+    `  Allowed buckets: ${BUCKET_LIST}.`,
+    "  Base it on the product category and target user (manual brief wins). Never include bots_spam or giveaway_hunters.",
   ];
   return lines.filter(Boolean).join("\n");
 }
 
-export function buildKolContentPrompt(input: ClassifyKolContentInput): string {
+/** Posts the KOL-content prompt labels (bounded sample, ids included). */
+export const KOL_CONTENT_POST_SAMPLE = 40;
+
+export function buildKolContentPrompt(
+  input: ClassifyKolContentInput,
+  attachedImagePostIds: string[] = []
+): string {
   const p = input.profile;
-  const posts = input.posts.slice(0, 40).map((t) => `- ${truncate(t.text, 200)}`).join("\n");
+  const sample = input.posts.slice(0, KOL_CONTENT_POST_SAMPLE);
+  const posts = sample
+    .map((t) => {
+      const mediaNote = t.media?.length
+        ? ` [media: ${t.media.map((m) => m.type).join(",")}]`
+        : "";
+      return `- [${t.id}] ${truncate(t.text, 200)}${mediaNote}`;
+    })
+    .join("\n");
   const replies = (input.replies ?? []).slice(0, 15).map((t) => `- ${truncate(t.text, 160)}`).join("\n");
   return [
     `Analyze the content of KOL @${input.handle}.`,
     p ? `Profile bio: "${truncate(p.bio ?? "", 240)}".` : "Profile: unavailable.",
-    `Recent posts (sample):\n${posts || "(none)"}`,
+    `Recent posts (sample, each prefixed with its [postId]):\n${posts || "(none)"}`,
     replies ? `Recent replies (sample):\n${replies}` : "",
     "Return themes, verticals, a style descriptor, a depth descriptor (null if unclear), " +
       "any promoPatterns (giveaway/shill/paid-promo language), and repeatedTickers ($SYMBOLs).",
+    "postLabels: label EVERY post listed above by its postId — isPromo (is it promotional/paid-sounding " +
+      "content for a project/token, not the KOL's own analysis or their own product), " +
+      "promoRelated (true if the promoted thing sits inside the KOL's usual domain, null when not a promo), " +
+      "promoQuality ('low' for obviously low-quality/pump-ish projects, 'ok' otherwise, null when not a promo). " +
+      "Do NOT output counts, ratios, or totals — per-post labels only.",
+    "brandSafetyFlags: report ONLY genuinely concerning patterns (scam/rug association, misleading claims, " +
+      "hate/harassment, NSFW, excessive drama/feuds, gambling promotion, legal/regulatory issues, " +
+      "impersonation/deception) with severity low|medium|high and evidence quoting the specific post(s). " +
+      "Ordinary promotion, memes, or strong opinions are NOT flags. Empty list when nothing concerning.",
+    attachedImagePostIds.length > 0
+      ? `mediaLabels: ${attachedImagePostIds.length} post image(s) are attached to this request, in this order ` +
+        `of postIds: ${attachedImagePostIds.join(", ")}. Label EACH attached image with its postId and kind ` +
+        "(chart_or_data | screenshot_text | meme | promo_graphic | photo_other). Label only attached images."
+      : "mediaLabels: no images are attached; return an empty list.",
   ].filter(Boolean).join("\n");
 }
 
@@ -72,17 +109,73 @@ export function buildAudiencePrompt(batch: EngagedAccountRaw[]): string {
   const rows = batch
     .map((a) => {
       const u = a.user;
-      return `- accountId=${u.id} handle=@${u.handle} source=${a.source} followers=${u.followersCount ?? "?"} bio="${truncate(u.bio ?? "", 140)}"`;
+      const year = (u.createdAt ?? "").slice(0, 4);
+      const stats = [
+        `followers=${u.followersCount ?? "?"}`,
+        `following=${u.followingCount ?? "?"}`,
+        `tweets=${u.tweetCount ?? "?"}`,
+        year ? `since=${year}` : "",
+        u.verified ? "verified" : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
+      const text = a.text ? ` said="${truncate(a.text, 160)}"` : "";
+      return `- accountId=${u.id} handle=@${u.handle} source=${a.source} ${stats} bio="${truncate(u.bio ?? "", 140)}"${text}`;
     })
     .join("\n");
   return [
     "Classify EACH engaged account below into exactly one audience bucket.",
     `Allowed buckets: ${BUCKET_LIST}.`,
+    'Use ALL signals: the bio, the numeric profile stats (follower/following ratio, account age, tweet volume), ' +
+      'and — most importantly — `said=` (what they actually replied/quoted, when present). ' +
+      'Generic hype ("🚀🚀", "gm", giveaway-claims, "wen airdrop/token") signals bots_spam / giveaway_hunters / ' +
+      "airdrop_farmers; substantive on-topic replies signal a real bucket. An empty bio alone does NOT make a bot " +
+      "if the reply is substantive.",
     "For each account echo its accountId, handle, and source, assign a bucket, and give light signals " +
       "(botScore 0..1 or null, emptyBio true/false/null, farmingSignals list). " +
       "Do NOT output any counts, percentages, or totals — labels only.",
     `Accounts:\n${rows}`,
   ].join("\n");
+}
+
+export function buildContentFitPrompt(input: AssessContentFitInput): string {
+  const org = input.org.classification;
+  const kol = input.kol.content;
+  return [
+    `Rate the SEMANTIC content fit between org @${input.org.handle} and KOL @${input.kol.handle}.`,
+    `Org: productCategory=${org.productCategory ?? "(unknown)"}, targetUser="${truncate(org.targetUser ?? "", 200)}", keywords=${(org.keywords ?? []).join(", ") || "(none)"}.`,
+    `KOL content: themes=${kol.themes.join(", ") || "(n/a)"}, verticals=${kol.verticals.join(", ") || "(n/a)"}, style=${kol.style ?? "(n/a)"}, depth=${kol.depth ?? "(n/a)"}.`,
+    "Rate three dimensions as INTEGERS 0-5 (0 = unrelated, 3 = clearly adjacent domains, 5 = same domain):",
+    "- topicalAdjacency: how close the KOL's usual topics are to the org's domain. Adjacent counts: a " +
+      "DeFi-yield KOL is adjacent (>=3) to a lending protocol even with zero shared words.",
+    "- audienceOverlapPotential: how plausibly the KOL's audience contains the org's target users.",
+    "- naturalMentionFit: would this KOL talking about this org feel natural (not forced) to their audience?",
+    "Also list sharedTopics (concrete overlapping topics, may be empty) and a 1-3 sentence rationale.",
+    "Output ONLY the ratings/labels — no scores out of 100, no verdicts, no recommendations.",
+  ].join("\n");
+}
+
+/** Bounded selection of attachable post images: first `limit` http(s) image
+ *  URLs (photo url / video+gif thumbnail) walking posts in order. Returns
+ *  parallel arrays of urls + their postIds (one entry per image). */
+export function selectPostImages(
+  posts: Tweet[],
+  limit: number
+): { urls: string[]; postIds: string[] } {
+  const urls: string[] = [];
+  const postIds: string[] = [];
+  for (const post of posts) {
+    if (urls.length >= limit) break;
+    for (const m of post.media ?? []) {
+      if (urls.length >= limit) break;
+      const url = m.type === "photo" ? m.url : m.previewUrl;
+      if (url && /^https?:\/\//i.test(url)) {
+        urls.push(url);
+        postIds.push(post.id);
+      }
+    }
+  }
+  return { urls, postIds };
 }
 
 export function buildReportPrompt(input: GenerateFitReportInput): string {

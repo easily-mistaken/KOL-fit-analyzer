@@ -2,13 +2,16 @@ import { createHash } from "node:crypto";
 
 import {
   AudienceClassificationSchema,
+  ContentFitAssessmentSchema,
   KolContentClassificationSchema,
   OrgClassificationSchema,
   type AudienceClassification,
+  type ContentFitAssessment,
   type KolContentClassification,
   type OrgClassification,
 } from "@kol-fit/shared";
 import type {
+  AssessContentFitInput,
   ClassifyAudienceInput,
   ClassifyKolContentInput,
   ClassifyOrgInput,
@@ -25,7 +28,9 @@ type Parseable<T> = {
 };
 
 // Versioned namespace — bump the version to invalidate on a prompt/shape change.
-const NS = "cls:v1";
+// v2: Unit 29B classification overhaul (target buckets, post labels, safety
+// flags, media, text-aware audience classification, content-fit rubric).
+const NS = "cls:v2";
 
 const norm = (s: string): string => s.trim().toLowerCase();
 
@@ -58,6 +63,7 @@ export interface LlmClassificationCacheStats {
   org: HitStats;
   content: HitStats;
   audience: HitStats;
+  fit: HitStats;
 }
 
 /**
@@ -73,6 +79,7 @@ export class CachingLlmProvider implements LlmProvider {
     org: { hits: 0, misses: 0 },
     content: { hits: 0, misses: 0 },
     audience: { hits: 0, misses: 0 },
+    fit: { hits: 0, misses: 0 },
   };
 
   constructor(
@@ -156,8 +163,10 @@ export class CachingLlmProvider implements LlmProvider {
     input: ClassifyAudienceInput
   ): Promise<AudienceClassification> {
     const key = `${NS}:audience:${hash({
+      // Engagement text (Unit 29A) affects classification, so it is part of
+      // the identity — same accounts with different sampled replies re-classify.
       accounts: input.accounts
-        .map((a) => `${a.user.id}:${a.source}`)
+        .map((a) => `${a.user.id}:${a.source}:${a.text ?? ""}`)
         .sort(),
       audienceLimit: audienceLimit(),
       model: this.inner.model,
@@ -171,7 +180,24 @@ export class CachingLlmProvider implements LlmProvider {
     );
   }
 
-  /** Pair-specific — never cached. */
+  /** Pair-specific but content-addressed + deterministic — cached under the
+   *  `fit` kind (reuses the content TTL; Unit 29B). */
+  assessContentFit(input: AssessContentFitInput): Promise<ContentFitAssessment> {
+    const key = `${NS}:fit:${hash({
+      org: { handle: norm(input.org.handle), classification: input.org.classification },
+      kol: { handle: norm(input.kol.handle), content: input.kol.content },
+      model: this.inner.model,
+    })}`;
+    return this.cached(
+      "fit",
+      key,
+      this.config.ttls.contentSeconds,
+      ContentFitAssessmentSchema,
+      () => this.inner.assessContentFit(input)
+    );
+  }
+
+  /** Pair-specific narrative — never cached. */
   generateFitReport(input: GenerateFitReportInput) {
     return this.inner.generateFitReport(input);
   }
@@ -190,6 +216,7 @@ export class CachingLlmProvider implements LlmProvider {
             org: { ...this.cacheStats.org },
             content: { ...this.cacheStats.content },
             audience: { ...this.cacheStats.audience },
+            fit: { ...this.cacheStats.fit },
           },
         }
       : undefined;
