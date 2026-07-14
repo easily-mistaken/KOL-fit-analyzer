@@ -17,7 +17,10 @@ export const ANALYSIS_CAPS: AnalysisCaps = {
   topPostsForDeepAnalysis: 20,
   repliesPerPost: 50,
   quotesPerPost: 30,
-  retweetersPerPost: 100,
+  // 100 -> 50 in Unit 29D: retweets are the weakest engagement signal (scoring
+  // v2 weights them 0.5) and the most numerous fetch — halving them buys
+  // latency without touching the high-signal reply/quote depth.
+  retweetersPerPost: 50,
   maxUniqueEngagedAccounts: 1500,
 };
 

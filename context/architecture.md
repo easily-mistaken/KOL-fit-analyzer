@@ -398,7 +398,7 @@ Report depth is configurable, not hardcoded inline in pipeline stages. Centraliz
 | Top KOL posts selected for deep analysis | 20, ranked by engagement |
 | Replies fetched per selected post | up to 50 |
 | Quote tweets fetched per selected post | up to 30 |
-| Retweeters fetched per selected post | up to 100 |
+| Retweeters fetched per selected post | up to 50 (halved in Unit 29D — weakest signal, weighted 0.5 in scoring v2) |
 | Unique engaged accounts per report | 1,500 maximum |
 
 These caps must be easy to change without touching pipeline logic, since they will be tuned as real API cost/rate-limit data comes in.

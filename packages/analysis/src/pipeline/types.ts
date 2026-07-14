@@ -41,6 +41,9 @@ export type RunAnalysisOptions = {
   ingestOptions?: IngestOptions;
   /** Injectable clock (default () => new Date()). */
   now?: () => Date;
+  /** How many top posts fetch their engagement concurrently (Unit 29D).
+   *  Default 6; env override ANALYSIS_ENGAGEMENT_FETCH_CONCURRENCY. */
+  engagementConcurrency?: number;
   /** Evidence label; default process.env.TWITTER_PROVIDER ?? "mock". */
   twitterProviderKind?: string;
   /** Evidence label; default process.env.LLM_PROVIDER ?? "mock". */

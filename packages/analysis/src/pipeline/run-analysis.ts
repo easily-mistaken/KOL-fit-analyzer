@@ -29,12 +29,41 @@ function buildManualBrief(
   return Object.keys(brief).length > 0 ? brief : undefined;
 }
 
+// Bounded-concurrency engagement fetching (Unit 29D): posts in flight at once.
+// Each post still fires its 3 engagement calls in parallel.
+const DEFAULT_ENGAGEMENT_FETCH_CONCURRENCY = 6;
+
+function envConcurrency(): number | undefined {
+  const n = Number(process.env.ANALYSIS_ENGAGEMENT_FETCH_CONCURRENCY);
+  return Number.isFinite(n) && n > 0 ? Math.trunc(n) : undefined;
+}
+
+/** Bounded-concurrency map; results are input-ordered (determinism). */
+async function mapConcurrent<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let next = 0;
+  const worker = async (): Promise<void> => {
+    for (let i = next++; i < items.length; i = next++) {
+      results[i] = await fn(items[i], i);
+    }
+  };
+  await Promise.all(
+    Array.from({ length: Math.max(1, Math.min(limit, items.length)) }, worker)
+  );
+  return results;
+}
+
 /**
  * The analysis pipeline: Twitter fetch -> optional website/docs ingestion ->
  * LLM classifications -> deterministic scoring (packages/scoring) -> fit report.
  * Depends only on provider interfaces/factories (never concrete providers) and
  * never touches @kol-fit/db. Returns a validated FitReport plus structured
- * evidence for the worker to persist.
+ * evidence for the worker to persist. Independent stages run concurrently
+ * (Unit 29D) with deterministic, input-ordered results.
  */
 export async function runAnalysis(
   request: AnalysisRequestData,
@@ -46,58 +75,73 @@ export async function runAnalysis(
   const now = options.now ?? (() => new Date());
   const ingest = options.ingest ?? ingestOrgContext;
   const performWebIngestion = options.performWebIngestion ?? false;
+  const engagementConcurrency =
+    options.engagementConcurrency ??
+    envConcurrency() ??
+    DEFAULT_ENGAGEMENT_FETCH_CONCURRENCY;
   const twitterProviderKind =
     options.twitterProviderKind ?? process.env.TWITTER_PROVIDER ?? "mock";
   const llmProviderKind =
     options.llmProviderKind ?? process.env.LLM_PROVIDER ?? "mock";
 
   // 1. Website/docs ingestion (off by default -> both "skipped", no fetch).
+  // Started here, awaited only where its result is needed (org classification)
+  // so it overlaps the Twitter fetch (Unit 29D).
   const ingestInput = performWebIngestion
     ? {
         websiteUrl: request.websiteUrl ?? undefined,
         docsUrl: request.docsUrl ?? undefined,
       }
     : {};
-  const orgContext = await ingest(ingestInput, options.ingestOptions);
+  const ingestPromise = ingest(ingestInput, options.ingestOptions);
 
-  // 2. Twitter fetch (mock).
-  const [orgProfile, kolProfile] = await Promise.all([
+  // 2. Twitter fetch — profiles/posts/replies are independent, one round-trip.
+  const [orgProfile, kolProfile, kolPosts, kolReplies] = await Promise.all([
     twitter.getUserProfile(request.orgHandle),
     twitter.getUserProfile(request.kolHandle),
-  ]);
-  const [kolPosts, kolReplies] = await Promise.all([
     twitter.getUserTweets(request.kolHandle, caps.kolPostsFetched),
     twitter.getUserReplies(request.kolHandle, caps.kolRepliesFetched),
   ]);
 
   const topPosts = selectTopPosts(kolPosts, caps.topPostsForDeepAnalysis);
-  const groups: EngagedAccountRaw[][] = [];
-  for (const post of topPosts) {
-    const [replies, quotes, retweeters] = await Promise.all([
-      twitter.getTweetReplies(post.id, caps.repliesPerPost),
-      twitter.getTweetQuotes(post.id, caps.quotesPerPost),
-      twitter.getTweetRetweeters(post.id, caps.retweetersPerPost),
-    ]);
-    groups.push(replies, quotes, retweeters);
-  }
+  // Per-post engagement with bounded concurrency (Unit 29D). Index-ordered
+  // results keep the group order identical to the sequential version, so
+  // dedupe/appearances/output stay byte-identical.
+  const perPost = await mapConcurrent(
+    topPosts,
+    engagementConcurrency,
+    async (post) => {
+      const [replies, quotes, retweeters] = await Promise.all([
+        twitter.getTweetReplies(post.id, caps.repliesPerPost),
+        twitter.getTweetQuotes(post.id, caps.quotesPerPost),
+        twitter.getTweetRetweeters(post.id, caps.retweetersPerPost),
+      ]);
+      return [replies, quotes, retweeters];
+    }
+  );
+  const groups: EngagedAccountRaw[][] = perPost.flat();
   const engagedAccounts = collectEngagedAccounts(
     groups,
     caps.maxUniqueEngagedAccounts
   );
 
-  // 3. LLM classification (mock).
-  const orgClassification = await llm.classifyOrgProfile({
-    handle: request.orgHandle,
-    profile: orgProfile,
-    websiteText: orgContext.combinedText || undefined,
-    manualBrief: buildManualBrief(request),
-  });
-  const kolContent = await llm.classifyKolContent({
-    handle: request.kolHandle,
-    profile: kolProfile,
-    posts: kolPosts,
-    replies: kolReplies,
-  });
+  const orgContext = await ingestPromise;
+
+  // 3. LLM classification — org and KOL content are independent (Unit 29D).
+  const [orgClassification, kolContent] = await Promise.all([
+    llm.classifyOrgProfile({
+      handle: request.orgHandle,
+      profile: orgProfile,
+      websiteText: orgContext.combinedText || undefined,
+      manualBrief: buildManualBrief(request),
+    }),
+    llm.classifyKolContent({
+      handle: request.kolHandle,
+      profile: kolProfile,
+      posts: kolPosts,
+      replies: kolReplies,
+    }),
+  ]);
   // Audience classification and the pair-specific content-fit rubric (29B) are
   // independent — run them in parallel. A rubric failure degrades scoring to
   // its token-overlap fallback instead of failing the analysis (Invariant 8).
