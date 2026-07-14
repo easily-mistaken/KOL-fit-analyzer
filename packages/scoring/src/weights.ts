@@ -17,8 +17,11 @@ export const OVERALL_WEIGHTS = {
 } as const satisfies Partial<Record<ScoreMetric, number>>;
 
 // Verdict thresholds on overall_fit (0-100), inclusive lower bounds.
+// STRONG raised 80→83 in the 29E live tuning pass (2026-07-14): STRONG is
+// reserved for direct-authority-grade fits; specialist/media pairs at ~80-82
+// belong in GOOD per the v26 labels.
 export const VERDICT_THRESHOLDS = {
-  STRONG: 80,
+  STRONG: 83,
   GOOD: 65,
   OKAY: 50,
   WEAK: 35,
@@ -148,12 +151,20 @@ export const BRAND_GATE_AVOID = 20;
 /** Founder/inventor/CEO/core-team of THIS org: verdict floor. Noisy public
  *  engagement lowers confidence, it must not collapse a founder pair. */
 export const AUTHORITY_FLOOR_FOUNDER = "GOOD" as const;
+/** Founder/core-team pairs also get a flat overall-score modifier (v26 rule 1:
+ *  "very large positive modifier AND verdict floor"). 29E live tuning: lifts
+ *  real founder pairs whose heterogeneous public audience keeps raw metrics a
+ *  few points shy of STRONG (chainlink × Sergey landed 77 pre-boost). */
+export const AUTHORITY_OVERALL_BOOST_FOUNDER = 6;
 /** The founder floor only applies when brand safety is at least this (severe
  *  brand-safety risk always wins) and no risk gate fired. */
 export const AUTHORITY_MIN_BRAND_SAFETY = 60;
-/** Media/news accounts: reach is not fit — capped unless the engaged-audience
- *  match itself proves quality (EAM at/above the exemption). */
-export const MEDIA_CAP = "OKAY" as const;
+/** Media/news/community-brand accounts: reach is not fit. Two-tier cap (29E
+ *  live tuning — ETHIndia/Bankless-style accounts with a genuinely strong
+ *  audience earn GOOD, never STRONG; without audience proof they cap at OKAY):
+ *  EAM >= MEDIA_CAP_EAM_EXEMPT -> cap GOOD; below -> cap OKAY. */
+export const MEDIA_CAP_GOOD = "GOOD" as const;
+export const MEDIA_CAP_OKAY = "OKAY" as const;
 export const MEDIA_CAP_EAM_EXEMPT = 75;
 
 // --- Brand safety (29B flags; severity deductions, floor 0, no flags = 100) --

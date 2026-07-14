@@ -26,7 +26,10 @@ import {
   riskGateApplied,
   verdictFromScore,
 } from "./verdict.js";
-import { OVERALL_WEIGHTS } from "./weights.js";
+import {
+  AUTHORITY_OVERALL_BOOST_FOUNDER,
+  OVERALL_WEIGHTS,
+} from "./weights.js";
 
 const METRIC_LABELS: Record<keyof typeof OVERALL_WEIGHTS, string> = {
   engaged_audience_match: "engaged audience match",
@@ -96,11 +99,18 @@ export function scoreAnalysis(input: ScoringInput): ScoringResult {
     geo_language_fit: glf,
   };
 
+  // Founder/core-team authority modifier (v26 rule 1 via 29E tuning): a flat
+  // overall lift on top of the metrics — direct authority is real signal the
+  // audience-derived metrics cannot see.
+  const relationship = input.contentFitAssessment?.relationship;
+  const authorityBoost =
+    relationship === "founder_or_core_team" ? AUTHORITY_OVERALL_BOOST_FOUNDER : 0;
+
   const overallValue = clampRound(
     (Object.keys(OVERALL_WEIGHTS) as (keyof typeof OVERALL_WEIGHTS)[]).reduce(
       (sum, k) => sum + OVERALL_WEIGHTS[k] * weighted[k].value,
       0
-    )
+    ) + authorityBoost
   );
 
   const gateInput = {
@@ -113,7 +123,6 @@ export function scoreAnalysis(input: ScoringInput): ScoringResult {
   const gateFired = riskGateApplied(overallValue, gateInput);
 
   // Authority modifier (Unit 29F): relationship-driven floor/cap after gates.
-  const relationship = input.contentFitAssessment?.relationship;
   const authority = applyAuthorityRules(gated, {
     relationship,
     eam: eam.value,
@@ -151,6 +160,11 @@ export function scoreAnalysis(input: ScoringInput): ScoringResult {
     const evidence = input.contentFitAssessment?.relationshipEvidence;
     overallReasons.push(
       `KOL relationship to the org: ${relationship.replace(/_/g, " ")}${evidence ? ` — ${evidence}` : "."}`
+    );
+  }
+  if (authorityBoost > 0) {
+    overallReasons.push(
+      `Founder/core-team authority modifier: +${authorityBoost} on the overall score.`
     );
   }
   if (authority.applied === "founder_floor") {

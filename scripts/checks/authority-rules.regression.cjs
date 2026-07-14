@@ -82,7 +82,8 @@ const FIT = { topicalAdjacency: 5, audienceOverlapPotential: 5, naturalMentionFi
     ck("founder floor yields to a fired risk gate", r("WEAK", { ...base, relationship: "founder_or_core_team", riskGateFired: true }).applied === null);
     ck("founder floor yields to severe brand safety", r("WEAK", { ...base, relationship: "founder_or_core_team", brandSafety: 40 }).applied === null);
     ck("media cap lowers GOOD -> OKAY when EAM below exemption", r("GOOD", { ...base, relationship: "media_or_news", eam: 50 }).verdict === "OKAY");
-    ck("media cap exempted by high EAM (audience proof)", r("STRONG", { ...base, relationship: "media_or_news", eam: 80 }).applied === null);
+    ck("media + audience proof caps at GOOD, never STRONG (two-tier)", r("STRONG", { ...base, relationship: "media_or_news", eam: 80 }).verdict === "GOOD");
+    ck("media + audience proof leaves GOOD untouched", r("GOOD", { ...base, relationship: "media_or_news", eam: 80 }).applied === null);
     ck("media cap never raises WEAK", r("WEAK", { ...base, relationship: "media_or_news", eam: 10 }).verdict === "WEAK");
     ck("adjacent authority gets no floor", r("OKAY", { ...base, relationship: "adjacent_ecosystem_authority" }).applied === null);
     ck("specialist gets no floor/cap", r("GOOD", { ...base, relationship: "independent_specialist" }).applied === null);
@@ -112,6 +113,8 @@ const FIT = { topicalAdjacency: 5, audienceOverlapPotential: 5, naturalMentionFi
     ck(`founder floor lifts a mediocre-audience founder pair (${without.verdict} -> ${withFloor.verdict})`, ["OKAY", "WEAK"].includes(without.verdict) && withFloor.verdict === "GOOD");
     ck("floor is explained in overall reasons", withFloor.scores.overall.reasons.some((x) => x.includes("authority floor")));
     ck("relationship surfaced in reasons", withFloor.scores.overall.reasons.some((x) => x.includes("founder or core team")));
+    ck(`founder overall boost applied (+${withFloor.scores.overall.value - without.scores.overall.value})`, withFloor.scores.overall.value === without.scores.overall.value + 6);
+    ck("boost explained in reasons", withFloor.scores.overall.reasons.some((x) => x.includes("authority modifier: +6")));
   }
 
   console.log(`\nAUTHORITY RULES REGRESSION (29F): ${pass} passed, ${fail} failed`);

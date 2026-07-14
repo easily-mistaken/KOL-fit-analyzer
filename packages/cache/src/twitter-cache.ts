@@ -13,6 +13,14 @@ import type { CacheStore } from "./store.js";
 const KEY_PREFIX = "tw:v2";
 const norm = (s: string): string => s.trim().toLowerCase();
 
+/** The provider KIND is part of the cache identity (live-calibration incident,
+ *  2026-07-14): mock and live providers share handles, so kind-less keys let a
+ *  mock run poison the cache for live runs. Defaults to the same env the
+ *  provider factory resolves. */
+function resolveKind(explicit?: string): string {
+  return (explicit ?? process.env.TWITTER_PROVIDER ?? "mock").trim().toLowerCase();
+}
+
 export interface CacheHitStats {
   hits: number;
   misses: number;
@@ -26,12 +34,17 @@ export interface CacheHitStats {
  */
 export class CachingTwitterProvider implements TwitterProvider {
   readonly cacheStats: CacheHitStats = { hits: 0, misses: 0 };
+  /** Kind-namespaced key prefix, e.g. `tw:v2:twitterapi`. */
+  private readonly ns: string;
 
   constructor(
     private readonly inner: TwitterProvider,
     private readonly store: CacheStore,
-    private readonly config: CacheConfig
-  ) {}
+    private readonly config: CacheConfig,
+    kind?: string
+  ) {
+    this.ns = `${KEY_PREFIX}:${resolveKind(kind)}`;
+  }
 
   private async cached<T>(
     key: string,
@@ -60,7 +73,7 @@ export class CachingTwitterProvider implements TwitterProvider {
 
   getUserProfile(handle: string): Promise<TwitterUser | null> {
     return this.cached(
-      `${KEY_PREFIX}:profile:${norm(handle)}`,
+      `${this.ns}:profile:${norm(handle)}`,
       this.config.ttls.profileSeconds,
       () => this.inner.getUserProfile(handle)
     );
@@ -68,7 +81,7 @@ export class CachingTwitterProvider implements TwitterProvider {
 
   getUserTweets(handle: string, limit: number): Promise<Tweet[]> {
     return this.cached(
-      `${KEY_PREFIX}:tweets:${norm(handle)}:${limit}`,
+      `${this.ns}:tweets:${norm(handle)}:${limit}`,
       this.config.ttls.tweetsSeconds,
       () => this.inner.getUserTweets(handle, limit)
     );
@@ -76,7 +89,7 @@ export class CachingTwitterProvider implements TwitterProvider {
 
   getUserReplies(handle: string, limit: number): Promise<Tweet[]> {
     return this.cached(
-      `${KEY_PREFIX}:replies:${norm(handle)}:${limit}`,
+      `${this.ns}:replies:${norm(handle)}:${limit}`,
       this.config.ttls.tweetsSeconds,
       () => this.inner.getUserReplies(handle, limit)
     );
@@ -84,7 +97,7 @@ export class CachingTwitterProvider implements TwitterProvider {
 
   getTweetReplies(tweetId: string, limit: number): Promise<EngagedAccountRaw[]> {
     return this.cached(
-      `${KEY_PREFIX}:tweetReplies:${tweetId}:${limit}`,
+      `${this.ns}:tweetReplies:${tweetId}:${limit}`,
       this.config.ttls.tweetsSeconds,
       () => this.inner.getTweetReplies(tweetId, limit)
     );
@@ -92,7 +105,7 @@ export class CachingTwitterProvider implements TwitterProvider {
 
   getTweetQuotes(tweetId: string, limit: number): Promise<EngagedAccountRaw[]> {
     return this.cached(
-      `${KEY_PREFIX}:tweetQuotes:${tweetId}:${limit}`,
+      `${this.ns}:tweetQuotes:${tweetId}:${limit}`,
       this.config.ttls.tweetsSeconds,
       () => this.inner.getTweetQuotes(tweetId, limit)
     );
@@ -103,7 +116,7 @@ export class CachingTwitterProvider implements TwitterProvider {
     limit: number
   ): Promise<EngagedAccountRaw[]> {
     return this.cached(
-      `${KEY_PREFIX}:retweeters:${tweetId}:${limit}`,
+      `${this.ns}:retweeters:${tweetId}:${limit}`,
       this.config.ttls.tweetsSeconds,
       () => this.inner.getTweetRetweeters(tweetId, limit)
     );
@@ -111,7 +124,7 @@ export class CachingTwitterProvider implements TwitterProvider {
 
   getFollowers(handle: string, limit: number): Promise<TwitterUser[]> {
     return this.cached(
-      `${KEY_PREFIX}:followers:${norm(handle)}:${limit}`,
+      `${this.ns}:followers:${norm(handle)}:${limit}`,
       this.config.ttls.tweetsSeconds,
       () => this.inner.getFollowers(handle, limit)
     );
@@ -134,7 +147,8 @@ export class CachingTwitterProvider implements TwitterProvider {
 export function withTwitterCache(
   inner: TwitterProvider,
   store: CacheStore,
-  config: CacheConfig
+  config: CacheConfig,
+  kind?: string
 ): CachingTwitterProvider {
-  return new CachingTwitterProvider(inner, store, config);
+  return new CachingTwitterProvider(inner, store, config, kind);
 }

@@ -65,18 +65,27 @@ function selftest() {
 }
 
 // --- provider assembly (mirrors the worker) -----------------------------------
-async function buildProviders() {
+async function buildProviders(isLive) {
   const { createTwitterProvider } = require(path.join(ROOT, "packages/twitter/dist/index.js"));
   const { createLlmProvider } = require(path.join(ROOT, "packages/llm/dist/index.js"));
   const cachePkg = require(path.join(ROOT, "packages/cache/dist/index.js"));
 
+  // Mock runs NEVER persist to the shared DB cache (2026-07-14 incident:
+  // kind-less keys let mock fixtures poison live runs; keys are now
+  // kind-namespaced AND mock runs stay in-memory, belt + suspenders).
   let store;
-  let storeKindTw = "prisma";
-  try {
-    store = { tw: new cachePkg.PrismaCacheStore("twitter"), llm: new cachePkg.PrismaCacheStore("llm") };
-  } catch {
-    storeKindTw = "in-memory (DB unavailable)";
+  let storeLabel;
+  if (!isLive) {
+    storeLabel = "in-memory (mock run)";
     store = { tw: new cachePkg.InMemoryCacheStore(), llm: new cachePkg.InMemoryCacheStore() };
+  } else {
+    try {
+      storeLabel = "prisma";
+      store = { tw: new cachePkg.PrismaCacheStore("twitter"), llm: new cachePkg.PrismaCacheStore("llm") };
+    } catch {
+      storeLabel = "in-memory (DB unavailable)";
+      store = { tw: new cachePkg.InMemoryCacheStore(), llm: new cachePkg.InMemoryCacheStore() };
+    }
   }
   const twitter = cachePkg.withTwitterCache(
     createTwitterProvider(),
@@ -88,7 +97,7 @@ async function buildProviders() {
     store.llm,
     cachePkg.resolveClassificationCacheConfig()
   );
-  return { twitter, llm, cacheStore: storeKindTw };
+  return { twitter, llm, cacheStore: storeLabel };
 }
 
 // --- output helpers -------------------------------------------------------------
@@ -133,7 +142,7 @@ const pad = (s, n) => String(s).padEnd(n);
   }
 
   const { runAnalysis, resolveCaps } = require(path.join(ROOT, "packages/analysis/dist/index.js"));
-  const { twitter, llm, cacheStore } = await buildProviders();
+  const { twitter, llm, cacheStore } = await buildProviders(isLive);
   const caps = resolveCaps();
   console.log(`providers: twitter=${twitterKind}, llm=${llmKind} (model ${llm.model}); cache=${cacheStore}\n`);
 

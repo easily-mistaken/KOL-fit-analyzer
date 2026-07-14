@@ -93,10 +93,12 @@ export function buildKolContentPrompt(
       "promoRelated (true if the promoted thing sits inside the KOL's usual domain, null when not a promo), " +
       "promoQuality ('low' for obviously low-quality/pump-ish projects, 'ok' otherwise, null when not a promo). " +
       "Do NOT output counts, ratios, or totals — per-post labels only.",
-    "brandSafetyFlags: report ONLY genuinely concerning patterns (scam/rug association, misleading claims, " +
-      "hate/harassment, NSFW, excessive drama/feuds, gambling promotion, legal/regulatory issues, " +
+    "brandSafetyFlags: report ONLY genuinely concerning patterns IN THE KOL'S OWN CONDUCT (scam/rug association, " +
+      "misleading claims, hate/harassment, NSFW, excessive drama/feuds, gambling promotion, legal/regulatory issues, " +
       "impersonation/deception) with severity low|medium|high and evidence quoting the specific post(s). " +
-      "Ordinary promotion, memes, or strong opinions are NOT flags. Empty list when nothing concerning.",
+      "Ordinary promotion, memes, or strong opinions are NOT flags. CRITICAL: reporting on, investigating, " +
+      "or warning about scams/hacks/exploits (security researchers, investigators, journalists) is NOT a flag — " +
+      "it is a trust signal about the subject matter, not the KOL's conduct. Empty list when nothing concerning.",
     attachedImagePostIds.length > 0
       ? `mediaLabels: ${attachedImagePostIds.length} post image(s) are attached to this request, in this order ` +
         `of postIds: ${attachedImagePostIds.join(", ")}. Label EACH attached image with its postId and kind ` +
@@ -155,9 +157,11 @@ export function buildContentFitPrompt(input: AssessContentFitInput): string {
     "- audienceOverlapPotential: how plausibly the KOL's audience contains the org's target users.",
     "- naturalMentionFit: would this KOL talking about this org feel natural (not forced) to their audience?",
     "Also list sharedTopics (concrete overlapping topics, may be empty) and a 1-3 sentence rationale.",
-    "Classify `relationship` — the KOL's relationship to THIS ORG specifically (use the bio and public knowledge; " +
-      "when unsure, choose the weaker category):",
-    "- founder_or_core_team: founder/inventor/CEO/core team of THIS org itself.",
+    "Classify `relationship` — the KOL's relationship to THIS ORG specifically. Use BOTH the bio AND your public " +
+      "knowledge of who this person/account is; when genuinely unsure, choose the weaker category:",
+    "- founder_or_core_team: founder/inventor/CEO/core team of THIS org itself. This INCLUDES pseudonymous " +
+      "founders who are publicly known to lead the org even if the bio doesn't state it, and creators/leads " +
+      "publicly identified with the org (a missing legal name or modest bio is not a discount).",
     "- adjacent_ecosystem_authority: founder or major figure of the underlying chain/ecosystem the org builds on, " +
       "but NOT this org (e.g. a chain co-founder vs an app on that chain).",
     "- independent_specialist: respected independent analyst/investigator/researcher in the org's domain.",

@@ -32,6 +32,14 @@ type Parseable<T> = {
 // flags, media, text-aware audience classification, content-fit rubric).
 const NS = "cls:v2";
 
+/** The provider KIND is part of the cache identity (live-calibration incident,
+ *  2026-07-14): the mock provider echoes LLM_MODEL, so model-only keys let a
+ *  mock run poison the cache for live runs. Defaults to the same env the
+ *  provider factory resolves. */
+function resolveKind(explicit?: string): string {
+  return (explicit ?? process.env.LLM_PROVIDER ?? "mock").trim().toLowerCase();
+}
+
 const norm = (s: string): string => s.trim().toLowerCase();
 
 // Canonical JSON with sorted object keys, so equivalent inputs hash equally.
@@ -82,11 +90,17 @@ export class CachingLlmProvider implements LlmProvider {
     fit: { hits: 0, misses: 0 },
   };
 
+  /** Kind-namespaced key prefix, e.g. `cls:v2:openai`. */
+  private readonly ns: string;
+
   constructor(
     private readonly inner: LlmProvider,
     private readonly store: CacheStore,
-    private readonly config: ClassificationCacheConfig
-  ) {}
+    private readonly config: ClassificationCacheConfig,
+    kind?: string
+  ) {
+    this.ns = `${NS}:${resolveKind(kind)}`;
+  }
 
   get model(): string {
     return this.inner.model;
@@ -124,7 +138,7 @@ export class CachingLlmProvider implements LlmProvider {
   }
 
   classifyOrgProfile(input: ClassifyOrgInput): Promise<OrgClassification> {
-    const key = `${NS}:org:${hash({
+    const key = `${this.ns}:org:${hash({
       handle: norm(input.handle),
       profileId: input.profile?.id ?? null,
       website: input.websiteText ? hash(input.websiteText) : null,
@@ -143,7 +157,7 @@ export class CachingLlmProvider implements LlmProvider {
   classifyKolContent(
     input: ClassifyKolContentInput
   ): Promise<KolContentClassification> {
-    const key = `${NS}:content:${hash({
+    const key = `${this.ns}:content:${hash({
       handle: norm(input.handle),
       profileId: input.profile?.id ?? null,
       posts: sortedIds(input.posts),
@@ -162,7 +176,7 @@ export class CachingLlmProvider implements LlmProvider {
   classifyAudienceAccounts(
     input: ClassifyAudienceInput
   ): Promise<AudienceClassification> {
-    const key = `${NS}:audience:${hash({
+    const key = `${this.ns}:audience:${hash({
       // Engagement text (Unit 29A) affects classification, so it is part of
       // the identity — same accounts with different sampled replies re-classify.
       accounts: input.accounts
@@ -183,7 +197,7 @@ export class CachingLlmProvider implements LlmProvider {
   /** Pair-specific but content-addressed + deterministic — cached under the
    *  `fit` kind (reuses the content TTL; Unit 29B). */
   assessContentFit(input: AssessContentFitInput): Promise<ContentFitAssessment> {
-    const key = `${NS}:fit:${hash({
+    const key = `${this.ns}:fit:${hash({
       org: { handle: norm(input.org.handle), classification: input.org.classification },
       kol: {
         handle: norm(input.kol.handle),
@@ -232,7 +246,8 @@ export class CachingLlmProvider implements LlmProvider {
 export function withLlmCache(
   inner: LlmProvider,
   store: CacheStore,
-  config: ClassificationCacheConfig
+  config: ClassificationCacheConfig,
+  kind?: string
 ): CachingLlmProvider {
-  return new CachingLlmProvider(inner, store, config);
+  return new CachingLlmProvider(inner, store, config, kind);
 }

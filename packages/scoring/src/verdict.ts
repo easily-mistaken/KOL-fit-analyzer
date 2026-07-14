@@ -8,7 +8,8 @@ import {
   BOT_GATE_WEAK,
   BRAND_GATE_AVOID,
   BRAND_GATE_WEAK,
-  MEDIA_CAP,
+  MEDIA_CAP_GOOD,
+  MEDIA_CAP_OKAY,
   MEDIA_CAP_EAM_EXEMPT,
   PROMO_GATE_OKAY,
   PROMO_GATE_UNRELATED_SHARE,
@@ -123,12 +124,14 @@ export function applyAuthorityRules(
   ) {
     return { verdict: AUTHORITY_FLOOR_FOUNDER, applied: "founder_floor" };
   }
-  if (
-    ctx.relationship === "media_or_news" &&
-    ctx.eam < MEDIA_CAP_EAM_EXEMPT &&
-    RANK.indexOf(verdict) > RANK.indexOf(MEDIA_CAP)
-  ) {
-    return { verdict: MEDIA_CAP, applied: "media_cap" };
+  if (ctx.relationship === "media_or_news") {
+    // Two-tier (29E tuning): audience proof earns GOOD, never STRONG —
+    // "media fit should be useful but not automatically elite" (v26).
+    const cap =
+      ctx.eam >= MEDIA_CAP_EAM_EXEMPT ? MEDIA_CAP_GOOD : MEDIA_CAP_OKAY;
+    if (RANK.indexOf(verdict) > RANK.indexOf(cap)) {
+      return { verdict: cap, applied: "media_cap" };
+    }
   }
   return { verdict, applied: null };
 }

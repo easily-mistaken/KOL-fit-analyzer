@@ -103,6 +103,16 @@ export async function runAnalysis(
     twitter.getUserReplies(request.kolHandle, caps.kolRepliesFetched),
   ]);
 
+  // Guard (2026-07-14 live-calibration finding): a provider soft-failure (e.g.
+  // exhausted API credits returning success envelopes with no data) must fail
+  // the analysis loudly — zero fetched posts would otherwise flow through and
+  // produce a confident-looking garbage verdict.
+  if (kolPosts.length === 0) {
+    throw new Error(
+      `No posts could be fetched for @${request.kolHandle} — the KOL is unanalyzable (empty or unavailable Twitter data).`
+    );
+  }
+
   const topPosts = selectTopPosts(kolPosts, caps.topPostsForDeepAnalysis);
   // Per-post engagement with bounded concurrency (Unit 29D). Index-ordered
   // results keep the group order identical to the sequential version, so
