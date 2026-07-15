@@ -113,10 +113,15 @@ export function scoreAnalysis(input: ScoringInput): ScoringResult {
 
   // Founder/core-team authority modifier (v26 rule 1 via 29E tuning): a flat
   // overall lift on top of the metrics — direct authority is real signal the
-  // audience-derived metrics cannot see.
+  // audience-derived metrics cannot see. Official ecosystem leads get the
+  // same lift except under a pure retail awareness goal (Unit 32, v26:
+  // "STRONG for builder campaigns, GOOD for broad retail awareness").
   const relationship = input.contentFitAssessment?.relationship;
   const authorityBoost =
-    relationship === "founder_or_core_team" ? AUTHORITY_OVERALL_BOOST_FOUNDER : 0;
+    relationship === "founder_or_core_team" ||
+    (relationship === "official_ecosystem_lead" && goalKey !== "awareness")
+      ? AUTHORITY_OVERALL_BOOST_FOUNDER
+      : 0;
 
   const overallValue = clampRound(
     (Object.keys(OVERALL_WEIGHTS) as (keyof typeof OVERALL_WEIGHTS)[]).reduce(
@@ -140,6 +145,7 @@ export function scoreAnalysis(input: ScoringInput): ScoringResult {
     eam: eam.value,
     brandSafety: bs.value,
     intentOverlap,
+    goalKey,
     riskGateFired: gateFired,
   });
   const verdict = authority.verdict;
@@ -187,6 +193,10 @@ export function scoreAnalysis(input: ScoringInput): ScoringResult {
   } else if (authority.applied === "media_cap") {
     overallReasons.push(
       `Media/news cap applied (${gated} → ${verdict}): broad reach is not product fit, and engaged-audience match ${eam.value} did not clear the exemption bar.`
+    );
+  } else if (authority.applied === "adjacent_cap") {
+    overallReasons.push(
+      `Adjacent-authority cap applied (${gated} → ${verdict}): ecosystem fame without direct org authority tops out at GOOD for a product-relevant campaign${goalKey ? ` (goal "${goalKey}")` : ""}; awareness/credibility goals lift this cap.`
     );
   }
 

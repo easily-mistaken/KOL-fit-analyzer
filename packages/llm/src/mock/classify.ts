@@ -221,6 +221,12 @@ export function classifyRelationshipMock(
       relationshipEvidence: `Bio claims a founder/core role at @${orgHandle}.`,
     };
   }
+  if (/creator of \w+|ecosystem lead|head of protocol/.test(bio)) {
+    return {
+      relationship: "official_ecosystem_lead",
+      relationshipEvidence: "Bio claims a creator/official-lead role for a platform.",
+    };
+  }
   if (founderTerms.test(bio)) {
     return {
       relationship: "adjacent_ecosystem_authority",

@@ -98,6 +98,10 @@ export type KolContentClassification = z.infer<
 // not a weighted metric. Drives verdict floors/caps in scoring.
 export const KolRelationshipSchema = z.enum([
   "founder_or_core_team",
+  // Unit 32 (v26 hierarchy): publicly-known creator/lead/official operator of
+  // the org's platform or ecosystem program — founder-grade authority whose
+  // boost is conditional on the campaign goal.
+  "official_ecosystem_lead",
   "adjacent_ecosystem_authority",
   "independent_specialist",
   "media_or_news",

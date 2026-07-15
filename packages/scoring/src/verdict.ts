@@ -1,8 +1,11 @@
 import type { KolRelationship, ReportVerdict } from "@kol-fit/shared";
 
 import {
+  ADJACENT_CAP,
+  ADJACENT_CAP_EXEMPT_GOALS,
   AUTHORITY_FLOOR_FOUNDER,
   AUTHORITY_MIN_BRAND_SAFETY,
+  MEDIA_WEAK_SOFTEN_GOALS,
   BOT_GATE_AVOID,
   BOT_GATE_OKAY,
   BOT_GATE_WEAK,
@@ -99,13 +102,16 @@ export type AuthorityContext = {
   brandSafety: number;
   /** audienceIntentOverlap 0-5 (Unit 30) — tiers the media cap. */
   intentOverlap?: number;
+  /** Normalized campaign-goal key (Unit 32) — absent means the default
+   *  "normal product-relevant campaign" assumption. */
+  goalKey?: string;
   /** True when a risk gate already capped the verdict (floors never override). */
   riskGateFired: boolean;
 };
 
 export type AuthorityAdjustment = {
   verdict: ReportVerdict;
-  applied: "founder_floor" | "media_cap" | null;
+  applied: "founder_floor" | "media_cap" | "adjacent_cap" | null;
 };
 
 /**
@@ -121,12 +127,22 @@ export function applyAuthorityRules(
   ctx: AuthorityContext
 ): AuthorityAdjustment {
   if (
-    ctx.relationship === "founder_or_core_team" &&
+    (ctx.relationship === "founder_or_core_team" ||
+      ctx.relationship === "official_ecosystem_lead") &&
     !ctx.riskGateFired &&
     ctx.brandSafety >= AUTHORITY_MIN_BRAND_SAFETY &&
     RANK.indexOf(verdict) < RANK.indexOf(AUTHORITY_FLOOR_FOUNDER)
   ) {
     return { verdict: AUTHORITY_FLOOR_FOUNDER, applied: "founder_floor" };
+  }
+  if (
+    ctx.relationship === "adjacent_ecosystem_authority" &&
+    !(ctx.goalKey && ADJACENT_CAP_EXEMPT_GOALS.includes(ctx.goalKey)) &&
+    RANK.indexOf(verdict) > RANK.indexOf(ADJACENT_CAP)
+  ) {
+    // Unit 32: adjacent fame needs direct authority or an aligned goal
+    // (awareness/credibility) to reach STRONG.
+    return { verdict: ADJACENT_CAP, applied: "adjacent_cap" };
   }
   if (ctx.relationship === "media_or_news") {
     // Intent-tiered (Unit 30): readers without product intent are reach, not
@@ -134,9 +150,15 @@ export function applyAuthorityRules(
     // STRONG — "media fit should be useful but not automatically elite".
     // Unknown intent falls back to the 29E EAM-only tiers.
     const i = ctx.intentOverlap;
+    // Unit 32: under an awareness goal the WEAK tier softens to OKAY —
+    // broad reach IS useful for a pure awareness burst.
+    const weakTier =
+      ctx.goalKey && MEDIA_WEAK_SOFTEN_GOALS.includes(ctx.goalKey)
+        ? MEDIA_CAP_OKAY
+        : "WEAK";
     const cap =
       i !== undefined && i <= MEDIA_INTENT_WEAK
-        ? "WEAK"
+        ? weakTier
         : ctx.eam >= MEDIA_CAP_EAM_EXEMPT &&
             (i === undefined || i >= MEDIA_INTENT_GOOD)
           ? MEDIA_CAP_GOOD

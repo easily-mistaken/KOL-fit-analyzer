@@ -164,6 +164,8 @@ export function buildContentFitPrompt(input: AssessContentFitInput): string {
       "not product users or protocol developers; sports-betting tipsters' followers are not researchers. " +
       "And the reverse holds: a non-crypto audience CAN have high intent (5) when the product serves exactly " +
       "what they do — e.g. election forecasters for a prediction market. " +
+      "SPECIALIZATION: generalist builders/developers are NOT specialists in a deep-niche technical product " +
+      "(FHE/privacy infra, zk tooling, formal verification) — cap at 3 unless demonstrated specialist interest. " +
       "0-1 = audience consumes content but would not use this product; 2 = mostly wrong intent; " +
       "3 = plausible intent WITH positive evidence; 4-5 = the audience demonstrably does/seeks what this product offers. " +
       "ANTI-HEDGE RULE: 3 is not a safe default — it requires POSITIVE evidence the audience acts with this " +
@@ -176,12 +178,19 @@ export function buildContentFitPrompt(input: AssessContentFitInput): string {
       "display name against your knowledge of the org's leadership — identity beats content. Use BOTH the bio AND " +
       "your public knowledge; when genuinely unsure AFTER that identity check, choose the weaker category:",
     "- founder_or_core_team: founder/inventor/CEO/core team of THIS org itself. This INCLUDES pseudonymous " +
-      "founders who are publicly known to lead the org even if the bio doesn't state it, and creators/leads " +
-      "publicly identified with the org (a missing legal name or modest bio is not a discount).",
+      "founders who are publicly known to lead the org even if the bio doesn't state it (a missing legal name " +
+      "or modest bio is not a discount).",
+    "- official_ecosystem_lead: publicly known CREATOR, lead, or official operator of this org's platform or " +
+      "ecosystem program (e.g. the person who created the org's chain/product while working at its parent " +
+      "company, or the org's official ecosystem/community lead), even when the bio understates it. This " +
+      "INCLUDES publicly announced advisors/officers OF THIS ORG. Stronger than adjacent; distinct from " +
+      "founder only in formal title.",
     "- adjacent_ecosystem_authority: founder or major figure of the underlying chain/ecosystem the org builds on, " +
-      "but NOT this org (e.g. a chain co-founder vs an app on that chain).",
+      "but NOT this org and NOT its official lead (e.g. a chain co-founder vs an app on that chain).",
     "- independent_specialist: respected independent analyst/investigator/researcher in the org's domain.",
-    "- media_or_news: a media, news, or aggregator account rather than an individual voice.",
+    "- media_or_news: a BRAND account rather than an individual voice — media, news, aggregators, AND " +
+      "community/event/organization brands (hackathon series, community programs, publications). What matters " +
+      "is that it is a distribution brand, not a person.",
     "- none: an ordinary KOL with no special relationship.",
     "Give `relationshipEvidence`: one sentence naming what grounds the call (bio claim or public role).",
     "Output ONLY the ratings/labels — no scores out of 100, no verdicts, no recommendations.",

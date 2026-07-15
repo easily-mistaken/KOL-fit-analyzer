@@ -141,6 +141,7 @@ export const CONTENT_FIT_SCHEMA = {
       type: "string",
       enum: [
         "founder_or_core_team",
+        "official_ecosystem_lead",
         "adjacent_ecosystem_authority",
         "independent_specialist",
         "media_or_news",

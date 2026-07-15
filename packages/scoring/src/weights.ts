@@ -190,6 +190,20 @@ export const AUTHORITY_OVERALL_BOOST_FOUNDER = 6;
 /** The founder floor only applies when brand safety is at least this (severe
  *  brand-safety risk always wins) and no risk gate fired. */
 export const AUTHORITY_MIN_BRAND_SAFETY = 60;
+/** Adjacent ecosystem authority (Unit 32, goal-conditional): capped at GOOD
+ *  under a normal product-relevant campaign — fame + ecosystem relevance is
+ *  not STRONG without direct authority or goal alignment. Goals where
+ *  adjacent authority genuinely shines lift the cap. */
+export const ADJACENT_CAP = "GOOD" as const;
+export const ADJACENT_CAP_EXEMPT_GOALS: string[] = [
+  "awareness",
+  "investor_credibility",
+];
+
+/** Media WEAK-tier softens to OKAY under an awareness goal (Unit 32) —
+ *  broad reach IS useful for a pure awareness burst. */
+export const MEDIA_WEAK_SOFTEN_GOALS: string[] = ["awareness"];
+
 /** Media/news/community-brand accounts: reach is not fit. Two-tier cap (29E
  *  live tuning — ETHIndia/Bankless-style accounts with a genuinely strong
  *  audience earn GOOD, never STRONG; without audience proof they cap at OKAY):
