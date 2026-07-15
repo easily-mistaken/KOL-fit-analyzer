@@ -156,9 +156,25 @@ export function buildContentFitPrompt(input: AssessContentFitInput): string {
       "DeFi-yield KOL is adjacent (>=3) to a lending protocol even with zero shared words.",
     "- audienceOverlapPotential: how plausibly the KOL's audience contains the org's target users.",
     "- naturalMentionFit: would this KOL talking about this org feel natural (not forced) to their audience?",
+    "Rate audienceIntentOverlap as an INTEGER 0-5 — a SEPARATE question from topic: does what this KOL's " +
+      "engaged audience actually DOES and SEEKS match what this org's product needs users to DO? " +
+      "Category overlap is NOT intent overlap. Contrasts (rate the mismatched side 0-2): " +
+      "DEX traders are not lenders/borrowers; borrowers are not yield depositors; retail wallet users are not " +
+      "multisig administrators; mainstream gamers are not NFT traders or Web3 users; crypto NEWS READERS are " +
+      "not product users or protocol developers; sports-betting tipsters' followers are not researchers. " +
+      "And the reverse holds: a non-crypto audience CAN have high intent (5) when the product serves exactly " +
+      "what they do — e.g. election forecasters for a prediction market. " +
+      "0-1 = audience consumes content but would not use this product; 2 = mostly wrong intent; " +
+      "3 = plausible intent WITH positive evidence; 4-5 = the audience demonstrably does/seeks what this product offers. " +
+      "ANTI-HEDGE RULE: 3 is not a safe default — it requires POSITIVE evidence the audience acts with this " +
+      "product-relevant intent. If the audience's primary reason for following is content consumption (news, " +
+      "entertainment, streams, headlines) or their demonstrated activity centers on a DIFFERENT product intent, " +
+      "rate 2 or lower. When torn between 2 and 3, choose 2.",
     "Also list sharedTopics (concrete overlapping topics, may be empty) and a 1-3 sentence rationale.",
-    "Classify `relationship` — the KOL's relationship to THIS ORG specifically. Use BOTH the bio AND your public " +
-      "knowledge of who this person/account is; when genuinely unsure, choose the weaker category:",
+    "Classify `relationship` — the KOL's relationship to THIS ORG specifically. FIRST ask: is this account's " +
+      "owner publicly known as the founder/creator/lead of this org, even under a pseudonym? Check the handle and " +
+      "display name against your knowledge of the org's leadership — identity beats content. Use BOTH the bio AND " +
+      "your public knowledge; when genuinely unsure AFTER that identity check, choose the weaker category:",
     "- founder_or_core_team: founder/inventor/CEO/core team of THIS org itself. This INCLUDES pseudonymous " +
       "founders who are publicly known to lead the org even if the bio doesn't state it, and creators/leads " +
       "publicly identified with the org (a missing legal name or modest bio is not a discount).",

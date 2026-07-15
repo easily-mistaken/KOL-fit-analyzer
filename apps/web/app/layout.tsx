@@ -23,7 +23,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       className={`${GeistSans.variable} ${GeistMono.variable}`}
       suppressHydrationWarning
     >
-      <body>
+      {/* Browser extensions (Grammarly, ColorZilla, …) inject attributes onto
+          <body> before hydration; suppressHydrationWarning on <html> only covers
+          one level, so mirror it here to silence those extension-only mismatches. */}
+      <body suppressHydrationWarning>
         <AppShell>{children}</AppShell>
       </body>
     </html>

@@ -34,9 +34,11 @@ export function createLlmProvider(options?: {
       if (!model || model.trim().length === 0) {
         throw new OpenAiError("config_error", "LLM_MODEL is not set; cannot use the openai provider.");
       }
-      // Optional cheaper/faster tier for bulk audience batches (Unit 29B).
+      // Optional cheaper/faster tier for bulk audience batches (Unit 29B) and
+      // optional stronger tier for the content-fit judgment call (Unit 30).
       const fastModel = process.env.LLM_MODEL_FAST?.trim() || undefined;
-      return createOpenAiLlmProvider({ apiKey, model: model.trim(), fastModel });
+      const fitModel = process.env.LLM_MODEL_FIT?.trim() || undefined;
+      return createOpenAiLlmProvider({ apiKey, model: model.trim(), fastModel, fitModel });
     }
     default:
       throw new Error(`Unknown LLM_PROVIDER: ${String(kind)}`);

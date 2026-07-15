@@ -62,7 +62,14 @@ export function scoreAnalysis(input: ScoringInput): ScoringResult {
   const ppr = paidPromoRisk(input.content, sampleLevel);
   const bfr = botFarmRisk(dist, avgBot, sampleLevel);
 
-  const eam = engagedAudienceMatch(accounts, dist, targets, sampleLevel);
+  const intentOverlap = input.contentFitAssessment?.audienceIntentOverlap;
+  const eam = engagedAudienceMatch(
+    accounts,
+    dist,
+    targets,
+    sampleLevel,
+    intentOverlap
+  );
   const aq = audienceQuality(
     dist,
     input.sample.repeatEngagerShare ?? 0,
@@ -127,6 +134,7 @@ export function scoreAnalysis(input: ScoringInput): ScoringResult {
     relationship,
     eam: eam.value,
     brandSafety: bs.value,
+    intentOverlap,
     riskGateFired: gateFired,
   });
   const verdict = authority.verdict;

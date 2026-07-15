@@ -6,7 +6,7 @@
   "scripts": {
     "build": "pnpm -r build",
     "lint": "pnpm -r --if-present lint",
-    "check": "node scripts/checks/base-url.regression.cjs && node scripts/checks/openai-reasoning.regression.cjs && node scripts/checks/twitterapi-envelope.regression.cjs && node scripts/checks/cache-and-caps.regression.cjs && node scripts/checks/error-taxonomy.regression.cjs && node scripts/checks/llm-cache.regression.cjs && node scripts/checks/report-delivery.regression.cjs && node scripts/checks/abuse-and-retry.regression.cjs && node scripts/checks/auth.regression.cjs && node scripts/checks/data-enrichment.regression.cjs && node scripts/checks/classification-v2.regression.cjs && node scripts/checks/scoring-v2.regression.cjs && node scripts/checks/pipeline-latency.regression.cjs && node scripts/checks/authority-rules.regression.cjs && node scripts/checks/negative-controls.regression.cjs && node scripts/checks/cache-poisoning.regression.cjs && node scripts/calibration/run-pairs.cjs --selftest",
+    "check": "node scripts/checks/base-url.regression.cjs && node scripts/checks/openai-reasoning.regression.cjs && node scripts/checks/twitterapi-envelope.regression.cjs && node scripts/checks/cache-and-caps.regression.cjs && node scripts/checks/error-taxonomy.regression.cjs && node scripts/checks/llm-cache.regression.cjs && node scripts/checks/report-delivery.regression.cjs && node scripts/checks/abuse-and-retry.regression.cjs && node scripts/checks/auth.regression.cjs && node scripts/checks/data-enrichment.regression.cjs && node scripts/checks/classification-v2.regression.cjs && node scripts/checks/scoring-v2.regression.cjs && node scripts/checks/pipeline-latency.regression.cjs && node scripts/checks/authority-rules.regression.cjs && node scripts/checks/negative-controls.regression.cjs && node scripts/checks/cache-poisoning.regression.cjs && node scripts/checks/intent-overlap.regression.cjs && node scripts/calibration/run-pairs.cjs --selftest",
     "check:base-url": "node scripts/checks/base-url.regression.cjs",
     "check:data-enrichment": "node scripts/checks/data-enrichment.regression.cjs",
     "check:classification-v2": "node scripts/checks/classification-v2.regression.cjs",
@@ -15,6 +15,7 @@
     "check:authority-rules": "node scripts/checks/authority-rules.regression.cjs",
     "check:negative-controls": "node scripts/checks/negative-controls.regression.cjs",
     "check:cache-poisoning": "node scripts/checks/cache-poisoning.regression.cjs",
+    "check:intent-overlap": "node scripts/checks/intent-overlap.regression.cjs",
     "check:openai-reasoning": "node scripts/checks/openai-reasoning.regression.cjs",
     "check:twitterapi-envelope": "node scripts/checks/twitterapi-envelope.regression.cjs",
     "check:cache-and-caps": "node scripts/checks/cache-and-caps.regression.cjs",

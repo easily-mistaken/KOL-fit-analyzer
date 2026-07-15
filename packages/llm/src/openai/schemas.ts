@@ -134,6 +134,7 @@ export const CONTENT_FIT_SCHEMA = {
     topicalAdjacency: { type: "integer" },
     audienceOverlapPotential: { type: "integer" },
     naturalMentionFit: { type: "integer" },
+    audienceIntentOverlap: { type: "integer" },
     sharedTopics: stringArray,
     rationale: { type: "string" },
     relationship: {
@@ -152,6 +153,7 @@ export const CONTENT_FIT_SCHEMA = {
     "topicalAdjacency",
     "audienceOverlapPotential",
     "naturalMentionFit",
+    "audienceIntentOverlap",
     "sharedTopics",
     "rationale",
     "relationship",

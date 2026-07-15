@@ -81,6 +81,11 @@ export interface OpenAiProviderOptions {
   /** Cheaper/faster model for bulk per-account audience batches (Unit 29B
    *  tiering). Defaults to `model`. */
   fastModel?: string;
+  /** Optionally STRONGER model for the single pair-specific content-fit /
+   *  relationship judgment call (Unit 30 tiering — pseudonymous-founder and
+   *  intent judgments are knowledge-bound; the call is tiny so a frontier
+   *  model costs pennies). Defaults to `model`. */
+  fitModel?: string;
   baseUrl?: string;
   timeoutMs?: number;
   fetchImpl?: FetchImpl;
@@ -140,10 +145,16 @@ function parseLimit(raw: string | undefined): number | undefined {
  */
 export class OpenAiLlmProvider implements LlmProvider {
   readonly model: string;
+  /** Model actually used for assessContentFit (the fit tier when configured).
+   *  Exposed so the classification cache can key fit entries correctly. */
+  readonly fitModel: string;
   private readonly client: OpenAiClient;
   /** Separate client for bulk audience batches when fastModel is configured;
    *  otherwise the same instance as `client`. */
   private readonly fastClient: OpenAiClient;
+  /** Separate client for the content-fit judgment call when fitModel is
+   *  configured; otherwise the same instance as `client`. */
+  private readonly fitClient: OpenAiClient;
   private readonly maxRetries: number;
   private readonly audienceLimit: number;
   private readonly mediaImageLimit: number;
@@ -155,6 +166,12 @@ export class OpenAiLlmProvider implements LlmProvider {
       fastModel && fastModel !== options.model
         ? new OpenAiClient({ ...options, model: fastModel })
         : this.client;
+    const fitModel = options.fitModel?.trim();
+    this.fitClient =
+      fitModel && fitModel !== options.model
+        ? new OpenAiClient({ ...options, model: fitModel })
+        : this.client;
+    this.fitModel = fitModel || options.model;
     this.model = options.model;
     this.maxRetries = options.maxRetries ?? DEFAULT_MAX_RETRIES;
     this.audienceLimit =
@@ -168,18 +185,24 @@ export class OpenAiLlmProvider implements LlmProvider {
   }
 
   getUsageStats(): LlmUsageStats {
-    const main = this.client.getUsageStats();
-    if (this.fastClient === this.client) return main;
-    const fast = this.fastClient.getUsageStats();
-    const byMethod = { ...main.byMethod };
-    for (const [k, v] of Object.entries(fast.byMethod)) {
-      byMethod[k] = (byMethod[k] ?? 0) + v;
+    const clients = [this.client];
+    if (this.fastClient !== this.client) clients.push(this.fastClient);
+    if (this.fitClient !== this.client) clients.push(this.fitClient);
+    const stats = clients.map((c) => c.getUsageStats());
+    if (stats.length === 1) return stats[0];
+    const byMethod: Record<string, number> = {};
+    const sum = (k: "requests" | "inputTokens" | "outputTokens" | "totalTokens") =>
+      stats.reduce((s, x) => s + x[k], 0);
+    for (const s of stats) {
+      for (const [k, v] of Object.entries(s.byMethod)) {
+        byMethod[k] = (byMethod[k] ?? 0) + v;
+      }
     }
     return {
-      requests: main.requests + fast.requests,
-      inputTokens: main.inputTokens + fast.inputTokens,
-      outputTokens: main.outputTokens + fast.outputTokens,
-      totalTokens: main.totalTokens + fast.totalTokens,
+      requests: sum("requests"),
+      inputTokens: sum("inputTokens"),
+      outputTokens: sum("outputTokens"),
+      totalTokens: sum("totalTokens"),
       byMethod,
     };
   }
@@ -300,12 +323,18 @@ export class OpenAiLlmProvider implements LlmProvider {
         schema: CONTENT_FIT_SCHEMA,
         system: SYSTEM_PROMPT,
         user: buildContentFitPrompt(input),
+        // The one nuanced judgment call (relationship + intent): more
+        // reasoning budget than bulk classification stabilizes borderline
+        // ratings (Unit 30; meow founder-flicker, intent hedging).
+        reasoningEffort: "low",
         maxOutputTokens: MAX_TOKENS.contentFit,
       },
       (parsed) => {
         const r = ContentFitAssessmentSchema.safeParse(deepNullToUndefined(parsed));
         return r.success ? { ok: true, data: r.data } : { ok: false, errorSummary: summarize(r.error) };
-      }
+      },
+      // Judgment call runs on the fit tier when configured (LLM_MODEL_FIT).
+      this.fitClient
     );
   }
 

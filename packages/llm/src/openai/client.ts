@@ -54,6 +54,9 @@ export type RespondParams = {
    *  (Unit 29B multimodal content classification). Requires a vision-capable
    *  model. */
   images?: string[];
+  /** Per-call reasoning-effort override (Unit 30: the content-fit judgment
+   *  call gets more thinking budget than bulk classification). */
+  reasoningEffort?: string;
   maxOutputTokens: number;
 };
 
@@ -167,8 +170,9 @@ export class OpenAiClient {
     // Reasoning models (GPT-5-tier) count reasoning against max_output_tokens;
     // set a low effort so the budget is spent on the structured output, not
     // reasoning (otherwise the response is `incomplete` with empty output).
-    if (this.reasoningEffort) {
-      payload.reasoning = { effort: this.reasoningEffort };
+    const effort = params.reasoningEffort ?? this.reasoningEffort;
+    if (effort) {
+      payload.reasoning = { effort };
     }
     const requestBody = JSON.stringify(payload);
 

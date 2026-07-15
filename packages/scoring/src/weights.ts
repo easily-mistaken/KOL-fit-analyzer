@@ -85,6 +85,37 @@ export const GEO_ANCHORS: CurveAnchors = [
   [1, 100],
 ];
 
+// --- Audience intent overlap (Unit 30, v26 rule 4) ---------------------------
+// Category-matched share is adjusted by the pair's audienceIntentOverlap
+// rating (0-5): clear intent MISMATCH (<=2) damps the match (news readers /
+// mainstream gamers / wrong DeFi sub-intent classify into matching buckets
+// but won't use the product); HIGH intent (>=4) floors it (forecasters have
+// prediction-market intent despite non-crypto buckets). 3 = neutral.
+
+export const INTENT_DAMP: Record<number, number> = {
+  0: 0.3,
+  1: 0.4,
+  2: 0.5,
+  3: 1,
+  4: 1,
+  5: 1,
+};
+
+export const INTENT_FLOOR: Record<number, number> = {
+  0: 0,
+  1: 0,
+  2: 0,
+  3: 0,
+  4: 55,
+  5: 70,
+};
+
+/** Media cap tier bounds on intent (see applyAuthorityRules): media with
+ *  intent <= MEDIA_INTENT_WEAK caps at WEAK; the GOOD tier additionally
+ *  requires intent >= MEDIA_INTENT_GOOD. */
+export const MEDIA_INTENT_WEAK = 2;
+export const MEDIA_INTENT_GOOD = 4;
+
 // --- Baselines / modifiers ---------------------------------------------------
 
 /** Junk engagement (bots + giveaway + weighted farmers) below this share is

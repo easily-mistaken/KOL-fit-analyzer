@@ -11,6 +11,8 @@ import {
   MEDIA_CAP_GOOD,
   MEDIA_CAP_OKAY,
   MEDIA_CAP_EAM_EXEMPT,
+  MEDIA_INTENT_GOOD,
+  MEDIA_INTENT_WEAK,
   PROMO_GATE_OKAY,
   PROMO_GATE_UNRELATED_SHARE,
   PROMO_GATE_WEAK,
@@ -95,6 +97,8 @@ export type AuthorityContext = {
   /** engaged_audience_match value — exempts media accounts from the cap. */
   eam: number;
   brandSafety: number;
+  /** audienceIntentOverlap 0-5 (Unit 30) — tiers the media cap. */
+  intentOverlap?: number;
   /** True when a risk gate already capped the verdict (floors never override). */
   riskGateFired: boolean;
 };
@@ -125,10 +129,18 @@ export function applyAuthorityRules(
     return { verdict: AUTHORITY_FLOOR_FOUNDER, applied: "founder_floor" };
   }
   if (ctx.relationship === "media_or_news") {
-    // Two-tier (29E tuning): audience proof earns GOOD, never STRONG —
-    // "media fit should be useful but not automatically elite" (v26).
+    // Intent-tiered (Unit 30): readers without product intent are reach, not
+    // fit -> WEAK. Audience proof (EAM) + real intent earns GOOD, never
+    // STRONG — "media fit should be useful but not automatically elite".
+    // Unknown intent falls back to the 29E EAM-only tiers.
+    const i = ctx.intentOverlap;
     const cap =
-      ctx.eam >= MEDIA_CAP_EAM_EXEMPT ? MEDIA_CAP_GOOD : MEDIA_CAP_OKAY;
+      i !== undefined && i <= MEDIA_INTENT_WEAK
+        ? "WEAK"
+        : ctx.eam >= MEDIA_CAP_EAM_EXEMPT &&
+            (i === undefined || i >= MEDIA_INTENT_GOOD)
+          ? MEDIA_CAP_GOOD
+          : MEDIA_CAP_OKAY;
     if (RANK.indexOf(verdict) > RANK.indexOf(cap)) {
       return { verdict: cap, applied: "media_cap" };
     }

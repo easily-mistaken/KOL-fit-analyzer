@@ -24,6 +24,8 @@ import {
   GEO_ANCHORS,
   GEO_NEUTRAL_SCORE,
   GOAL_BUCKETS,
+  INTENT_DAMP,
+  INTENT_FLOOR,
   KEYWORD_BUCKETS,
   LOWQ_BASELINE,
   NON_TARGET_BUCKETS,
@@ -211,7 +213,8 @@ export function engagedAudienceMatch(
   accounts: AudienceAccount[],
   dist: AudienceDistribution,
   targets: TargetSets,
-  sampleLevel: ConfidenceLevel
+  sampleLevel: ConfidenceLevel,
+  intentOverlap?: number
 ): ScoreValue {
   if (dist.sampleSize === 0) {
     return sv(0, "low", ["No engaged accounts were sampled."]);
@@ -228,15 +231,31 @@ export function engagedAudienceMatch(
       : targets.source === "keywords"
         ? "keyword-derived targets"
         : "generic crypto-audience targets";
-  return sv(
-    clampRound(curve(matchedShare, EAM_ANCHORS)),
-    audienceConfidence(dist, sampleLevel),
-    [
-      `${pct(matchedShare)} of the real engaged audience (${humanCount} humans, reply/quote-weighted) matches ${sourceNote}: ` +
-        `primary ${[...targets.primary].join(", ") || "(none)"}${targets.secondary.size > 0 ? `; secondary ${[...targets.secondary].join(", ")}` : ""}.`,
-      "Calibrated: real engaged audiences are heterogeneous — 30% target share is strong, 45%+ exceptional.",
-    ]
-  );
+  const reasons = [
+    `${pct(matchedShare)} of the real engaged audience (${humanCount} humans, reply/quote-weighted) matches ${sourceNote}: ` +
+      `primary ${[...targets.primary].join(", ") || "(none)"}${targets.secondary.size > 0 ? `; secondary ${[...targets.secondary].join(", ")}` : ""}.`,
+    "Calibrated: real engaged audiences are heterogeneous — 30% target share is strong, 45%+ exceptional.",
+  ];
+
+  // Intent adjustment (Unit 30, v26 rule 4): category match is damped on a
+  // clear intent mismatch and floored on demonstrated intent.
+  const base = curve(matchedShare, EAM_ANCHORS);
+  const i = typeof intentOverlap === "number" ? intentOverlap : undefined;
+  const damp = i !== undefined ? (INTENT_DAMP[i] ?? 1) : 1;
+  const floor = i !== undefined ? (INTENT_FLOOR[i] ?? 0) : 0;
+  let value = base * damp;
+  if (damp < 1) {
+    reasons.push(
+      `Audience intent overlap ${i}/5 — the matched buckets share the org's CATEGORY but not its user intent; match damped accordingly.`
+    );
+  }
+  if (floor > value) {
+    value = floor;
+    reasons.push(
+      `Audience intent overlap ${i}/5 — the audience demonstrably seeks what this product offers; match floored despite weak bucket-category overlap.`
+    );
+  }
+  return sv(clampRound(value), audienceConfidence(dist, sampleLevel), reasons);
 }
 
 export function audienceQuality(

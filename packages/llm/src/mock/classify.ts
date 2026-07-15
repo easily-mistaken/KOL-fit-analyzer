@@ -262,6 +262,9 @@ export function assessContentFitMock(
     topicalAdjacency: adjacency,
     audienceOverlapPotential: Math.min(5, adjacency + (cryptoKol ? 1 : 0)),
     naturalMentionFit: adjacency,
+    // Unit 30 mock heuristic: direct topical overlap implies audience intent;
+    // crypto-adjacent-without-overlap is plausible-but-unproven (3).
+    audienceIntentOverlap: m >= 2 ? Math.min(5, adjacency + 1) : cryptoKol ? 3 : 1,
     sharedTopics: shared,
     rationale:
       m > 0

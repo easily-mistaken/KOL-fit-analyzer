@@ -116,6 +116,11 @@ export const ContentFitAssessmentSchema = z.object({
   audienceOverlapPotential: z.number().int().min(0).max(5),
   /** Would this KOL mentioning the org feel natural to their audience? */
   naturalMentionFit: z.number().int().min(0).max(5),
+  /** Unit 30: does what this KOL's engaged audience actually DOES/SEEKS match
+   *  what the org's product needs users to do? Category ≠ intent (v26 rule 4):
+   *  DEX traders ≠ lenders, mainstream gamers ≠ NFT traders, news readers ≠
+   *  product users, forecasters DO have prediction-market intent. */
+  audienceIntentOverlap: z.number().int().min(0).max(5).optional(),
   sharedTopics: z.array(z.string()).default([]),
   rationale: z.string(),
   relationship: KolRelationshipSchema.optional(),
