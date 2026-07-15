@@ -454,7 +454,16 @@ export function paidPromoRisk(
   const labels = content.postLabels;
   if (labels && labels.length > 0) {
     const promos = labels.filter((l) => l.isPromo);
-    const saturation = promos.length / labels.length;
+    // Visual-only promos (Unit 31): image labeled promo_graphic under a post
+    // whose TEXT was not flagged — a shill graphic is still a promo.
+    const promoIds = new Set(promos.map((l) => l.postId));
+    const visualOnlyPromoIds = new Set(
+      (content.mediaLabels ?? [])
+        .filter((m) => m.kind === "promo_graphic" && !promoIds.has(m.postId))
+        .map((m) => m.postId)
+    );
+    const promoCount = promos.length + visualOnlyPromoIds.size;
+    const saturation = Math.min(1, promoCount / labels.length);
     const unrelatedShare =
       promos.length > 0
         ? promos.filter((l) => l.promoRelated === false).length / promos.length
@@ -467,9 +476,14 @@ export function paidPromoRisk(
     const multiplier = PROMO_QUALITY_FLOOR + (1 - PROMO_QUALITY_FLOOR) * quality;
     const risk = clampRound(curve(saturation, PROMO_ANCHORS) * multiplier);
     const reasons: string[] = [
-      `${promos.length}/${labels.length} labeled posts are promotional (${pct(saturation)} saturation).`,
+      `${promoCount}/${labels.length} labeled posts are promotional (${pct(saturation)} saturation).`,
     ];
-    if (promos.length > 0) {
+    if (visualOnlyPromoIds.size > 0) {
+      reasons.push(
+        `${visualOnlyPromoIds.size} post(s) counted from promo GRAPHICS under non-promotional text (visual shilling).`
+      );
+    }
+    if (promoCount > 0) {
       reasons.push(
         `${pct(unrelatedShare)} of promos are outside the KOL's domain; ${pct(lowQualityShare)} promote low-quality projects.`,
         quality < 0.25
@@ -500,6 +514,25 @@ export function paidPromoRisk(
   if (reasons.length === 0) reasons.push("No notable paid-promo patterns in sampled content.");
   reasons.push("Legacy heuristic (no per-post labels available). Higher = more paid-promo risk.");
   return { value: sv(risk, "low", reasons), unrelatedShare: 0 };
+}
+
+/** Deterministic visual-content profile from the 29B media labels (Unit 31).
+ *  Informational: appended to content_fit reasons; substantive share has no
+ *  numeric effect yet (no calibration label demands one). */
+export function mediaProfileReason(
+  content: KolContentClassification
+): string | null {
+  const labels = content.mediaLabels ?? [];
+  if (labels.length === 0) return null;
+  const share = (kinds: string[]) =>
+    labels.filter((m) => kinds.includes(m.kind)).length / labels.length;
+  const substantive = share(["chart_or_data", "screenshot_text"]);
+  const meme = share(["meme"]);
+  const promo = share(["promo_graphic"]);
+  return (
+    `Visual content across ${labels.length} labeled image(s): ` +
+    `${pct(substantive)} charts/data/analysis, ${pct(meme)} memes, ${pct(promo)} promo graphics.`
+  );
 }
 
 export function botFarmRisk(

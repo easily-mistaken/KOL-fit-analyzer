@@ -15,6 +15,7 @@ import {
   contentFit,
   engagedAudienceMatch,
   geoLanguageFit,
+  mediaProfileReason,
   normalizeGoal,
   paidPromoRisk,
   resolveGoal,
@@ -82,6 +83,10 @@ export function scoreAnalysis(input: ScoringInput): ScoringResult {
     input.brief,
     sampleLevel
   );
+  // Visual-content profile (Unit 31): deterministic evidence from the 29B
+  // vision labels, surfaced with the content assessment.
+  const mediaReason = mediaProfileReason(input.content);
+  if (mediaReason) cf.reasons.push(mediaReason);
   const cgf = campaignGoalFit(
     accounts,
     dist,

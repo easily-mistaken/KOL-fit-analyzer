@@ -62,7 +62,8 @@ const AUDIENCE_BATCH_SIZE = 40;
 const AUDIENCE_BATCH_CONCURRENCY = 3;
 const DEFAULT_MAX_RETRIES = 1;
 // Post images attached to the content classification (Unit 29B multimodal).
-export const DEFAULT_MEDIA_IMAGE_LIMIT = 12;
+// 12 -> 16 in Unit 31: live data shows ~40% of sampled posts carry media.
+export const DEFAULT_MEDIA_IMAGE_LIMIT = 16;
 
 // Caps (billed only for tokens actually generated). Generous headroom so
 // reasoning-model overhead + the structured JSON output both fit. kolContent
