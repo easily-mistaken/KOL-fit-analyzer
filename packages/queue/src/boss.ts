@@ -22,9 +22,35 @@ function connectionString(): string {
   return process.env.DIRECT_URL ?? process.env.DATABASE_URL ?? "";
 }
 
+/**
+ * Pool sizing + role options (2026-07-15 incident): Supabase's session pooler
+ * caps clients (pool_size 15 by default). pg-boss's default pg Pool is 10 per
+ * process, so web (enqueue-only) + worker together exceeded the cap after a
+ * pooler idle-drop reconnect (EMAXCONNSESSION storm). Enqueue-only processes
+ * get a tiny pool and no supervision/scheduling loops; the worker (identified
+ * by PGBOSS_ROLE=worker, set in apps/worker) gets a small one. Overridable via
+ * PGBOSS_POOL_MAX. Pure + exported for the regression check.
+ */
+export function resolvePgBossOptions(
+  env: Record<string, string | undefined> = process.env
+): { max: number; supervise: boolean; schedule: boolean } {
+  const isWorker = (env.PGBOSS_ROLE ?? "").trim().toLowerCase() === "worker";
+  const fromEnv = Number(env.PGBOSS_POOL_MAX);
+  const max =
+    Number.isFinite(fromEnv) && fromEnv > 0
+      ? Math.trunc(fromEnv)
+      : isWorker
+        ? 5
+        : 2;
+  return { max, supervise: isWorker, schedule: isWorker };
+}
+
 async function createStartedBoss() {
   const { PgBoss } = await import("pg-boss");
-  const boss = new PgBoss(connectionString());
+  const boss = new PgBoss({
+    connectionString: connectionString(),
+    ...resolvePgBossOptions(),
+  });
   // Surface async pg-boss errors instead of crashing the process.
   boss.on("error", (error) => {
     console.error("[queue] pg-boss error:", error);
