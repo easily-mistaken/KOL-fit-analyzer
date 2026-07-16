@@ -91,6 +91,7 @@ export type AdminDetailedRequestRow = {
   status: "NEW" | "SENT" | "DISMISSED";
   telegram: string;
   xHandle: string;
+  email: string | null;
   note: string | null;
   orgHandle: string | null;
   kolHandle: string | null;

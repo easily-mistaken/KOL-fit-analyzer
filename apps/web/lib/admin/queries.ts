@@ -507,6 +507,7 @@ export async function listAdminDetailedRequests({
     status: r.status,
     telegram: r.telegram,
     xHandle: r.xHandle,
+    email: r.email,
     note: r.note,
     orgHandle: r.orgHandle,
     kolHandle: r.kolHandle,

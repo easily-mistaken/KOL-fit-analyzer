@@ -46,6 +46,14 @@ export const DetailedReportRequestInputSchema = z.object({
         .string()
         .regex(X_USERNAME, "Enter a valid X handle or profile link.")
     ),
+  /** Required for anonymous requesters (enforced server-side, where auth is
+   *  known); signed-in users' account email is used instead. */
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .pipe(z.email("Enter a valid email address."))
+    .optional(),
   orgHandle: HandleSchema.optional(),
   kolHandle: HandleSchema.optional(),
   analysisRequestId: z.string().trim().min(10).max(40).optional(),

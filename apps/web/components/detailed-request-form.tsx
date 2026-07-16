@@ -21,15 +21,20 @@ type Props = {
   defaultOrgHandle?: string;
   defaultKolHandle?: string;
   analysisRequestId?: string;
+  /** Signed-in users' email comes from their account; anonymous visitors
+   *  must provide one (Unit 36.1). */
+  isAuthenticated?: boolean;
 };
 
 export function DetailedRequestForm({
   defaultOrgHandle,
   defaultKolHandle,
   analysisRequestId,
+  isAuthenticated = false,
 }: Props) {
   const [telegram, setTelegram] = React.useState("");
   const [xHandle, setXHandle] = React.useState("");
+  const [email, setEmail] = React.useState("");
   const [orgHandle, setOrgHandle] = React.useState(defaultOrgHandle ?? "");
   const [kolHandle, setKolHandle] = React.useState(defaultKolHandle ?? "");
   const [note, setNote] = React.useState("");
@@ -41,7 +46,13 @@ export function DetailedRequestForm({
     event.preventDefault();
     setError(null);
 
+    if (!isAuthenticated && !email.trim()) {
+      setError("Add your email so we can follow up.");
+      return;
+    }
+
     const payload: Record<string, unknown> = { telegram, xHandle };
+    if (!isAuthenticated && email.trim()) payload.email = email;
     if (orgHandle.trim()) payload.orgHandle = orgHandle;
     if (kolHandle.trim()) payload.kolHandle = kolHandle;
     if (note.trim()) payload.note = note;
@@ -114,6 +125,21 @@ export function DetailedRequestForm({
           />
         </div>
       </div>
+
+      {!isAuthenticated && (
+        <div className="space-y-1.5">
+          <Label htmlFor="dr-email">Email</Label>
+          <Input
+            id="dr-email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@project.xyz"
+            disabled={loading}
+            required
+          />
+        </div>
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">

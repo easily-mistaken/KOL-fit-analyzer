@@ -9,6 +9,7 @@ import {
 import { prisma } from "@kol-fit/db";
 
 import { getCurrentUser } from "@/lib/auth";
+import { buildDetailedRequestNotification, notifyOperator } from "@/lib/notify";
 import { ensureOwnerId } from "@/lib/owner";
 
 // Detailed-report concierge requests (Unit 35). Public: anyone may raise a
@@ -51,6 +52,16 @@ export async function POST(request: Request): Promise<NextResponse> {
     const ownerId = await ensureOwnerId();
     const user = await getCurrentUser();
 
+    // Email: the signed-in account's email wins; anonymous requesters must
+    // provide one (Unit 36.1) so the operator can always follow up.
+    const email = user?.email ?? input.email ?? null;
+    if (!email) {
+      return json(
+        err("validation_error", "Add your email so we can follow up."),
+        400
+      );
+    }
+
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const recent = await prisma.detailedReportRequest.count({
       where: { ownerId, createdAt: { gte: since } },
@@ -74,10 +85,23 @@ export async function POST(request: Request): Promise<NextResponse> {
         kolHandle: input.kolHandle ?? null,
         telegram: input.telegram,
         xHandle: input.xHandle,
+        email,
         note: input.note ?? null,
       },
       select: { id: true, createdAt: true },
     });
+
+    // Ping the operator (Unit 36) — best-effort, never blocks the response.
+    void notifyOperator(
+      buildDetailedRequestNotification({
+        telegram: input.telegram,
+        xHandle: input.xHandle,
+        email,
+        orgHandle: input.orgHandle,
+        kolHandle: input.kolHandle,
+        note: input.note,
+      })
+    );
 
     return json(ok({ id: created.id, createdAt: created.createdAt.toISOString() }), 201);
   } catch {

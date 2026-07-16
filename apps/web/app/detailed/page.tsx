@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Sparkles } from "lucide-react";
 
+import { getCurrentUser } from "@/lib/auth";
 import { DetailedRequestForm } from "@/components/detailed-request-form";
 import {
   Card,
@@ -21,6 +22,7 @@ export default async function DetailedRequestPage({
   searchParams: Promise<{ org?: string; kol?: string; analysis?: string }>;
 }) {
   const { org, kol, analysis } = await searchParams;
+  const user = await getCurrentUser();
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -52,6 +54,7 @@ export default async function DetailedRequestPage({
             defaultOrgHandle={org}
             defaultKolHandle={kol}
             analysisRequestId={analysis}
+            isAuthenticated={Boolean(user)}
           />
         </CardContent>
       </Card>

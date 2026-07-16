@@ -50,5 +50,11 @@ ck("bad x handle rejected", DetailedReportRequestInputSchema.safeParse({ telegra
 ck("note over 500 chars rejected", DetailedReportRequestInputSchema.safeParse({ ...base, note: "x".repeat(501) }).success === false);
 ck("empty inputs rejected", DetailedReportRequestInputSchema.safeParse({ telegram: "", xHandle: "" }).success === false);
 
+// --- email (Unit 36.1: required for anonymous requesters, enforced server-side) --
+const withEmail = DetailedReportRequestInputSchema.safeParse({ ...base, email: "  PJ@Example.COM " });
+ck("email normalized to lowercase", withEmail.success && withEmail.data.email === "pj@example.com");
+ck("invalid email rejected", DetailedReportRequestInputSchema.safeParse({ ...base, email: "not-an-email" }).success === false);
+ck("email optional at schema level (auth enforced in the route)", DetailedReportRequestInputSchema.safeParse(base).success === true);
+
 console.log(`\nDETAILED REQUESTS REGRESSION (35): ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

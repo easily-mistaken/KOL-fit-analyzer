@@ -58,7 +58,7 @@ export function AdminDetailedRequestsTable({
   return (
     <div className="space-y-4">
       <AdminTable
-        head={["Requested", "Pair", "Telegram", "X", "Note", "Status", "Actions"]}
+        head={["Requested", "Pair", "Telegram", "X", "Email", "Note", "Status", "Actions"]}
       >
         {data.items.map((r) => (
           <AdminRow key={r.id}>
@@ -104,7 +104,10 @@ export function AdminDetailedRequestsTable({
                 @{r.xHandle}
               </a>
             </td>
-            <td className="max-w-[260px] px-3 py-2.5 text-xs text-secondary-foreground">
+            <td className="whitespace-nowrap px-3 py-2.5 text-xs text-secondary-foreground">
+              {r.email ?? <Dash />}
+            </td>
+            <td className="max-w-[220px] px-3 py-2.5 text-xs text-secondary-foreground">
               {r.note ? <span className="line-clamp-2">{r.note}</span> : <Dash />}
             </td>
             <td className="whitespace-nowrap px-3 py-2.5">

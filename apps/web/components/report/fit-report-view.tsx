@@ -21,7 +21,6 @@ import { ConfidenceChip } from "@/components/report/score-meter";
 import { ScoreGauge } from "@/components/report/score-gauge";
 import { AudienceDonut } from "@/components/report/audience-donut";
 import { MetricGroups, type MetricMap } from "@/components/report/metric-groups";
-import { GetReport } from "@/components/report/get-report";
 
 // ---- verdict presentation -------------------------------------------------
 const VERDICT: Record<ReportVerdict, { word: string; tone: string }> = {
@@ -266,10 +265,9 @@ export function FitReportView({
         </div>
       </section>
 
-      {/* Lead capture — email the PDF */}
-      <GetReport requestId={meta.requestId} />
-
-      {/* Concierge CTA (Unit 35): the hands-on tier, available any time. */}
+      {/* Concierge CTA (Unit 35): the hands-on tier, available any time.
+          The on-page report IS the full report (Unit 36.1: the old
+          "Get the full report" email capture was removed — misleading). */}
       <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-accent/30 bg-accent/5 p-5">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-foreground">
