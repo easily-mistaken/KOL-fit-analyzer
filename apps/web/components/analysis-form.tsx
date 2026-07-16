@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, ChevronDown, Loader2, Search } from "lucide-react";
+import { AlertCircle, ChevronDown, Loader2, Search, Sparkles } from "lucide-react";
 import {
   AnalysisRequestInputSchema,
   CAMPAIGN_GOAL_LABELS,
@@ -236,36 +236,61 @@ export function AnalysisForm() {
             </Field>
           </div>
 
-          {/* Optional context toggle */}
-          <div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="px-2 text-secondary-foreground"
-              onClick={() => setShowOptional((v) => !v)}
-              aria-expanded={showOptional}
-            >
-              <ChevronDown
+          {/* Context nudge (Unit 37): collaborative tone ("give more context,
+              we'll give better results"), with an explicit clickable
+              affordance — this is a form section, not a pitch. */}
+          <button
+            type="button"
+            onClick={() => setShowOptional((v) => !v)}
+            aria-expanded={showOptional}
+            className={cn(
+              "group w-full cursor-pointer rounded-xl border border-default bg-surface px-4 py-3.5 text-left transition-all duration-150",
+              "hover:border-accent/60 hover:bg-elevated",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60",
+              showOptional && "border-accent/50 bg-elevated"
+            )}
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex min-w-0 items-start gap-2.5">
+                <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-accent-hover" />
+                <div className="min-w-0">
+                  <span className="text-sm font-semibold text-foreground">
+                    Give us more context, and we&apos;ll give you better results
+                  </span>
+                  <p className="mt-0.5 text-xs text-secondary-foreground">
+                    A few quick details about your product, audience, and goal
+                    help the analysis reflect <em>your</em> situation — all
+                    optional, always free.
+                  </p>
+                </div>
+              </div>
+              <span
                 className={cn(
-                  "h-4 w-4 transition-transform",
-                  showOptional && "rotate-180"
+                  "inline-flex shrink-0 items-center gap-1 rounded-lg border border-accent/50 px-2.5 py-1.5 text-xs font-medium text-accent-hover transition-colors",
+                  "group-hover:bg-accent group-hover:text-accent-foreground group-hover:border-accent"
                 )}
-              />
-              {showOptional ? "Hide optional context" : "Add optional context"}
-            </Button>
-          </div>
+              >
+                {showOptional ? "Hide" : "Add context"}
+                <ChevronDown
+                  className={cn(
+                    "h-3.5 w-3.5 transition-transform",
+                    showOptional && "rotate-180"
+                  )}
+                />
+              </span>
+            </div>
+          </button>
 
           {showOptional && (
             <div className="space-y-4">
               <Separator />
               <p className="text-xs text-muted-foreground">
-                Optional context improves accuracy. Leave anything blank if
-                unknown.
+                Everything here is optional — every field you do fill makes the
+                verdict more yours. Skip anything unknown.
               </p>
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field id="websiteUrl" label="Website URL" optional error={fieldErrors.websiteUrl}>
+                <Field id="websiteUrl" label="Website URL" optional hint="helps us understand your product" error={fieldErrors.websiteUrl}>
                   <Input
                     id="websiteUrl"
                     name="websiteUrl"
@@ -319,7 +344,7 @@ export function AnalysisForm() {
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field id="campaignGoal" label="Campaign goal" optional>
+                <Field id="campaignGoal" label="Campaign goal" optional hint="changes the verdict">
                   <Select
                     value={values.campaignGoal || undefined}
                     onValueChange={(v) =>
@@ -361,7 +386,7 @@ export function AnalysisForm() {
                 </Field>
               </div>
 
-              <Field id="targetUser" label="Target user" optional error={fieldErrors.targetUser}>
+              <Field id="targetUser" label="Target user" optional hint="the audience we match against" error={fieldErrors.targetUser}>
                 <Textarea
                   id="targetUser"
                   name="targetUser"
