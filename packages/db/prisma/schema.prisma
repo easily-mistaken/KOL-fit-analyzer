@@ -302,3 +302,36 @@ model ReportDelivery {
   @@index([email])
   @@index([createdAt])
 }
+
+// Detailed-report concierge requests (Unit 35): a user asks for a manually
+// curated analysis, delivered to their Telegram by the operator. Available at
+// any time (not only past the Unit 34 tier walls). Fulfillment is manual —
+// status is flipped from the admin panel.
+enum DetailedRequestStatus {
+  NEW
+  SENT
+  DISMISSED
+}
+
+model DetailedReportRequest {
+  id      String  @id @default(cuid())
+  // Owner cookie or user id (mirrors AnalysisRequest.ownerId semantics).
+  ownerId String
+  userId  String?
+
+  // Optional link to the self-serve analysis this request is about.
+  analysisRequestId String?
+  orgHandle         String?
+  kolHandle         String?
+
+  telegram String
+  xHandle  String
+  note     String?
+
+  status      DetailedRequestStatus @default(NEW)
+  createdAt   DateTime              @default(now()) @db.Timestamptz
+  fulfilledAt DateTime?             @db.Timestamptz
+
+  @@index([status, createdAt])
+  @@index([ownerId, createdAt])
+}

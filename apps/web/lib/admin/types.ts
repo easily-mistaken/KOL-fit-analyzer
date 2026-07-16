@@ -84,6 +84,21 @@ export type AdminLeadRow = {
   kolHandle: string | null;
 };
 
+// Detailed-report concierge requests (Unit 35).
+export type AdminDetailedRequestRow = {
+  id: string;
+  createdAt: string; // ISO
+  status: "NEW" | "SENT" | "DISMISSED";
+  telegram: string;
+  xHandle: string;
+  note: string | null;
+  orgHandle: string | null;
+  kolHandle: string | null;
+  analysisRequestId: string | null;
+  userId: string | null;
+  fulfilledAt: string | null; // ISO
+};
+
 export type AdminUsageRow = {
   id: string;
   createdAt: string; // ISO

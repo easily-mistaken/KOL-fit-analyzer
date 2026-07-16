@@ -13,8 +13,10 @@ import {
   listAnalyses,
   type AnalysisListResponse,
 } from "@/lib/analyses-list";
+import { getCurrentUser } from "@/lib/auth";
 import { ensureOwnerId, getOwnerId } from "@/lib/owner";
 import { checkAnalysisRateLimit } from "@/lib/rate-limit";
+import { checkTierGate } from "@/lib/tier-gate";
 
 // Prisma + the pg driver adapter require the Node.js runtime (not Edge).
 export const runtime = "nodejs";
@@ -99,6 +101,18 @@ export async function POST(req: Request): Promise<Response> {
     // Tag the analysis with the browser's anonymous owner (sets the cookie on
     // first submit), so it can be scoped to them later.
     const ownerId = await ensureOwnerId();
+
+    // Tiered access funnel (Unit 34): 3 lifetime anonymous → login → 12
+    // lifetime per account → concierge tier. Runs BEFORE the daily abuse
+    // limit so the funnel message wins.
+    const user = await getCurrentUser();
+    const tier = await checkTierGate(ownerId, Boolean(user));
+    if (!tier.allowed) {
+      return json(
+        err(tier.code, tier.message),
+        tier.code === "login_required" ? 401 : 403
+      );
+    }
 
     // Abuse & cost controls (Unit 26): refuse over-limit creations before doing
     // any work. Two count() reads (+ optional spend sum) against saved records —

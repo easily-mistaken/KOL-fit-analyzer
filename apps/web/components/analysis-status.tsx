@@ -194,9 +194,7 @@ export function AnalysisStatus({ id }: { id: string }) {
                 <span className="text-muted-foreground">vs</span>{" "}
                 @{data.kolHandle}
               </CardTitle>
-              <CardDescription>
-                <span className="font-mono text-xs">{data.id}</span>
-              </CardDescription>
+              <CardDescription>KOL fit analysis</CardDescription>
             </div>
             <StatusBadge status={job.status} />
           </div>
@@ -292,9 +290,10 @@ function StatusBadge({ status }: { status: JobStatus }) {
   );
 }
 
-// The real pipeline stages, with why each takes time. `until` = cumulative
-// seconds by which a typical run has usually reached the *next* stage; used only
-// to estimate which stage is likely active (the elapsed timer is the truthful
+// Client-facing progress stages (Unit 33: outcome language only — no pipeline
+// mechanics, counts, provider or model details). `until` = cumulative seconds
+// by which a typical run has usually reached the *next* stage; used only to
+// estimate which stage is likely active (the elapsed timer is the truthful
 // anchor — we never claim a precise percentage).
 const STAGES: {
   icon: React.ReactNode;
@@ -304,26 +303,26 @@ const STAGES: {
 }[] = [
   {
     icon: <Search className="h-4 w-4" />,
-    title: "Reading profiles & recent posts",
-    why: "Pulling the org and KOL profiles and the KOL's latest ~100 posts to see what they actually talk about.",
+    title: "Reading the public presence",
+    why: "Getting to know the org and the KOL — what they publish and what they stand for.",
     until: 35,
   },
   {
     icon: <Radar className="h-4 w-4" />,
-    title: "Measuring real engagement",
-    why: "Fetching everyone who replies, quotes and retweets the top posts — often 100+ API calls. This is the slow part, and the whole point: we measure the audience that actually engages, not follower counts.",
+    title: "Measuring the real audience",
+    why: "Looking past follower counts at the people who actually engage — this deep pass is the slow part, and the whole point.",
     until: 210,
   },
   {
     icon: <Sparkles className="h-4 w-4" />,
-    title: "Classifying the audience with AI",
-    why: "Labeling up to 300 engaged accounts into audience types and flagging bots and farmers — done in AI batches.",
+    title: "Evaluating audience quality & fit",
+    why: "Weighing who that audience really is, how genuine it is, and how well it matches your target users.",
     until: 330,
   },
   {
     icon: <BarChart3 className="h-4 w-4" />,
-    title: "Scoring fit & writing the report",
-    why: "Deterministic scoring across nine metrics, then the written analysis and recommendation.",
+    title: "Preparing your report",
+    why: "Turning everything into a scorecard, a verdict, and concrete recommendations.",
     until: Number.POSITIVE_INFINITY,
   },
 ];
@@ -373,8 +372,8 @@ function RunningExperience({ data }: { data: AnalysisStatusResponse }) {
               @{data.orgHandle}{" "}
               <span className="text-muted-foreground">vs</span> @{data.kolHandle}
             </div>
-            <div className="mt-0.5 font-mono text-xs text-muted-foreground">
-              {data.id}
+            <div className="mt-0.5 text-xs text-muted-foreground">
+              Deep fit analysis in progress
             </div>
           </div>
           <StatusBadge status={job.status} />

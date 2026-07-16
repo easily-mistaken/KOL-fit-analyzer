@@ -161,11 +161,12 @@ export function AudienceDonut({
             </>
           ) : (
             <>
-              <div className="font-mono text-3xl font-bold text-foreground">
-                {distribution.sampleSize}
+              {/* Unit 33: no sample counts client-side — neutral label. */}
+              <div className="max-w-[110px] text-[12px] font-semibold leading-tight text-foreground">
+                Engaged audience
               </div>
-              <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                classified
+              <div className="mt-0.5 text-[10.5px] uppercase tracking-wider text-muted-foreground">
+                by type
               </div>
             </>
           )}

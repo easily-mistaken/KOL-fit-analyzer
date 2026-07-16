@@ -9,6 +9,8 @@ export const ApiErrorCodeSchema = z.enum([
   "not_found",
   "conflict",
   "rate_limited",
+  "login_required", // free anonymous tier exhausted (Unit 34) — sign in to continue
+  "upgrade_required", // lifetime account tier exhausted (Unit 34) — concierge tier (Unit 35)
   "provider_error",
   "internal_error",
 ]);

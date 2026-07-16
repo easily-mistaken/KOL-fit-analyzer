@@ -133,6 +133,8 @@ export function AnalysisForm() {
     Partial<Record<string, string>>
   >({});
   const [formError, setFormError] = React.useState<string | null>(null);
+  // Tier gate (Unit 34): which funnel wall the API answered with, if any.
+  const [gate, setGate] = React.useState<"login_required" | "upgrade_required" | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [showOptional, setShowOptional] = React.useState(false);
 
@@ -146,6 +148,7 @@ export function AnalysisForm() {
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormError(null);
+    setGate(null);
     setFieldErrors({});
 
     const payload = buildPayload(values);
@@ -175,6 +178,12 @@ export function AnalysisForm() {
         // Keep loading during navigation to the status page.
         router.push(`/analyses/${body.data.id}`);
         return;
+      }
+      if (
+        body.error.code === "login_required" ||
+        body.error.code === "upgrade_required"
+      ) {
+        setGate(body.error.code);
       }
       setFormError(body.error.message);
       setLoading(false);
@@ -367,7 +376,7 @@ export function AnalysisForm() {
             </div>
           )}
 
-          {formError && (
+          {formError && gate === null && (
             <div
               role="alert"
               className="flex items-start gap-2 rounded-lg border border-error/40 bg-error/10 px-3 py-2.5 text-sm text-error"
@@ -376,6 +385,51 @@ export function AnalysisForm() {
               <span>{formError}</span>
             </div>
           )}
+
+          {/* Tier walls (Unit 34) — friendly funnel panels, not error styling. */}
+          {gate === "login_required" && (
+            <div
+              role="alert"
+              className="rounded-xl border border-accent/40 bg-accent/10 px-4 py-3.5 text-sm"
+            >
+              <p className="font-semibold text-foreground">
+                You&apos;ve used your 3 free analyses
+              </p>
+              <p className="mt-1 text-secondary-foreground">
+                Sign in with Google to unlock 9 more — it takes ten seconds, and
+                your existing reports come with you.
+              </p>
+              <Button asChild className="mt-3">
+                <a href="/login">Sign in to continue</a>
+              </Button>
+            </div>
+          )}
+          {gate === "upgrade_required" && (
+            <div
+              role="alert"
+              className="rounded-xl border border-accent/40 bg-accent/10 px-4 py-3.5 text-sm"
+            >
+              <p className="font-semibold text-foreground">
+                You&apos;ve used all 12 included analyses
+              </p>
+              <p className="mt-1 text-secondary-foreground">
+                For more, request a detailed report: share your Telegram and X
+                handle, and we&apos;ll deliver a curated analysis straight to
+                your Telegram within a day.
+              </p>
+              <Button asChild className="mt-3">
+                <a href="/detailed">Request a curated report</a>
+              </Button>
+            </div>
+          )}
+
+          <p className="text-center text-xs text-muted-foreground">
+            Prefer a hands-on review?{" "}
+            <a href="/detailed" className="text-accent-hover underline-offset-2 hover:underline">
+              Request a curated detailed report
+            </a>{" "}
+            — delivered to your Telegram by an analyst.
+          </p>
 
           <div className="flex justify-end">
             <Button type="submit" disabled={loading} className="min-w-40">

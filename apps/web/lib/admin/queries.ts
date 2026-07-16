@@ -8,6 +8,7 @@ import {
 import { DEFAULT_LIST_LIMIT, MAX_LIST_LIMIT } from "@/lib/analyses-list";
 import type {
   AdminAnalysisRow,
+  AdminDetailedRequestRow,
   AdminLeadRow,
   AdminOverview,
   AdminUsage,
@@ -478,5 +479,44 @@ export async function getAdminUsage({
   return {
     totals,
     rows: { items, nextCursor: hasMore ? page[page.length - 1].id : null },
+  };
+}
+
+/** Detailed-report concierge requests (Unit 35), newest first. */
+export async function listAdminDetailedRequests({
+  limit,
+  cursor,
+}: {
+  limit?: number;
+  cursor?: string | null;
+} = {}): Promise<Page<AdminDetailedRequestRow>> {
+  const take = takeFor(limit);
+
+  const rows = await prisma.detailedReportRequest.findMany({
+    orderBy: { createdAt: "desc" },
+    take: take + 1,
+    ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
+  });
+
+  const hasMore = rows.length > take;
+  const page = hasMore ? rows.slice(0, take) : rows;
+
+  const items: AdminDetailedRequestRow[] = page.map((r) => ({
+    id: r.id,
+    createdAt: iso(r.createdAt),
+    status: r.status,
+    telegram: r.telegram,
+    xHandle: r.xHandle,
+    note: r.note,
+    orgHandle: r.orgHandle,
+    kolHandle: r.kolHandle,
+    analysisRequestId: r.analysisRequestId,
+    userId: r.userId,
+    fulfilledAt: r.fulfilledAt ? iso(r.fulfilledAt) : null,
+  }));
+
+  return {
+    items,
+    nextCursor: hasMore ? page[page.length - 1].id : null,
   };
 }

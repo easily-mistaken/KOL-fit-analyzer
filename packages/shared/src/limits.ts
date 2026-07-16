@@ -35,6 +35,63 @@ function nonNegNum(v: string | undefined, def: number): number {
   return Number.isFinite(n) && n >= 0 ? n : def;
 }
 
+// --- Tiered access funnel (Unit 34) ------------------------------------------
+// 3 lifetime analyses per anonymous browser -> Google login -> 12 lifetime per
+// account (claimed anonymous history included) -> the detailed-report
+// concierge tier (Unit 35). LIFETIME counts, distinct from the rolling daily
+// abuse caps above, which stay in force on top.
+
+export interface TierLimits {
+  anonLifetime: number;
+  userLifetime: number;
+}
+
+export const TIER_LIMITS: TierLimits = {
+  anonLifetime: 3,
+  userLifetime: 12,
+};
+
+export const TIER_LIMIT_ENV_VARS: Record<keyof TierLimits, string> = {
+  anonLifetime: "FREE_TIER_ANON_LIFETIME",
+  userLifetime: "FREE_TIER_USER_LIFETIME",
+};
+
+/** Pure env resolution, same idiom as resolveAbuseLimits. */
+export function resolveTierLimits(
+  env: Record<string, string | undefined> = {}
+): TierLimits {
+  return {
+    anonLifetime: posInt(
+      env[TIER_LIMIT_ENV_VARS.anonLifetime],
+      TIER_LIMITS.anonLifetime
+    ),
+    userLifetime: posInt(
+      env[TIER_LIMIT_ENV_VARS.userLifetime],
+      TIER_LIMITS.userLifetime
+    ),
+  };
+}
+
+export type TierDecision =
+  | { allowed: true }
+  | { allowed: false; gate: "login_required" | "upgrade_required" };
+
+/** Pure funnel decision from the owner's LIFETIME analysis count. */
+export function decideTier(
+  lifetimeCount: number,
+  isAuthenticated: boolean,
+  limits: TierLimits = TIER_LIMITS
+): TierDecision {
+  if (!isAuthenticated) {
+    return lifetimeCount >= limits.anonLifetime
+      ? { allowed: false, gate: "login_required" }
+      : { allowed: true };
+  }
+  return lifetimeCount >= limits.userLifetime
+    ? { allowed: false, gate: "upgrade_required" }
+    : { allowed: true };
+}
+
 /**
  * Resolves abuse limits from environment overrides on top of the defaults.
  * `perOwnerPerDay`/`globalPerDay` must be > 0 to override (invalid/absent/

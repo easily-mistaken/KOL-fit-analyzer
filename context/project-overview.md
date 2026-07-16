@@ -174,6 +174,18 @@ The final report should include:
 - Store enough data to compare future runs against past results.
 - Do not overbuild CRM, campaign management, or discovery in the first version.
 
+## Access Model & Concierge Tier (added 2026-07-16, Units 34-35)
+
+- Tiered access funnel: 3 lifetime analyses per anonymous browser, then Google
+  sign-in; 12 lifetime analyses per account; beyond that (or at ANY time, as an
+  alternative path) users raise a detailed-report request.
+- Detailed-report requests: the user shares their Telegram username and X
+  handle/link; the operator manually curates a deep-dive analysis and delivers
+  it via Telegram within a day. Requests are captured with an optional org/KOL
+  pair or a link to an existing analysis, and are worked from the admin panel.
+- The self-serve report content is identical across tiers; the concierge tier
+  adds the analyst's curated layer (it is not a different automated render).
+
 ## Scope
 
 ### In Scope
@@ -223,7 +235,7 @@ The final report should include:
 5. The report includes all required scoring categories and a final verdict.
 6. The report clearly explains whether the KOL is a strong, good, okay, weak, or avoid-level fit.
 7. The report prioritizes engaged audience match over raw content similarity.
-8. Every report includes confidence and evidence/sample-size information.
+8. Every report includes confidence information; evidence/sample-size detail is captured and persisted but shown only internally (admin/DB), not on the client-facing report (methodology redaction, Unit 33).
 9. Reports are saved and viewable after generation.
 10. The codebase keeps API, worker, provider, scoring, database, and UI concerns separate.
 

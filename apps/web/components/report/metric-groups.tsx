@@ -6,14 +6,15 @@ import { InfoHint } from "@/components/ui/info-hint";
 
 export type MetricMap = Partial<Record<ScoreMetric, ScoreValue>>;
 
-// Weighted fit components (overall_fit is shown as the hero gauge, not here).
-const FIT_METRICS: { metric: ScoreMetric; weight: string }[] = [
-  { metric: "engaged_audience_match", weight: "35%" },
-  { metric: "audience_quality", weight: "20%" },
-  { metric: "content_fit", weight: "15%" },
-  { metric: "campaign_goal_fit", weight: "15%" },
-  { metric: "brand_safety", weight: "10%" },
-  { metric: "geo_language_fit", weight: "5%" },
+// Fit components (overall_fit is shown as the hero gauge, not here). Display
+// order = importance; the numeric weights are internal (Unit 33).
+const FIT_METRICS: ScoreMetric[] = [
+  "engaged_audience_match",
+  "audience_quality",
+  "content_fit",
+  "campaign_goal_fit",
+  "brand_safety",
+  "geo_language_fit",
 ];
 const RISK_METRICS: ScoreMetric[] = ["paid_promo_risk", "bot_farm_risk"];
 
@@ -27,12 +28,10 @@ function riskColor(v: number): string {
 function MetricRow({
   metric,
   score,
-  weight,
   isRisk,
 }: {
   metric: ScoreMetric;
   score: ScoreValue;
-  weight?: string;
   isRisk?: boolean;
 }) {
   const info = METRIC_INFO[metric];
@@ -41,11 +40,6 @@ function MetricRow({
     <div className="grid grid-cols-[minmax(150px,210px)_1fr_44px] items-center gap-3.5 border-t border-default/60 py-2.5 first:border-t-0">
       <div className="flex items-center gap-2 text-[13.5px] text-foreground">
         <span>{info.label}</span>
-        {weight && (
-          <span className="rounded border border-default bg-elevated px-1.5 py-px font-mono text-[10.5px] text-muted-foreground">
-            {weight}
-          </span>
-        )}
         <InfoHint title={info.label} body={[info.what, info.read]} />
       </div>
       <div className="h-2 overflow-hidden rounded-full bg-inset">
@@ -62,7 +56,7 @@ function MetricRow({
 }
 
 export function MetricGroups({ metrics }: { metrics: MetricMap }) {
-  const fit = FIT_METRICS.filter(({ metric }) => metrics[metric]);
+  const fit = FIT_METRICS.filter((metric) => metrics[metric]);
   const risk = RISK_METRICS.filter((m) => metrics[m]);
 
   return (
@@ -73,13 +67,8 @@ export function MetricGroups({ metrics }: { metrics: MetricMap }) {
             Fit metrics
           </div>
           <div>
-            {fit.map(({ metric, weight }) => (
-              <MetricRow
-                key={metric}
-                metric={metric}
-                score={metrics[metric]!}
-                weight={weight}
-              />
+            {fit.map((metric) => (
+              <MetricRow key={metric} metric={metric} score={metrics[metric]!} />
             ))}
           </div>
         </div>

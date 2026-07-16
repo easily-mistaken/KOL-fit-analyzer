@@ -34,19 +34,6 @@ const VERDICT: Record<ReportVerdict, { word: string; tone: string }> = {
 
 const RISK_METRICS = new Set<ScoreMetric>(["paid_promo_risk", "bot_farm_risk"]);
 
-const SAMPLE_LABELS: Record<string, string> = {
-  kolPosts: "KOL posts",
-  kolReplies: "KOL replies",
-  topPostsAnalyzed: "Top posts analyzed",
-  engagedAccounts: "Engaged accounts",
-  engagedAccountsClassified: "Accounts classified",
-  websiteChars: "Website chars",
-  docsChars: "Docs chars",
-};
-const humanizeKey = (key: string): string =>
-  SAMPLE_LABELS[key] ??
-  key.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, (c) => c.toUpperCase());
-
 function formatFollowers(n: number | undefined): string | null {
   if (typeof n !== "number") return null;
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
@@ -117,8 +104,10 @@ function collectMetrics(fit: FitReport, scores: ScoreBreakdown | null): MetricMa
   return metrics;
 }
 
-type Driver = { label: string; value: number; reason?: string };
-// Compute "what works / what to watch" from the scored metrics themselves.
+type Driver = { label: string; value: number; note: string };
+// Compute "what works / what to watch" from the scored metric VALUES. The raw
+// scoring `reasons` strings are intentionally NOT rendered (Unit 33: they
+// describe internal methodology); the ⓘ explainer copy carries the meaning.
 function computeDrivers(metrics: MetricMap): { pos: Driver[]; neg: Driver[] } {
   const pos: Driver[] = [];
   const neg: Driver[] = [];
@@ -126,13 +115,14 @@ function computeDrivers(metrics: MetricMap): { pos: Driver[]; neg: Driver[] } {
     const metric = k as ScoreMetric;
     if (metric === "overall_fit" || !score) continue;
     const label = METRIC_INFO[metric]?.label ?? metric;
-    const reason = score.reasons?.[0];
     if (RISK_METRICS.has(metric)) {
-      if (score.value >= 55) neg.push({ label, value: score.value, reason });
+      if (score.value >= 55) {
+        neg.push({ label, value: score.value, note: "Elevated — factor this into the decision." });
+      }
     } else if (score.value >= 65) {
-      pos.push({ label, value: score.value, reason });
+      pos.push({ label, value: score.value, note: "A genuine strength for this pairing." });
     } else if (score.value < 45) {
-      neg.push({ label, value: score.value, reason });
+      neg.push({ label, value: score.value, note: "Below par for this pairing." });
     }
   }
   pos.sort((a, b) => b.value - a.value);
@@ -220,14 +210,6 @@ export function FitReportView({
 
   const drivers = computeDrivers(metrics);
 
-  // sample-size strip
-  const ss = fitReport.evidence.sampleSizes;
-  const sampleChips: string[] = [];
-  if (ss.kolPosts) sampleChips.push(`${ss.kolPosts} posts`);
-  if (ss.engagedAccounts) sampleChips.push(`${ss.engagedAccounts} engaged`);
-  const classified = ss.engagedAccountsClassified ?? fitReport.audienceBreakdown?.sampleSize;
-  if (classified) sampleChips.push(`${classified} classified`);
-
   const heroStyle = { ["--v" as string]: v.tone } as React.CSSProperties;
 
   return (
@@ -278,18 +260,6 @@ export function FitReportView({
             )}
             <div className="mt-4 flex flex-wrap items-center gap-2">
               <ConfidenceChip level={confidence} />
-              {sampleChips.map((s, i) => {
-                const [n, ...rest] = s.split(" ");
-                return (
-                  <span
-                    key={i}
-                    className="inline-flex items-center gap-1 rounded-full border border-default bg-elevated px-2.5 py-1 text-xs text-secondary-foreground"
-                  >
-                    <span className="font-mono text-foreground">{n}</span>
-                    {rest.join(" ")}
-                  </span>
-                );
-              })}
             </div>
           </div>
           <ScoreGauge value={overall.value} color={v.tone} />
@@ -298,6 +268,25 @@ export function FitReportView({
 
       {/* Lead capture — email the PDF */}
       <GetReport requestId={meta.requestId} />
+
+      {/* Concierge CTA (Unit 35): the hands-on tier, available any time. */}
+      <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-accent/30 bg-accent/5 p-5">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-foreground">
+            Want the analyst&apos;s cut of this report?
+          </p>
+          <p className="mt-0.5 text-xs text-secondary-foreground">
+            A hand-curated deep dive on @{meta.kolHandle} — delivered to your
+            Telegram within a day.
+          </p>
+        </div>
+        <a
+          href={`/detailed?org=${encodeURIComponent(meta.orgHandle)}&kol=${encodeURIComponent(meta.kolHandle)}&analysis=${encodeURIComponent(meta.requestId)}`}
+          className="inline-flex shrink-0 items-center rounded-lg bg-accent px-3.5 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent-hover"
+        >
+          Request curated report
+        </a>
+      </section>
 
       {/* KEY TAKEAWAYS */}
       {points.length > 0 && (
@@ -335,7 +324,7 @@ export function FitReportView({
                     <Check className="mt-0.5 h-3.5 w-3.5 text-success" />
                     <span>
                       <span className="text-foreground">{d.label} ({d.value}).</span>{" "}
-                      {d.reason}
+                      {d.note}
                     </span>
                   </li>
                 ))}
@@ -356,7 +345,7 @@ export function FitReportView({
                     <X className="mt-0.5 h-3.5 w-3.5 text-error" />
                     <span>
                       <span className="text-foreground">{d.label} ({d.value}).</span>{" "}
-                      {d.reason}
+                      {d.note}
                     </span>
                   </li>
                 ))}
@@ -523,38 +512,10 @@ export function FitReportView({
         </Panel>
       )}
 
-      {/* EVIDENCE */}
-      <Panel title="Evidence & sample">
-        {Object.keys(ss).length > 0 && (
-          <dl className="mb-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
-            {Object.entries(ss).map(([k, val]) => (
-              <div
-                key={k}
-                className="rounded-lg border border-default bg-elevated p-3"
-              >
-                <dt className="text-[10.5px] uppercase tracking-wide text-muted-foreground">
-                  {humanizeKey(k)}
-                </dt>
-                <dd className="mt-0.5 font-mono text-lg font-semibold text-foreground">
-                  {val}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        )}
-        {fitReport.evidence.notes.length > 0 && (
-          <ul className="grid gap-1.5">
-            {fitReport.evidence.notes.map((n, i) => (
-              <li
-                key={i}
-                className="relative pl-3.5 text-xs text-muted-foreground before:absolute before:left-0 before:content-['–']"
-              >
-                {n}
-              </li>
-            ))}
-          </ul>
-        )}
-        <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-default pt-3">
+      {/* FOOTER — confidence + timestamp only. Sample sizes and evidence
+          notes (providers, models, methodology) stay internal (Unit 33). */}
+      <Panel>
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs text-muted-foreground">Overall confidence:</span>
           <ConfidenceChip level={confidence} />
           {meta.generatedAt && (
