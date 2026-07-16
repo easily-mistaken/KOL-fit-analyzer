@@ -21,6 +21,7 @@ import { ConfidenceChip } from "@/components/report/score-meter";
 import { ScoreGauge } from "@/components/report/score-gauge";
 import { AudienceDonut } from "@/components/report/audience-donut";
 import { MetricGroups, type MetricMap } from "@/components/report/metric-groups";
+import { ShareReport } from "@/components/report/share-report";
 
 // ---- verdict presentation -------------------------------------------------
 const VERDICT: Record<ReportVerdict, { word: string; tone: string }> = {
@@ -179,6 +180,7 @@ export function FitReportView({
   fitReport,
   scores,
   meta,
+  mode = "owner",
 }: {
   fitReport: FitReport;
   scores: ScoreBreakdown | null;
@@ -188,6 +190,8 @@ export function FitReportView({
     requestId: string;
     generatedAt: string | null;
   };
+  /** "public" = shared-link view (Unit 38): no owner navigation/actions. */
+  mode?: "owner" | "public";
 }) {
   const metrics = collectMetrics(fitReport, scores);
   const overall = scores?.overall ?? fitReport.overallScore;
@@ -213,13 +217,18 @@ export function FitReportView({
 
   return (
     <div className="mx-auto max-w-4xl space-y-4">
-      <Link
-        href="/analyses"
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        All reports
-      </Link>
+      {mode === "owner" && (
+        <div className="flex items-center justify-between gap-3">
+          <Link
+            href="/analyses"
+            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            All reports
+          </Link>
+          <ShareReport requestId={meta.requestId} />
+        </div>
+      )}
 
       {/* HERO / verdict band */}
       <section

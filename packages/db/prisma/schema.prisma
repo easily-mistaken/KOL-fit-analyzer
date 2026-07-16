@@ -168,6 +168,8 @@ model Report {
   requestId   String       @unique
   workspaceId String?
   status      ReportStatus @default(PENDING)
+  // Public share-link capability token (Unit 38): null = not shared.
+  shareToken  String?      @unique
 
   overallScore Int?
   verdict      ReportVerdict?
