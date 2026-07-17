@@ -1,15 +1,11 @@
 // Regression check for Unit 28 (User Authentication) — the pure @kol-fit/auth
-// security core: the signed session token and the auth-mode gate. Offline, no
-// DB, no keys, no network.
+// security core. Sign-in is Google-only via Supabase; this pins the auth-mode
+// resolution that gates it. Offline, no DB, no keys, no network.
 //
 // Run after `pnpm build`:  node scripts/checks/auth.regression.cjs
 // (or `pnpm check:auth`). Requires packages/auth/dist/index.js.
 
-const {
-  signSessionToken,
-  verifySessionToken,
-  resolveAuthMode,
-} = require("../../packages/auth/dist/index.js");
+const { resolveAuthMode } = require("../../packages/auth/dist/index.js");
 
 let pass = 0,
   fail = 0;
@@ -18,68 +14,9 @@ const ck = (n, c) => {
   c ? pass++ : fail++;
 };
 
-const SECRET = "unit-28-test-secret-please-do-not-reuse";
-const USER = "clkol0000userid0000abcd";
-
-// --- signSessionToken / verifySessionToken round-trip ----------------------
-
-const token = signSessionToken(USER, SECRET);
-ck(`token has exactly one dot`, token.split(".").length === 2);
-ck(`token starts with "${USER}."`, token.startsWith(USER + "."));
-ck(
-  `round-trips to the same userId`,
-  verifySessionToken(token, SECRET) === USER
-);
-
-// --- tamper / wrong secret / malformed -> null (never throws) --------------
-
-// Wrong secret.
-ck("wrong secret -> null", verifySessionToken(token, "different-secret") === null);
-
-// Tampered userId segment (signature no longer matches).
-const [, sig] = token.split(".");
-ck(
-  "tampered userId -> null",
-  verifySessionToken(`${USER}x.${sig}`, SECRET) === null
-);
-
-// Tampered signature segment (flip the last char).
-const flipped = sig.slice(0, -1) + (sig.slice(-1) === "A" ? "B" : "A");
-ck(
-  "tampered signature -> null",
-  verifySessionToken(`${USER}.${flipped}`, SECRET) === null
-);
-
-// Constant-time path: a signature of the SAME length but wrong content -> null.
-const sameLenWrong = "Z".repeat(sig.length);
-ck(
-  "valid-length wrong signature -> null (constant-time path)",
-  verifySessionToken(`${USER}.${sameLenWrong}`, SECRET) === null
-);
-
-// Malformed shapes.
-ck("no dot -> null", verifySessionToken("nodothere", SECRET) === null);
-ck("empty string -> null", verifySessionToken("", SECRET) === null);
-ck(
-  "extra segments -> null",
-  verifySessionToken(`${USER}.${sig}.extra`, SECRET) === null
-);
-ck("empty userId segment -> null", verifySessionToken(`.${sig}`, SECRET) === null);
-ck("empty signature segment -> null", verifySessionToken(`${USER}.`, SECRET) === null);
-ck("empty secret -> null", verifySessionToken(token, "") === null);
-
-// Never throws on odd inputs.
-let threw = false;
-try {
-  verifySessionToken(token, SECRET);
-  verifySessionToken("a.b.c.d", SECRET);
-  verifySessionToken("....", SECRET);
-} catch {
-  threw = true;
-}
-ck("verify never throws on odd inputs", threw === false);
-
 // --- resolveAuthMode -------------------------------------------------------
+// "supabase" (Google sign-in active) iff BOTH public Supabase vars are set;
+// otherwise "dev" (sign-in unavailable, anonymous use only).
 
 ck(
   "both supabase vars set -> supabase",

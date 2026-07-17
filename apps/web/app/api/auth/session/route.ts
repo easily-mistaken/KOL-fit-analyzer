@@ -1,10 +1,8 @@
 import { err, ok, type ApiResponse } from "@kol-fit/shared";
 import { resolveAuthMode } from "@kol-fit/auth";
 
-import { clearDevSession } from "@/lib/auth/session";
-
-// Sign-out clears cookies with node:crypto-adjacent helpers and (in Supabase
-// mode) hits Supabase; must never be cached or prerendered.
+// Sign-out hits Supabase (Supabase mode) to clear its auth cookies; must never
+// be cached or prerendered.
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -13,13 +11,12 @@ function json(body: ApiResponse<{ ok: true }>, status: number): Response {
 }
 
 /**
- * DELETE /api/auth/session — sign out. Clears any legacy dev-session cookie and,
- * in Supabase mode, signs out of Supabase too. Safe to call without a session.
+ * DELETE /api/auth/session — sign out. In Supabase mode this signs out of
+ * Supabase (clearing its auth cookies). Safe to call without a session.
  * (Sign-in is Google-only via /auth/callback; there is no POST login here.)
  */
 export async function DELETE(): Promise<Response> {
   try {
-    await clearDevSession();
     if (resolveAuthMode(process.env) === "supabase") {
       const { supabaseSignOut } = await import("@/lib/auth/supabase");
       await supabaseSignOut();
