@@ -177,8 +177,8 @@ export function AnalysisForm() {
         if (!errors[key]) errors[key] = issue.message;
       }
       // Friendlier messages for the empty required fields.
-      if (!payload.orgHandle) errors.orgHandle = "Organization handle is required.";
-      if (!payload.kolHandle) errors.kolHandle = "KOL handle is required.";
+      if (!payload.orgHandle) errors.orgHandle = "Your brand's handle is required.";
+      if (!payload.kolHandle) errors.kolHandle = "The creator's handle is required.";
       setFieldErrors(errors);
       return;
     }
@@ -223,7 +223,7 @@ export function AnalysisForm() {
         <form onSubmit={onSubmit} noValidate className="space-y-6">
           {/* Primary inputs */}
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field id="orgHandle" label="Your brand" error={fieldErrors.orgHandle}>
+            <Field id="orgHandle" label="Your brand" hint="with or without @" error={fieldErrors.orgHandle}>
               <Input
                 id="orgHandle"
                 name="orgHandle"

@@ -94,6 +94,22 @@ const FIT: { metric: ScoreMetric; weight: string }[] = [
   { metric: "geo_language_fit", weight: "5%" },
 ];
 const RISK: ScoreMetric[] = ["paid_promo_risk", "bot_farm_risk"];
+
+// Friendly labels for the evidence sample-size keys. The keys themselves are
+// internal identifiers set by the pipeline (and baked into already-stored
+// reports), so display names are mapped here rather than by renaming the keys.
+// Unknown keys fall back to a camelCase split.
+const EVIDENCE_LABELS: Record<string, string> = {
+  kolPosts: "Creator posts",
+  kolReplies: "Creator replies",
+  topPostsAnalyzed: "Top posts analyzed",
+  engagedAccounts: "Engaged accounts",
+  engagedAccountsClassified: "Accounts classified",
+  websiteChars: "Website chars",
+  docsChars: "Docs chars",
+};
+const evidenceLabel = (k: string) =>
+  EVIDENCE_LABELS[k] ?? k.replace(/([a-z])([A-Z])/g, "$1 $2");
 const LABEL: Record<ScoreMetric, string> = {
   overall_fit: "Overall fit",
   engaged_audience_match: "Engaged audience match",
@@ -316,7 +332,7 @@ function ReportDocument({
             <View style={s.evidGrid}>
               {Object.entries(fitReport.evidence.sampleSizes).map(([k, val]) => (
                 <View style={s.evidCell} key={k}>
-                  <Text style={s.evidKey}>{k.replace(/([a-z])([A-Z])/g, "$1 $2")}</Text>
+                  <Text style={s.evidKey}>{evidenceLabel(k)}</Text>
                   <Text style={s.evidVal}>{val}</Text>
                 </View>
               ))}

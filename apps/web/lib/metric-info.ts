@@ -10,12 +10,12 @@ export type MetricInfo = { label: string; what: string; read: string };
 export const METRIC_INFO: Record<ScoreMetric, MetricInfo> = {
   overall_fit: {
     label: "Overall fit",
-    what: "The headline 0–100 judgment of how well this creator fits this organization, blending audience, content, campaign, and safety signals.",
+    what: "The headline 0–100 judgment of how well this creator fits this brand, blending audience, content, campaign, and safety signals.",
     read: "The higher the score, the stronger the case for working together. The verdict badge is the plain-English version of this number.",
   },
   engaged_audience_match: {
     label: "Engaged audience match",
-    what: "How much of the creator's genuinely engaged audience (the people who actually show up in their replies and conversations, not just follower counts) matches the users this organization wants to reach.",
+    what: "How much of the creator's genuinely engaged audience (the people who actually show up in their replies and conversations, not just follower counts) matches the users this brand wants to reach.",
     read: "The most important signal. Higher means your real target audience is actually in the room.",
   },
   audience_quality: {

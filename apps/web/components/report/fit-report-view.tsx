@@ -249,11 +249,11 @@ export function FitReportView({
         <div className="relative grid items-center gap-6 p-6 pl-7 sm:grid-cols-[1fr_auto]">
           <div>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-              <Party handle={meta.orgHandle} role="Org" profile={fitReport.profiles?.org} />
+              <Party handle={meta.orgHandle} role="Brand" profile={fitReport.profiles?.org} />
               <span className="text-xs uppercase tracking-wider text-muted-foreground">
                 vs
               </span>
-              <Party handle={meta.kolHandle} role="KOL" profile={fitReport.profiles?.kol} />
+              <Party handle={meta.kolHandle} role="Creator" profile={fitReport.profiles?.kol} />
             </div>
             <div
               className="my-2.5 text-[clamp(38px,7vw,56px)] font-bold leading-none tracking-tight"

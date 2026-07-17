@@ -333,7 +333,7 @@ const STAGES: {
   {
     icon: <Search className="h-4 w-4" />,
     title: "Reading the public presence",
-    why: "Getting to know the org and the KOL: what they publish and what they stand for.",
+    why: "Getting to know the brand and the creator: what they publish and what they stand for.",
     until: 35,
   },
   {
@@ -489,7 +489,7 @@ function RunningExperience({ data }: { data: AnalysisStatusResponse }) {
           This page updates automatically, so there&apos;s no need to refresh.
           You can leave and come back from{" "}
           <Link href="/analyses" className="text-accent-ink hover:underline">
-            Reports
+            History
           </Link>
           .
         </p>
