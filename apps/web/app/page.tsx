@@ -1,6 +1,3 @@
-import { Sparkles } from "lucide-react";
-import { APP_NAME } from "@kol-fit/shared";
-
 import { AnalysisForm } from "@/components/analysis-form";
 import { AudienceField } from "@/components/audience-field";
 
@@ -14,23 +11,27 @@ export default function HomePage() {
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "linear-gradient(180deg, rgba(21,24,26,0.42), rgba(21,24,26,0.18) 34%, rgba(21,24,26,0.5))",
+            "linear-gradient(180deg, rgba(10,12,16,0.46), rgba(10,12,16,0.2) 34%, rgba(10,12,16,0.55))",
         }}
       />
 
       <div className="pointer-events-none relative flex flex-col items-center gap-8 px-4 py-12 sm:py-16">
         <div className="max-w-2xl text-center">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-default bg-elevated/70 px-3 py-1 text-xs text-secondary-foreground backdrop-blur">
-            <Sparkles className="h-3.5 w-3.5 text-accent-hover" />
-            Engaged-audience fit analysis
+          <span className="inline-flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.14em] text-secondary-foreground">
+            <span className="h-2 w-2 rounded-[2px] bg-accent-primary" />
+            Audience intelligence
           </span>
-          <h1 className="mt-4 text-3xl font-semibold tracking-tight text-foreground sm:text-[42px] sm:leading-[1.05]">
-            {APP_NAME}
+          <h1 className="mt-5 text-4xl font-semibold tracking-tight text-foreground sm:text-[52px] sm:leading-[1.02]">
+            Know who actually listens
           </h1>
-          <p className="mx-auto mt-3 max-w-xl text-base leading-relaxed text-secondary-foreground">
-            We don&apos;t just check what a KOL posts. We check{" "}
-            <span className="text-foreground">who actually listens</span>. The
-            blue accounts below engage; move your cursor to find more.
+          <p className="mx-auto mt-4 max-w-lg text-base leading-relaxed text-secondary-foreground">
+            Followers are cheap to buy. Before you pay a creator, find out
+            whether the people who actually engage with them are the people you
+            want to reach.
+          </p>
+          <p className="mt-3 text-xs text-muted-foreground">
+            Every lit dot below is an account that engages. Move your cursor to
+            find more.
           </p>
         </div>
 

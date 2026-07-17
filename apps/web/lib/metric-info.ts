@@ -10,12 +10,12 @@ export type MetricInfo = { label: string; what: string; read: string };
 export const METRIC_INFO: Record<ScoreMetric, MetricInfo> = {
   overall_fit: {
     label: "Overall fit",
-    what: "The headline 0–100 judgment of how well this KOL fits this organization, blending audience, content, campaign, and safety signals.",
+    what: "The headline 0–100 judgment of how well this creator fits this organization, blending audience, content, campaign, and safety signals.",
     read: "The higher the score, the stronger the case for working together. The verdict badge is the plain-English version of this number.",
   },
   engaged_audience_match: {
     label: "Engaged audience match",
-    what: "How much of the KOL's genuinely engaged audience (the people who actually show up in their replies and conversations, not just follower counts) matches the users this organization wants to reach.",
+    what: "How much of the creator's genuinely engaged audience (the people who actually show up in their replies and conversations, not just follower counts) matches the users this organization wants to reach.",
     read: "The most important signal. Higher means your real target audience is actually in the room.",
   },
   audience_quality: {
@@ -25,27 +25,27 @@ export const METRIC_INFO: Record<ScoreMetric, MetricInfo> = {
   },
   content_fit: {
     label: "Content fit",
-    what: "How naturally this KOL's world connects to yours, and whether their usual topics and their audience's interests make a mention of your product feel organic rather than forced.",
+    what: "How naturally this creator's world connects to yours, and whether their usual topics and their audience's interests make a mention of your product feel organic rather than forced.",
     read: "Higher = the message lands in its natural habitat. Adjacent topics count, not just identical ones.",
   },
   campaign_goal_fit: {
     label: "Campaign goal fit",
-    what: "How well this KOL's audience serves your stated campaign goal: awareness, community growth, user acquisition, developer adoption, and so on.",
-    read: "Higher = the right tool for this specific job. The same KOL can score differently for different goals.",
+    what: "How well this creator's audience serves your stated campaign goal: awareness, community growth, user acquisition, developer adoption, and so on.",
+    read: "Higher = the right tool for this specific job. The same creator can score differently for different goals.",
   },
   brand_safety: {
     label: "Brand safety",
-    what: "Whether anything in this KOL's track record poses a reputational risk to your brand, from misleading claims to associations you wouldn't want next to your name.",
+    what: "Whether anything in this creator's track record poses a reputational risk to your brand, from misleading claims to associations you wouldn't want next to your name.",
     read: "Higher = safer. Anything below a clean score deserves a human look before committing budget.",
   },
   geo_language_fit: {
     label: "Geo / language fit",
-    what: "Whether this KOL actually reaches the region and language your campaign targets.",
+    what: "Whether this creator actually reaches the region and language your campaign targets.",
     read: "Higher = you're reaching the right geography, not just the right topic.",
   },
   paid_promo_risk: {
     label: "Paid-promo risk",
-    what: "How much this KOL's feed behaves like a paid billboard. Occasional relevant partnerships are normal; a feed dominated by unrelated promotions dilutes trust and endorsement value.",
+    what: "How much this creator's feed behaves like a paid billboard. Occasional relevant partnerships are normal; a feed dominated by unrelated promotions dilutes trust and endorsement value.",
     read: "Risk metric: higher is worse. High risk means their recommendation carries less weight with their audience.",
   },
   bot_farm_risk: {

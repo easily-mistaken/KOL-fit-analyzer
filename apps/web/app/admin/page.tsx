@@ -164,7 +164,7 @@ export default async function AdminOverviewPage() {
       </section>
 
       <section className="grid gap-3 md:grid-cols-2">
-        <HandleList title="Top KOLs" items={o.topKols} />
+        <HandleList title="Top creators" items={o.topKols} />
         <HandleList title="Top orgs" items={o.topOrgs} />
       </section>
 

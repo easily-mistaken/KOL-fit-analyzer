@@ -61,7 +61,7 @@ export function AnalysesList({ data }: { data: AnalysisListResponse }) {
         <table className="w-full min-w-[680px] border-collapse text-sm">
           <thead>
             <tr className="border-b border-default text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-              <th className="px-5 py-3 font-medium">KOL / Org</th>
+              <th className="px-5 py-3 font-medium">Creator / Brand</th>
               <th className="px-5 py-3 font-medium">Status</th>
               <th className="px-5 py-3 font-medium">Verdict</th>
               <th className="px-5 py-3 text-right font-medium">Score</th>

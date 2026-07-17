@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Sparkles } from "lucide-react";
+import { UserCheck } from "lucide-react";
 
 import { getCurrentUser } from "@/lib/auth";
 import { DetailedRequestForm } from "@/components/detailed-request-form";
@@ -28,16 +28,16 @@ export default async function DetailedRequestPage({
     <div className="mx-auto max-w-2xl space-y-6">
       <div className="space-y-2">
         <div className="flex items-center gap-2 text-sm text-accent-hover">
-          <Sparkles className="h-4 w-4" />
+          <UserCheck className="h-4 w-4" />
           Curated by an analyst
         </div>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           Request a detailed, hand-curated report
         </h1>
         <p className="max-w-xl text-sm text-secondary-foreground">
-          Beyond the automated analysis: a human analyst reviews the KOL&apos;s
-          audience, content, and risks in depth and sends you a curated
-          verdict straight to your Telegram, within a day.
+          Beyond the automated analysis: a human analyst reviews the
+          creator&apos;s audience, content, and risks in depth, then sends you a
+          curated verdict on Telegram within a day.
         </p>
       </div>
 

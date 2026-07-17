@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Sparkles } from "lucide-react";
 
 import { FitReportSchema, ScoreBreakdownSchema } from "@kol-fit/shared";
 import { prisma } from "@kol-fit/db";
@@ -43,17 +42,17 @@ export default async function SharedReportPage({
       {/* Brand banner — the shared page is a funnel entry. */}
       <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3 rounded-2xl border border-accent/30 bg-accent/5 px-5 py-4">
         <div className="flex items-center gap-2.5 text-sm">
-          <Sparkles className="h-4 w-4 shrink-0 text-accent-hover" />
+          <span className="h-2 w-2 shrink-0 rounded-[2px] bg-accent-primary" />
           <span className="text-secondary-foreground">
-            This fit report was shared with you. We check who actually listens,
-            not just who follows.
+            This report was shared with you. We measure who actually listens,
+            not who follows.
           </span>
         </div>
         <Link
           href="/"
-          className="inline-flex shrink-0 items-center rounded-lg bg-accent px-3.5 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent-hover"
+          className="inline-flex shrink-0 items-center rounded-full bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent-hover"
         >
-          Analyze your own KOL
+          Analyze a creator
         </Link>
       </div>
 

@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Activity, FileText, Plus } from "lucide-react";
+import { FileText, Plus } from "lucide-react";
 import { APP_NAME } from "@kol-fit/shared";
 
 import { cn } from "@/lib/utils";
@@ -21,10 +22,17 @@ export function TopNav({ userMenu }: { userMenu?: React.ReactNode }) {
   return (
     <header className="sticky top-0 z-20 border-b border-default bg-surface/80 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-6">
+        {/* Mark lives at /public/logo.svg so the brand asset can be swapped
+            without touching this component. */}
         <Link href="/" className="flex items-center gap-2.5">
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-accent-primary to-[#1e51c9] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.22)]">
-            <Activity className="h-4 w-4" />
-          </span>
+          <Image
+            src="/logo.svg"
+            alt=""
+            width={28}
+            height={28}
+            className="h-7 w-7"
+            priority
+          />
           <span className="text-sm font-semibold tracking-tight text-foreground">
             {APP_NAME}
           </span>

@@ -243,6 +243,9 @@ export function buildReportPrompt(input: GenerateFitReportInput): string {
       "each a concrete \"so what\" a busy reader can grasp in a glance. No numbers, no filler.",
     // The narrative fields are the only model-written text a reader ever sees, so
     // the house style is enforced here rather than post-processed downstream.
+    // "KOL" is crypto-specific jargon; the product serves AI and Web3 brands alike.
+    "WORDING: Never write \"KOL\". Call the account being analyzed \"the creator\" and the " +
+      "organization \"the brand\". Never assume the brand is a crypto company.",
     "STYLE: Never use em dashes (—). Use a period, comma, colon, or parentheses instead. " +
       "Avoid stock LLM phrasing (\"it's worth noting\", \"in today's landscape\", \"dive into\", " +
       "\"when it comes to\", \"not just X, but Y\"). Prefer short declarative sentences and concrete " +

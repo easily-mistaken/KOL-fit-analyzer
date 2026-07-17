@@ -176,7 +176,7 @@ export function DetailedRequestForm({
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="dr-kol">KOL handle (optional)</Label>
+          <Label htmlFor="dr-kol">Creator handle (optional)</Label>
           <Input
             id="dr-kol"
             value={kolHandle}

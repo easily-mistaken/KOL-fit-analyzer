@@ -13,7 +13,7 @@ import {
   RotateCcw,
   Radar,
   Search,
-  Sparkles,
+  Scale,
 } from "lucide-react";
 import { APP_NAME, type ApiResponse, type JobStatus } from "@kol-fit/shared";
 
@@ -168,7 +168,7 @@ export function AnalysisStatus({ id }: { id: string }) {
             <button
               type="button"
               onClick={() => setReloadKey((k) => k + 1)}
-              className="inline-flex h-9 items-center gap-2 rounded-lg border border-input bg-transparent px-4 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+              className="inline-flex h-9 items-center gap-2 rounded-full border border-strong bg-transparent px-4 text-sm font-medium text-foreground transition-colors hover:bg-elevated"
             >
               <Loader2 className="h-4 w-4" />
               Try again
@@ -343,7 +343,7 @@ const STAGES: {
     until: 210,
   },
   {
-    icon: <Sparkles className="h-4 w-4" />,
+    icon: <Scale className="h-4 w-4" />,
     title: "Evaluating audience quality & fit",
     why: "Weighing who that audience really is, how genuine it is, and how well it matches your target users.",
     until: 330,
@@ -390,7 +390,7 @@ function RunningExperience({ data }: { data: AnalysisStatusResponse }) {
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "linear-gradient(to bottom, rgba(21,24,26,0.55), rgba(21,24,26,0.82))",
+            "linear-gradient(to bottom, rgba(10,12,16,0.58), rgba(10,12,16,0.85))",
         }}
       />
 

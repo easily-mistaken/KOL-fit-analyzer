@@ -27,7 +27,7 @@ const MESSAGES: Record<AnalysisErrorCode, string> = {
   twitter_rate_limited:
     "The X/Twitter data provider is rate-limiting requests right now. Please try again shortly.",
   twitter_not_found:
-    "We couldn't find one of the X/Twitter accounts. Double-check the org and KOL handles.",
+    "We couldn't find one of the X/Twitter accounts. Double-check the brand and creator handles.",
   twitter_timeout:
     "The X/Twitter data provider took too long to respond. Please try again shortly.",
   twitter_unavailable:

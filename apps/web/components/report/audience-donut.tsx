@@ -16,27 +16,44 @@ const LOW_QUALITY = new Set<AudienceBucket>([
   "airdrop_farmers",
 ]);
 
-// Curated palette harmonising with the violet/blue accent world. Low-quality
-// buckets always render in the error tone regardless of this map.
+/*
+ * Categorical identity palette, tuned for the near-black surface (#0a0c10) and
+ * kept deliberately separate from the brand lime, so a slice never reads as a
+ * control. Colour follows the BUCKET, never its rank, so a bucket keeps its
+ * colour as shares move.
+ *
+ * Key order below is the validated order — the 11 hues clear the dark lightness
+ * band, chroma floor, adjacent-pair CVD (worst ΔE 9.4 deutan), the normal-vision
+ * floor (19.4), and 3:1 on surface. Re-run before editing:
+ *   node scripts/validate_palette.js "<hexes>" --mode dark --surface "#0a0c10"
+ *
+ * Known limit: 11 hues exceed what an 8-slot categorical system can separate
+ * under all-pairs, and segment order here is share-dependent, so any two can
+ * touch. Identity therefore never rests on colour alone — every slice carries a
+ * legend swatch, a label, a percentage, and a hover tooltip.
+ */
 const BUCKET_COLOR: Record<AudienceBucket, string> = {
-  community_managers: "#2973FF",
-  kols_creators: "#5792FF",
-  non_crypto: "#5B6169",
-  developers: "#7FA8FF",
-  founders: "#3E62D6",
-  ai_crypto: "#4FC3D6",
-  traders: "#3DD68C",
-  infra_research: "#8C93A0",
-  meme_degens: "#A9C3FF",
-  nft_gaming: "#6E86C4",
-  investors_vcs: "#2E56C0",
-  defi_users: "#3DD68C",
-  bots_spam: "#FF6470",
-  airdrop_farmers: "#FF8590",
-  giveaway_hunters: "#FFAAB2",
+  developers: "#3987e5",
+  founders: "#d95926",
+  defi_users: "#199e70",
+  investors_vcs: "#9085e9",
+  traders: "#c98500",
+  kols_creators: "#d55181",
+  ai_crypto: "#008300",
+  infra_research: "#0d9bb5",
+  community_managers: "#a1662f",
+  nft_gaming: "#8a5cd6",
+  meme_degens: "#6f8f2a",
+  // "Outside our space" is the neutral slot, so it stays grey by intent rather
+  // than spending a hue.
+  non_crypto: "#6b7480",
+  // Low-quality buckets are a reserved status tone, never a categorical hue.
+  bots_spam: "#ff5c5c",
+  airdrop_farmers: "#ff5c5c",
+  giveaway_hunters: "#ff5c5c",
 };
 
-const LOW_QUALITY_COLOR = "#FF6470";
+const LOW_QUALITY_COLOR = "#ff5c5c";
 
 type Entry = {
   bucket: AudienceBucket;
@@ -77,7 +94,7 @@ export function AudienceDonut({
             label: AUDIENCE_BUCKET_LABELS[bucket] ?? bucket,
             share: v?.share ?? 0,
             count: v?.count ?? 0,
-            color: low ? LOW_QUALITY_COLOR : BUCKET_COLOR[bucket] ?? "#5A6478",
+            color: low ? LOW_QUALITY_COLOR : BUCKET_COLOR[bucket] ?? "#6b7480",
             low,
           };
         })

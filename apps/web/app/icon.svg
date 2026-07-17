@@ -1,0 +1,10 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="OverlapX">
+  <!-- PLACEHOLDER MARK — replace this whole file with the real logo.
+       Two audiences intersecting; the filled lens is the engaged overlap. -->
+  <circle cx="12.5" cy="16" r="8" stroke="#BEF54B" stroke-width="2" />
+  <circle cx="19.5" cy="16" r="8" stroke="#BEF54B" stroke-width="2" />
+  <path
+    d="M16 8.94a8 8 0 0 0 0 14.12A8 8 0 0 0 16 8.94Z"
+    fill="#BEF54B"
+  />
+</svg>

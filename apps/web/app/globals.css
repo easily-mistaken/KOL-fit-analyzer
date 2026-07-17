@@ -4,7 +4,7 @@
 /*
  * Dark-only analyst-dashboard visual system.
  * Raw palette below is the single source of truth for every color
- * (values from context/ui-context.md). Components never hardcode hex —
+ * (values from context/ui-context.md). Components never hardcode hex;
  * they consume these tokens through the Tailwind theme mapping below.
  */
 :root {
@@ -14,33 +14,37 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
-  /* Surfaces — Morpho-style warm charcoal neutrals. */
-  --bg-base: #15181a;
-  --bg-surface: #1a1d20;
-  --bg-elevated: #222529;
-  --bg-muted: #2c3034;
+  /* Surfaces — near-black neutrals with a cool cast. */
+  --bg-base: #0a0c10;
+  --bg-surface: #111419;
+  --bg-elevated: #191d24;
+  --bg-muted: #232830;
 
   /* Text */
-  --text-primary: #f7f8f8;
-  --text-secondary: #b4b7ba;
-  --text-muted: #7e8184;
+  --text-primary: #ffffff;
+  --text-secondary: #9ba3af;
+  --text-muted: #6b7480;
 
-  /* Accent — Morpho electric blue. */
-  --accent-primary: #2973ff;
-  --accent-hover: #5792ff;
+  /* Brand accent — acid lime. NOTE: this is a LIGHT accent, so anything
+     sitting on top of it must use --accent-contrast, never --text-primary. */
+  --accent-primary: #bef54b;
+  --accent-hover: #d0f87a;
+  --accent-contrast: #0a0c10;
 
-  /* State (semantic — kept separate from the brand accent). */
-  --state-success: #3dd68c;
-  --state-warning: #f5b84b;
-  --state-error: #ff6470;
-  --state-info: #5792ff;
+  /* State (semantic — deliberately not the brand lime, so a "good score"
+     never reads as a call to action). */
+  --state-success: #4ade80;
+  --state-warning: #fbbf4c;
+  --state-error: #ff5c5c;
+  --state-info: #60a5fa;
 
   /* Borders + shadow */
-  --border-default: #262a2e;
-  --border-strong: #383b3e;
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.24), 0 16px 40px rgba(0, 0, 0, 0.2);
+  --border-default: #1e232a;
+  --border-strong: #2e353f;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 16px 40px rgba(0, 0, 0, 0.32);
 
-  /* Radius scale baseline (inputs/buttons = rounded-lg). Morpho leans rounder. */
+  /* Radius scale baseline. Controls are pills (rounded-full); this drives
+     cards/inputs. */
   --radius: 0.625rem;
 
   /* shadcn semantic variables, mapped onto the raw palette above. */
@@ -51,13 +55,17 @@
   --popover: var(--bg-elevated);
   --popover-foreground: var(--text-primary);
   --primary: var(--accent-primary);
-  --primary-foreground: var(--text-primary);
+  --primary-foreground: var(--accent-contrast);
   --secondary: var(--bg-elevated);
   --secondary-foreground: var(--text-secondary);
   --muted: var(--bg-muted);
   --muted-foreground: var(--text-muted);
-  --accent: var(--bg-elevated);
-  --accent-foreground: var(--text-primary);
+  /* `accent` is the BRAND lime here, not shadcn's neutral hover surface.
+     App code already reads it that way (bg-accent, border-accent/30, and
+     text-accent-foreground on lime buttons); the shadcn primitives that
+     wanted a neutral hover now say bg-elevated explicitly. */
+  --accent: var(--accent-primary);
+  --accent-foreground: var(--accent-contrast);
   --destructive: var(--state-error);
   --destructive-foreground: var(--text-primary);
   --border: var(--border-default);
@@ -80,7 +88,7 @@
   --radius-lg: calc(var(--radius) + 2px);
   --radius-xl: calc(var(--radius) + 6px);
 
-  /* Soft card shadow (Morpho-style) -> `shadow-card` utility. */
+  /* Soft card shadow -> `shadow-card` utility. */
   --shadow-card: var(--shadow-card);
 
   /* shadcn semantic tokens */
@@ -113,6 +121,10 @@
   --color-warning: var(--state-warning);
   --color-error: var(--state-error);
   --color-info: var(--state-info);
+  /* The brand lime, addressable directly (bg-accent-primary, border-accent-primary).
+     Without this mapping those utilities silently resolve to nothing. */
+  --color-accent-primary: var(--accent-primary);
+  --color-accent-contrast: var(--accent-contrast);
   --color-accent-hover: var(--accent-hover);
   --color-default: var(--border-default);
   --color-strong: var(--border-strong);

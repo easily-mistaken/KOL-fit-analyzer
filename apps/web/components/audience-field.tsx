@@ -18,8 +18,10 @@ type P = {
   glow: number; // 0..1 current "lit" amount
 };
 
-const ENGAGED_COLOR = [41, 115, 255]; // Morpho blue #2973FF
-const ENGAGED_HI = [87, 146, 255]; // #5792FF
+// Brand lime, mirroring --accent-primary / --accent-hover. Canvas can't read
+// CSS tokens, so these are the one intentional hardcode; keep them in sync.
+const ENGAGED_COLOR = [190, 245, 75]; // #BEF54B
+const ENGAGED_HI = [208, 248, 122]; // #D0F87A
 
 export function AudienceField({ className }: { className?: string }) {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
@@ -86,7 +88,7 @@ export function AudienceField({ className }: { className?: string }) {
           const d = Math.hypot(dx, dy);
           if (d < linkDist) {
             const alpha = (1 - d / linkDist) * 0.32 * Math.min(1, (a.glow + b.glow) / 1.4 + 0.4);
-            ctx!.strokeStyle = `rgba(87,146,255,${alpha})`;
+            ctx!.strokeStyle = `rgba(${ENGAGED_HI[0]},${ENGAGED_HI[1]},${ENGAGED_HI[2]},${alpha})`;
             ctx!.lineWidth = 1;
             ctx!.beginPath();
             ctx!.moveTo(a.x, a.y);
@@ -102,7 +104,7 @@ export function AudienceField({ className }: { className?: string }) {
           if (p.glow <= 0.2) continue;
           const d = Math.hypot(p.x - pointer.x, p.y - pointer.y);
           if (d < 190) {
-            ctx!.strokeStyle = `rgba(41,115,255,${(1 - d / 190) * 0.5 * p.glow})`;
+            ctx!.strokeStyle = `rgba(${ENGAGED_COLOR[0]},${ENGAGED_COLOR[1]},${ENGAGED_COLOR[2]},${(1 - d / 190) * 0.5 * p.glow})`;
             ctx!.lineWidth = 1;
             ctx!.beginPath();
             ctx!.moveTo(p.x, p.y);

@@ -17,18 +17,21 @@ import {
   type ScoreValue,
 } from "@kol-fit/shared";
 
-// Light, printable palette with Morpho-blue accents.
+// Light, printable palette. The brand lime is very light, so on white paper it
+// is a FILL colour only (chips, rules) and never text; `brandDeep` is the
+// print-safe version used for bars and marks that must survive a mono printer.
 const C = {
-  ink: "#15181A",
-  sub: "#4A5057",
-  muted: "#8A9099",
-  accent: "#2973FF",
-  success: "#1F9D57",
-  warning: "#B67611",
-  error: "#D6433B",
-  border: "#E7E9EC",
-  track: "#EEF0F3",
-  paper: "#FFFFFF",
+  ink: "#0a0c10",
+  sub: "#4a5057",
+  muted: "#8a9099",
+  brand: "#bef54b",
+  brandDeep: "#6f9e13",
+  success: "#1f9d57",
+  warning: "#b67611",
+  error: "#d6433b",
+  border: "#e7e9ec",
+  track: "#eef0f3",
+  paper: "#ffffff",
 };
 
 const s = StyleSheet.create({
@@ -36,7 +39,9 @@ const s = StyleSheet.create({
   eyebrow: { fontSize: 8, letterSpacing: 1.4, color: C.muted, textTransform: "uppercase", fontFamily: "Helvetica-Bold" },
   h1: { fontSize: 17, fontFamily: "Helvetica-Bold", marginTop: 4 },
   headerRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
-  brand: { fontSize: 9, color: C.accent, fontFamily: "Helvetica-Bold", letterSpacing: 0.4 },
+  brand: { fontSize: 9, color: C.ink, fontFamily: "Helvetica-Bold", letterSpacing: 0.4 },
+  brandRow: { flexDirection: "row", alignItems: "center", gap: 4 },
+  brandMark: { width: 6, height: 6, borderRadius: 1, backgroundColor: C.brand },
   rule: { height: 1, backgroundColor: C.border, marginVertical: 14 },
   verdictRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", marginTop: 4 },
   verdictWord: { fontSize: 26, fontFamily: "Helvetica-Bold" },
@@ -46,7 +51,7 @@ const s = StyleSheet.create({
   section: { marginTop: 18 },
   secTitle: { fontSize: 11, fontFamily: "Helvetica-Bold", marginBottom: 8 },
   bullet: { flexDirection: "row", marginBottom: 4 },
-  bulletDot: { width: 10, color: C.accent, fontFamily: "Helvetica-Bold" },
+  bulletDot: { width: 10, color: C.brandDeep, fontFamily: "Helvetica-Bold" },
   bulletText: { flex: 1, color: C.sub },
   metricRow: { flexDirection: "row", alignItems: "center", marginBottom: 6 },
   metricName: { width: 150, fontSize: 9.5 },
@@ -61,7 +66,7 @@ const s = StyleSheet.create({
   lowTag: { fontSize: 7, color: C.error, fontFamily: "Helvetica-Bold", marginLeft: 4 },
   para: { color: C.sub, marginBottom: 6 },
   subhead: { fontSize: 9.5, fontFamily: "Helvetica-Bold", marginBottom: 3 },
-  callout: { borderLeftWidth: 3, borderLeftColor: C.accent, backgroundColor: "#F4F7FF", padding: 10, borderRadius: 4 },
+  callout: { borderLeftWidth: 3, borderLeftColor: C.brand, backgroundColor: "#f8fdec", padding: 10, borderRadius: 4 },
   chipRow: { flexDirection: "row", flexWrap: "wrap", marginBottom: 6 },
   chip: { fontSize: 8, color: C.sub, borderWidth: 1, borderColor: C.border, borderRadius: 4, paddingVertical: 2, paddingHorizontal: 5, marginRight: 4, marginBottom: 4 },
   evidGrid: { flexDirection: "row", flexWrap: "wrap", marginBottom: 8 },
@@ -200,7 +205,10 @@ function ReportDocument({
             </Text>
             {gen && <Text style={s.metaLine}>Generated {gen}</Text>}
           </View>
-          <Text style={s.brand}>{APP_NAME}</Text>
+          <View style={s.brandRow}>
+            <View style={s.brandMark} />
+            <Text style={s.brand}>{APP_NAME}</Text>
+          </View>
         </View>
 
         <View style={s.rule} />
@@ -249,7 +257,7 @@ function ReportDocument({
                     {AUDIENCE_BUCKET_LABELS[bucket] ?? bucket}
                     {low ? <Text style={s.lowTag}> low-quality</Text> : ""}
                   </Text>
-                  <Bar value={(x?.share ?? 0) * 100} color={low ? C.error : C.accent} />
+                  <Bar value={(x?.share ?? 0) * 100} color={low ? C.error : C.brandDeep} />
                   <Text style={s.audVal}>{Math.round((x?.share ?? 0) * 100)}%</Text>
                 </View>
               );

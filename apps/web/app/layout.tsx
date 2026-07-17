@@ -8,7 +8,7 @@ import "./globals.css";
 export const metadata = {
   title: "OverlapX",
   description:
-    "We don't just check what a KOL posts. We check who actually listens.",
+    "We don't measure who follows. We measure who actually listens. Audience-overlap analysis for AI and Web3 brands.",
 };
 
 // The shell nav renders per-request auth state (Unit 28), which depends on the

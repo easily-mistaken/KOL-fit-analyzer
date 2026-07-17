@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, ChevronDown, Loader2, Search, Sparkles } from "lucide-react";
+import { AlertCircle, ChevronDown, Loader2, Search } from "lucide-react";
 import {
   AnalysisRequestInputSchema,
   CAMPAIGN_GOAL_LABELS,
@@ -215,7 +215,7 @@ export function AnalysisForm() {
       <CardHeader>
         <CardTitle className="text-lg text-foreground">New analysis</CardTitle>
         <CardDescription>
-          Compare a crypto organization against a Twitter/X KOL. Only the two
+          Compare your brand against any creator on X. Only the two
           handles are required.
         </CardDescription>
       </CardHeader>
@@ -223,11 +223,11 @@ export function AnalysisForm() {
         <form onSubmit={onSubmit} noValidate className="space-y-6">
           {/* Primary inputs */}
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field id="orgHandle" label="Organization handle" error={fieldErrors.orgHandle}>
+            <Field id="orgHandle" label="Your brand" error={fieldErrors.orgHandle}>
               <Input
                 id="orgHandle"
                 name="orgHandle"
-                placeholder="@myorg"
+                placeholder="@yourbrand"
                 autoComplete="off"
                 autoCapitalize="none"
                 spellCheck={false}
@@ -237,11 +237,11 @@ export function AnalysisForm() {
                 onChange={(e) => setField("orgHandle", e.target.value)}
               />
             </Field>
-            <Field id="kolHandle" label="KOL handle" error={fieldErrors.kolHandle}>
+            <Field id="kolHandle" label="Creator to check" error={fieldErrors.kolHandle}>
               <Input
                 id="kolHandle"
                 name="kolHandle"
-                placeholder="@somekol"
+                placeholder="@creator"
                 autoComplete="off"
                 autoCapitalize="none"
                 spellCheck={false}
@@ -269,7 +269,7 @@ export function AnalysisForm() {
           >
             <div className="flex items-center justify-between gap-3">
               <div className="flex min-w-0 items-start gap-2.5">
-                <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-accent-hover" />
+                <span className="mt-1.5 h-2 w-2 shrink-0 rounded-[2px] bg-accent-primary" />
                 <div className="min-w-0">
                   <span className="text-sm font-semibold text-foreground">
                     Give us more context, and we&apos;ll give you better results

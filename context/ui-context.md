@@ -2,18 +2,21 @@
 
 ## Theme
 
-The product should feel like a serious crypto intelligence dashboard, not a playful social media tool. The visual language is **Morpho-inspired** (see brand.morpho.org): a dark, premium, editorial fintech look — warm charcoal neutrals, a single electric-blue brand accent, generous whitespace, soft shadows, and rounded surfaces. Analytical and information-dense, but calm and confident. Suitable for an internal agency research tool and a client/brand-facing SaaS dashboard. We take Morpho's design *language*, not its identity (no butterfly / logo clone — our own mark and gradients).
+The product serves AI and Web3 brands alike, so nothing in the surface should read as crypto-specific. The visual language takes after **Robinhood and Higgsfield**: near-black surfaces, a single acid-lime brand accent, pill-shaped controls, tight geometric headlines, and flat surfaces. Confident and instrument-like rather than decorative.
 
 Use a dark technical workspace:
 
-- warm-charcoal page background (Morpho neutral, not blue-black)
-- layered dark surfaces with soft, diffuse shadows
-- subtle borders, generous padding, rounded corners
-- high-contrast text
-- a single restrained electric-blue brand accent
-- semantic score colors (green/amber/red) kept **separate** from the blue accent
-- score cards and report sections
+- near-black page background with a cool cast (not warm charcoal, not blue-black)
+- flat layered surfaces; no glassmorphism, no decorative gradients
+- subtle borders, generous padding, pill controls (`rounded-full`)
+- high-contrast text (pure white headlines)
+- a single acid-lime brand accent
+- semantic score colors (green/amber/red) kept **separate** from the lime accent
 - minimal decorative elements
+
+**The lime is a LIGHT accent.** Anything sitting on it (button labels, badge text) must use `--accent-contrast` (near-black), never `--text-primary`. This is the most common way to break the theme.
+
+Avoid the generic-AI-app tells: no `Sparkles` icons, no glyph-in-a-gradient-rounded-square logo, no electric-blue-on-charcoal, no glass blur panels.
 
 The UI should make the report easy to scan. Prioritize clarity, hierarchy, and evidence over visual noise.
 
@@ -23,26 +26,37 @@ All components should use semantic tokens. Avoid hardcoded random hex values ins
 
 Suggested CSS variables:
 
-Morpho-inspired palette (implemented in `apps/web/app/globals.css`):
+Palette (implemented in `apps/web/app/globals.css`):
 
 | Role | CSS Variable | Value |
 | --- | --- | --- |
-| Page background | `--bg-base` | `#15181A` |
-| Main surface | `--bg-surface` | `#1A1D20` |
-| Raised surface | `--bg-elevated` | `#222529` |
-| Muted surface | `--bg-muted` | `#2C3034` |
-| Primary text | `--text-primary` | `#F7F8F8` |
-| Secondary text | `--text-secondary` | `#B4B7BA` |
-| Muted text | `--text-muted` | `#7E8184` |
-| Primary accent (Morpho blue) | `--accent-primary` | `#2973FF` |
-| Accent hover | `--accent-hover` | `#5792FF` |
-| Positive | `--state-success` | `#3DD68C` |
-| Warning | `--state-warning` | `#F5B84B` |
-| Error | `--state-error` | `#FF6470` |
-| Info | `--state-info` | `#5792FF` |
-| Border default | `--border-default` | `#262A2E` |
-| Border strong | `--border-strong` | `#383B3E` |
-| Card shadow | `--shadow-card` | `0 1px 2px rgba(0,0,0,.24), 0 16px 40px rgba(0,0,0,.2)` (→ `shadow-card` utility) |
+| Page background | `--bg-base` | `#0A0C10` |
+| Main surface | `--bg-surface` | `#111419` |
+| Raised surface | `--bg-elevated` | `#191D24` |
+| Muted surface | `--bg-muted` | `#232830` |
+| Primary text | `--text-primary` | `#FFFFFF` |
+| Secondary text | `--text-secondary` | `#9BA3AF` |
+| Muted text | `--text-muted` | `#6B7480` |
+| Brand accent (acid lime) | `--accent-primary` | `#BEF54B` |
+| Accent hover | `--accent-hover` | `#D0F87A` |
+| **Text/icons on the lime** | `--accent-contrast` | `#0A0C10` |
+| Positive | `--state-success` | `#4ADE80` |
+| Warning | `--state-warning` | `#FBBF4C` |
+| Error | `--state-error` | `#FF5C5C` |
+| Info | `--state-info` | `#60A5FA` |
+| Border default | `--border-default` | `#1E232A` |
+| Border strong | `--border-strong` | `#2E353F` |
+| Card shadow | `--shadow-card` | `0 1px 2px rgba(0,0,0,.4), 0 16px 40px rgba(0,0,0,.32)` (→ `shadow-card` utility) |
+
+Token wiring worth knowing: `--accent` is the **brand lime** here, not shadcn's neutral hover surface. shadcn primitives that want a quiet hover say `bg-elevated` explicitly. `--primary-foreground` and `--accent-foreground` both resolve to `--accent-contrast`, which is what keeps lime buttons readable.
+
+The brand mark is `apps/web/public/logo.svg` (tab icon: `apps/web/app/icon.svg`). Swap those files to rebrand; no component change needed.
+
+The hero canvas (`audience-field.tsx`) can't read CSS tokens, so it mirrors the lime in JS constants. Keep them in sync.
+
+### Chart color
+
+The audience donut carries its own **categorical identity palette**, deliberately separate from the brand lime so a slice never reads as a control, and from the status tones. Colour follows the bucket, never its rank. The hues are validated (dark band, chroma floor, adjacent-pair CVD, normal-vision floor, 3:1 on surface) — see the header comment in `audience-donut.tsx` for the re-validation command. Low-quality buckets always render in the reserved error tone.
 
 Score color usage:
 

@@ -58,7 +58,7 @@ export function AdminAnalysesTable({
         head={
           <>
             <th className="px-5 py-3 font-medium">Created</th>
-            <th className="px-5 py-3 font-medium">KOL / Org</th>
+            <th className="px-5 py-3 font-medium">Creator / Brand</th>
             <th className="px-5 py-3 font-medium">Owner</th>
             <th className="px-5 py-3 font-medium">Status</th>
             <th className="px-5 py-3 text-right font-medium">Attempts</th>
