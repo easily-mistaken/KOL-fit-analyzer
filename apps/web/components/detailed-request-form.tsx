@@ -85,6 +85,9 @@ export function DetailedRequestForm({
   }
 
   if (done) {
+    // The delivery bot cannot DM first (Telegram restriction) — nudging the
+    // requester to open the chat closes the delivery loop (Unit 39).
+    const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME;
     return (
       <div className="rounded-xl border border-success/40 bg-success/10 px-4 py-4 text-sm">
         <div className="flex items-center gap-2 font-semibold text-foreground">
@@ -92,9 +95,29 @@ export function DetailedRequestForm({
           Request received
         </div>
         <p className="mt-1.5 text-secondary-foreground">
-          Your curated report will land in your Telegram within a day. Keep an
-          eye on your message requests.
+          Your curated report will land in your Telegram within a day.
         </p>
+        {botUsername ? (
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <Button asChild size="sm">
+              <a
+                href={`https://t.me/${botUsername}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Send className="h-3.5 w-3.5" />
+                Open @{botUsername} on Telegram
+              </a>
+            </Button>
+            <span className="text-xs text-secondary-foreground">
+              Tap <em>Start</em> so your report can reach you directly.
+            </span>
+          </div>
+        ) : (
+          <p className="mt-1.5 text-xs text-secondary-foreground">
+            Keep an eye on your message requests.
+          </p>
+        )}
       </div>
     );
   }

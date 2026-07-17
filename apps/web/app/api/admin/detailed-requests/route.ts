@@ -27,6 +27,21 @@ function json<T>(body: ApiResponse<T>, status: number): NextResponse {
   return NextResponse.json(body, { status });
 }
 
+/** Unread badge (Unit 39.1): count of NEW (unhandled) requests. */
+export async function GET(): Promise<NextResponse> {
+  if (!(await isAdminRequest())) {
+    return json(err("unauthorized", "Admin session required."), 401);
+  }
+  try {
+    const newCount = await prisma.detailedReportRequest.count({
+      where: { status: "NEW" },
+    });
+    return json(ok({ newCount }), 200);
+  } catch {
+    return json(err("internal_error", "Could not load counts."), 500);
+  }
+}
+
 export async function PATCH(request: Request): Promise<NextResponse> {
   if (!(await isAdminRequest())) {
     return json(err("unauthorized", "Admin session required."), 401);

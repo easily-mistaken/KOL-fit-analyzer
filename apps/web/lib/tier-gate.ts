@@ -23,12 +23,18 @@ const MESSAGES = {
     "You've used all 12 included analyses. Request a detailed report and we'll deliver a curated analysis straight to your Telegram within a day.",
 } as const;
 
+/** Lifetime analyses counted against the funnel tiers. Single source of truth
+ *  for the gate AND the quota indicator (Unit 39). */
+export async function countLifetimeAnalyses(ownerId: string): Promise<number> {
+  return prisma.analysisRequest.count({ where: { ownerId } });
+}
+
 export async function checkTierGate(
   ownerId: string,
   isAuthenticated: boolean
 ): Promise<TierGateDecision> {
   const limits = resolveTierLimits(process.env);
-  const lifetime = await prisma.analysisRequest.count({ where: { ownerId } });
+  const lifetime = await countLifetimeAnalyses(ownerId);
   const decision = decideTier(lifetime, isAuthenticated, limits);
   if (decision.allowed) return { allowed: true };
   return {

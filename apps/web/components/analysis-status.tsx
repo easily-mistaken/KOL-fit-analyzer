@@ -41,6 +41,26 @@ export function AnalysisStatus({ id }: { id: string }) {
   const [phase, setPhase] = React.useState<Phase>("loading");
   const [reloadKey, setReloadKey] = React.useState(0);
 
+  // Ready-notification (Unit 39): analyses take ~2 minutes and people tab
+  // away — flash the tab title when the run finishes while the tab is hidden,
+  // restore it when they come back. Dependency-free (no permission prompts).
+  const status = data?.job.status;
+  React.useEffect(() => {
+    if (status !== "COMPLETED" && status !== "FAILED") return;
+    if (typeof document === "undefined" || !document.hidden) return;
+    const original = document.title;
+    document.title =
+      status === "COMPLETED" ? "✅ Report ready — KOL Fit" : "⚠️ Analysis failed — KOL Fit";
+    const restore = () => {
+      document.title = original;
+    };
+    document.addEventListener("visibilitychange", restore, { once: true });
+    return () => {
+      document.removeEventListener("visibilitychange", restore);
+      document.title = original;
+    };
+  }, [status]);
+
   React.useEffect(() => {
     let cancelled = false;
     let haveData = false;

@@ -155,7 +155,7 @@ export function AdminDetailedRequestsTable({
       {data.nextCursor && (
         <div className="flex justify-center">
           <Button asChild variant="outline" size="sm">
-            <Link href={`/admin/detailed?cursor=${data.nextCursor}`}>
+            <Link href={`/admin/leads?cursor=${data.nextCursor}`}>
               Load more
             </Link>
           </Button>

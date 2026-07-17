@@ -10,7 +10,6 @@ import {
   LogOut,
   Mail,
   ShieldCheck,
-  Sparkles,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -20,7 +19,6 @@ const LINKS = [
   { href: "/admin", label: "Overview", icon: <LayoutDashboard className="h-4 w-4" /> },
   { href: "/admin/analyses", label: "Analyses", icon: <FileText className="h-4 w-4" /> },
   { href: "/admin/leads", label: "Leads", icon: <Mail className="h-4 w-4" /> },
-  { href: "/admin/detailed", label: "Detailed reports", icon: <Sparkles className="h-4 w-4" /> },
   { href: "/admin/usage", label: "Usage", icon: <Coins className="h-4 w-4" /> },
 ];
 
@@ -32,6 +30,27 @@ export function AdminNav() {
   const pathname = usePathname();
   const router = useRouter();
   const [pending, setPending] = React.useState(false);
+  // Unread badge (Unit 39.1): NEW (unhandled) concierge requests, chat-style.
+  const [newLeads, setNewLeads] = React.useState(0);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    const load = () =>
+      fetch("/api/admin/detailed-requests", { cache: "no-store" })
+        .then((r) => r.json())
+        .then((body) => {
+          if (!cancelled && body?.ok) setNewLeads(body.data.newCount ?? 0);
+        })
+        .catch(() => {
+          /* badge is best-effort */
+        });
+    void load();
+    const timer = setInterval(load, 60_000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [pathname]);
 
   async function logout() {
     setPending(true);
@@ -63,6 +82,11 @@ export function AdminNav() {
           >
             {link.icon}
             {link.label}
+            {link.href === "/admin/leads" && newLeads > 0 && (
+              <span className="ml-0.5 inline-flex min-w-[18px] items-center justify-center rounded-full bg-accent px-1.5 py-px text-[10.5px] font-semibold leading-4 text-accent-foreground">
+                {newLeads > 99 ? "99+" : newLeads}
+              </span>
+            )}
           </Link>
         ))}
       </nav>

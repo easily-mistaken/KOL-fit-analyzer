@@ -137,6 +137,23 @@ export function AnalysisForm() {
   const [gate, setGate] = React.useState<"login_required" | "upgrade_required" | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [showOptional, setShowOptional] = React.useState(false);
+  // Quota indicator (Unit 39): remaining analyses in the current tier.
+  const [quota, setQuota] = React.useState<{ used: number; limit: number } | null>(null);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    fetch("/api/analyses/quota", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((body) => {
+        if (!cancelled && body?.ok) setQuota(body.data);
+      })
+      .catch(() => {
+        /* hide silently */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function setField(name: FieldName, value: string) {
     setValues((prev) => ({ ...prev, [name]: value }));
@@ -456,7 +473,13 @@ export function AnalysisForm() {
             — delivered to your Telegram by an analyst.
           </p>
 
-          <div className="flex justify-end">
+          <div className="flex items-center justify-end gap-3">
+            {quota && quota.limit > 0 && (
+              <span className="text-xs text-muted-foreground">
+                {Math.max(0, quota.limit - quota.used)} of {quota.limit}{" "}
+                {quota.used < quota.limit ? "analyses left" : "analyses used"}
+              </span>
+            )}
             <Button type="submit" disabled={loading} className="min-w-40">
               {loading ? (
                 <>

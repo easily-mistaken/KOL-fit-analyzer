@@ -1,8 +1,12 @@
-import { Mail } from "lucide-react";
+import { Sparkles } from "lucide-react";
 
 import { isAdminConfigured, requireAdmin } from "@/lib/admin/auth";
-import { listAdminLeads } from "@/lib/admin/queries";
+import {
+  listAdminDetailedRequests,
+  listAdminLeads,
+} from "@/lib/admin/queries";
 import { AdminNav } from "@/components/admin/admin-nav";
+import { AdminDetailedRequestsTable } from "@/components/admin/detailed-requests-table";
 import { AdminLeadsTable } from "@/components/admin/leads-table";
 import { NotConfigured } from "@/components/admin/primitives";
 
@@ -10,7 +14,11 @@ import { NotConfigured } from "@/components/admin/primitives";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/** Every captured lead (ReportDelivery row) across all owners. Read-only. */
+/**
+ * Leads (consolidated, Unit 39.1): the concierge detailed-report queue IS the
+ * lead list now that the old email-capture component is gone. Legacy email
+ * captures (pre-concierge ReportDelivery rows) are preserved below.
+ */
 export default async function AdminLeadsPage({
   searchParams,
 }: {
@@ -20,7 +28,10 @@ export default async function AdminLeadsPage({
   await requireAdmin();
 
   const { cursor } = await searchParams;
-  const data = await listAdminLeads({ cursor });
+  const [requests, legacy] = await Promise.all([
+    listAdminDetailedRequests({ cursor }),
+    listAdminLeads({ limit: 50 }),
+  ]);
 
   return (
     <div className="space-y-8">
@@ -28,18 +39,29 @@ export default async function AdminLeadsPage({
 
       <section className="space-y-2">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Mail className="h-5 w-5 text-accent-hover" />
+          <Sparkles className="h-5 w-5 text-accent-hover" />
           <span>Leads</span>
         </div>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Captured emails &amp; Telegram handles
+          Curated-report requests
         </h1>
         <p className="max-w-2xl text-sm text-secondary-foreground">
-          Everyone who asked for a report, with the per-channel delivery status.
+          Everyone who asked for the hand-curated analysis — with their
+          Telegram, X handle, and email. Deliver on Telegram, then mark the
+          request sent.
         </p>
       </section>
 
-      <AdminLeadsTable data={data} />
+      <AdminDetailedRequestsTable data={requests} />
+
+      {legacy.items.length > 0 && (
+        <section className="space-y-3 border-t border-default pt-6">
+          <h2 className="text-sm font-semibold text-muted-foreground">
+            Legacy email captures (pre-concierge)
+          </h2>
+          <AdminLeadsTable data={{ items: legacy.items, nextCursor: null }} />
+        </section>
+      )}
     </div>
   );
 }
