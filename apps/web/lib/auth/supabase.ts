@@ -64,15 +64,16 @@ export async function getSupabaseUserId(): Promise<string | null> {
 }
 
 /**
- * Resolves the current Supabase user (id + email) and mirror-upserts a local
- * `User` row (id = the Supabase UUID) so ownership/claims map onto a real row.
+ * The current Supabase user (id + email) from the JWT claims. PURE READ — no DB
+ * write. This runs on every page render (the nav) and several API routes, so it
+ * must not touch the database; the local `User` mirror row is maintained once at
+ * login (see exchangeSupabaseCode + the /auth/callback route), not here.
  */
 export async function getSupabaseUser(): Promise<AuthUser | null> {
   const claims = await readClaims();
   const sub = typeof claims?.sub === "string" ? claims.sub : null;
   if (!sub) return null;
   const email = typeof claims?.email === "string" ? claims.email : null;
-  await mirrorUser(sub, email);
   return { id: sub, email };
 }
 
@@ -102,14 +103,19 @@ export async function mirrorUser(
 }
 
 /**
- * Exchanges an OAuth/magic-link code for a session (the /auth/callback flow).
- * Returns the resolved user id on success, or null.
+ * Exchanges an OAuth code for a session (the /auth/callback flow). Returns the
+ * resolved user (id + email) on success, or null. The caller mirror-upserts the
+ * local `User` row — this is the one place a login writes it.
  */
-export async function exchangeSupabaseCode(code: string): Promise<string | null> {
+export async function exchangeSupabaseCode(code: string): Promise<AuthUser | null> {
   const supabase = await createServerSupabase();
   const { error } = await supabase.auth.exchangeCodeForSession(code);
   if (error) return null;
-  return getSupabaseUserId();
+  const claims = await readClaims();
+  const sub = typeof claims?.sub === "string" ? claims.sub : null;
+  if (!sub) return null;
+  const email = typeof claims?.email === "string" ? claims.email : null;
+  return { id: sub, email };
 }
 
 /** Signs the Supabase user out (clears its auth cookies). Best-effort. */

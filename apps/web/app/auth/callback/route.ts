@@ -26,17 +26,21 @@ async function handle(req: Request): Promise<Response> {
     return NextResponse.redirect(`${origin}/login?error=missing_code`);
   }
 
-  const { exchangeSupabaseCode } = await import("@/lib/auth/supabase");
-  const userId = await exchangeSupabaseCode(code);
-  if (!userId) {
+  const { exchangeSupabaseCode, mirrorUser } = await import("@/lib/auth/supabase");
+  const user = await exchangeSupabaseCode(code);
+  if (!user) {
     return NextResponse.redirect(`${origin}/login?error=auth`);
   }
 
-  // Adopt the anonymous browser's history into the account. Best-effort.
+  // Maintain the local User mirror row once, here at login (the per-request
+  // reads are pure). Then adopt the anonymous browser's history into the
+  // account. Both best-effort — neither blocks landing the user.
+  await mirrorUser(user.id, user.email);
   const { claimAnonymousReports } = await import("@/lib/auth/claim");
-  await claimAnonymousReports(userId);
+  await claimAnonymousReports(user.id);
 
-  return NextResponse.redirect(`${origin}/`);
+  // Land on History so the just-claimed reports are the first thing they see.
+  return NextResponse.redirect(`${origin}/analyses`);
 }
 
 export async function GET(req: Request): Promise<Response> {
