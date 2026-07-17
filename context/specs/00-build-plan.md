@@ -1,6 +1,6 @@
 # Build Plan
 
-This file defines the first complete build sequence for Crypto KOL Fit Analyzer.
+This file defines the first complete build sequence for OverlapX.
 
 Each unit should be implemented one at a time. Each unit should produce a visible or verifiable result. Do not jump ahead or combine unrelated units.
 

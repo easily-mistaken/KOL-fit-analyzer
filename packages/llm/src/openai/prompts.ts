@@ -239,8 +239,14 @@ export function buildReportPrompt(input: GenerateFitReportInput): string {
       "fit: whether this KOL is a good match for this org and why, grounded in the engaged-audience match, " +
       "content alignment, and any risks. Reference the verdict qualitatively (e.g. \"a weak fit\") but do NOT " +
       "state or invent any numeric scores. Write it as flowing prose, not bullet points.",
-    "Write `keyTakeaways` as 3-5 punchy, standalone one-line points (the scannable version of the summary) — " +
+    "Write `keyTakeaways` as 3-5 punchy, standalone one-line points (the scannable version of the summary), " +
       "each a concrete \"so what\" a busy reader can grasp in a glance. No numbers, no filler.",
+    // The narrative fields are the only model-written text a reader ever sees, so
+    // the house style is enforced here rather than post-processed downstream.
+    "STYLE: Never use em dashes (—). Use a period, comma, colon, or parentheses instead. " +
+      "Avoid stock LLM phrasing (\"it's worth noting\", \"in today's landscape\", \"dive into\", " +
+      "\"when it comes to\", \"not just X, but Y\"). Prefer short declarative sentences and concrete " +
+      "nouns over hedged abstractions. Write like an analyst briefing a colleague, not like marketing copy.",
     "IMPORTANT: The numeric scores and verdict are computed deterministically and are FINAL. " +
       "Do NOT output, repeat, recompute, or alter any numbers or the verdict. Write ONLY qualitative narrative " +
       "for: summary, keyTakeaways, bestUseCases, weakUseCases, audienceMatchSummary, contentNarrative, engagementNarrative, " +

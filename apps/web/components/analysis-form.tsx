@@ -276,7 +276,7 @@ export function AnalysisForm() {
                   </span>
                   <p className="mt-0.5 text-xs text-secondary-foreground">
                     A few quick details about your product, audience, and goal
-                    help the analysis reflect <em>your</em> situation — all
+                    help the analysis reflect <em>your</em> situation. All
                     optional, always free.
                   </p>
                 </div>
@@ -302,8 +302,8 @@ export function AnalysisForm() {
             <div className="space-y-4">
               <Separator />
               <p className="text-xs text-muted-foreground">
-                Everything here is optional — every field you do fill makes the
-                verdict more yours. Skip anything unknown.
+                Everything here is optional, but every field you do fill makes
+                the verdict more yours. Skip anything unknown.
               </p>
 
               <div className="grid gap-4 sm:grid-cols-2">
@@ -438,7 +438,7 @@ export function AnalysisForm() {
                 You&apos;ve used your 3 free analyses
               </p>
               <p className="mt-1 text-secondary-foreground">
-                Sign in with Google to unlock 9 more — it takes ten seconds, and
+                Sign in with Google to unlock 9 more. It takes ten seconds, and
                 your existing reports come with you.
               </p>
               <Button asChild className="mt-3">
@@ -469,8 +469,8 @@ export function AnalysisForm() {
             Prefer a hands-on review?{" "}
             <a href="/detailed" className="text-accent-hover underline-offset-2 hover:underline">
               Request a curated detailed report
-            </a>{" "}
-            — delivered to your Telegram by an analyst.
+            </a>
+            , delivered to your Telegram by an analyst.
           </p>
 
           <div className="flex items-center justify-end gap-3">

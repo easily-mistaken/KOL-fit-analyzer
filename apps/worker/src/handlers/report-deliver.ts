@@ -1,7 +1,7 @@
 import { prisma } from "@kol-fit/db";
 import { createMailProvider } from "@kol-fit/mail";
 import { ReportDeliverPayloadSchema } from "@kol-fit/queue";
-import { FitReportSchema, ScoreBreakdownSchema } from "@kol-fit/shared";
+import { APP_NAME, FitReportSchema, ScoreBreakdownSchema } from "@kol-fit/shared";
 
 /**
  * Processes one `report.deliver` job: renders the report PDF and emails it to
@@ -69,15 +69,15 @@ export async function processReportDelivery(
     const safeName = (s: string) => s.replace(/[^a-z0-9]+/gi, "-").toLowerCase();
     await mail.send({
       to: delivery.email,
-      subject: `Your KOL fit report — @${org} vs @${kol}`,
+      subject: `Your fit report: @${org} vs @${kol}`,
       text: `Attached is your engaged-audience fit report for @${org} vs @${kol}.\n\nVerdict: ${fitReport.verdict} (${fitReport.overallScore.value}/100).`,
       html:
         `<p>Attached is your engaged-audience fit report for <b>@${org}</b> vs <b>@${kol}</b>.</p>` +
         `<p>Verdict: <b>${fitReport.verdict}</b> (${fitReport.overallScore.value}/100).</p>` +
-        `<p>— KOL Fit Analyzer</p>`,
+        `<p>${APP_NAME}</p>`,
       attachments: [
         {
-          filename: `kol-fit-${safeName(org)}-${safeName(kol)}.pdf`,
+          filename: `overlapx-${safeName(org)}-${safeName(kol)}.pdf`,
           content: pdf,
           contentType: "application/pdf",
         },

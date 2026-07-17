@@ -176,7 +176,7 @@ function SupabaseEntry() {
           <h1 className="text-[15px] font-semibold text-foreground">Sign in</h1>
         </div>
         <p className="text-sm text-secondary-foreground">
-          Signing in is optional — you can run analyses without an account. Sign
+          Signing in is optional. You can run analyses without an account. Sign
           in to keep your saved reports across devices.
         </p>
       </div>

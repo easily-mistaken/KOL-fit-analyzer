@@ -78,7 +78,7 @@ export function MetricGroups({ metrics }: { metrics: MetricMap }) {
           <div className="mb-3 flex items-center gap-2 text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">
             Risk metrics
             <span className="normal-case tracking-normal text-warning">
-              — higher is worse
+              (higher is worse)
             </span>
           </div>
           <div>

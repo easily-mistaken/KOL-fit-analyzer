@@ -43,7 +43,7 @@ export default async function AnalysesListPage({
           Saved analyses
         </h1>
         <p className="max-w-2xl text-sm text-secondary-foreground">
-          Every KOL fit analysis, newest first. Open any row to view its full
+          Every fit analysis, newest first. Open any row to view its full
           report.
         </p>
       </section>

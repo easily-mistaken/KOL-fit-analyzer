@@ -2,7 +2,7 @@
 
 ## Goal
 
-Stand up the base monorepo structure and tooling for Crypto KOL Fit Analyzer with no product logic yet. At the end of this unit, the workspace builds, the web app starts, the worker package compiles, and a shared package can be imported from both — nothing more.
+Stand up the base monorepo structure and tooling for OverlapX with no product logic yet. At the end of this unit, the workspace builds, the web app starts, the worker package compiles, and a shared package can be imported from both — nothing more.
 
 Explicit non-goals for this unit (covered by later units, do not implement here):
 

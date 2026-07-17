@@ -37,7 +37,7 @@ export default async function DetailedRequestPage({
         <p className="max-w-xl text-sm text-secondary-foreground">
           Beyond the automated analysis: a human analyst reviews the KOL&apos;s
           audience, content, and risks in depth and sends you a curated
-          verdict — straight to your Telegram, within a day.
+          verdict straight to your Telegram, within a day.
         </p>
       </div>
 

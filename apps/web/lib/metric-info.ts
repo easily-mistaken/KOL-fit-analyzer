@@ -15,27 +15,27 @@ export const METRIC_INFO: Record<ScoreMetric, MetricInfo> = {
   },
   engaged_audience_match: {
     label: "Engaged audience match",
-    what: "How much of the KOL's genuinely engaged audience — the people who actually show up in their replies and conversations, not just follower counts — matches the users this organization wants to reach.",
+    what: "How much of the KOL's genuinely engaged audience (the people who actually show up in their replies and conversations, not just follower counts) matches the users this organization wants to reach.",
     read: "The most important signal. Higher means your real target audience is actually in the room.",
   },
   audience_quality: {
     label: "Audience quality",
-    what: "How real and valuable the engaged audience is — genuine, interested people versus bots, spam, and freebie-hunters.",
+    what: "How real and valuable the engaged audience is: genuine, interested people versus bots, spam, and freebie-hunters.",
     read: "Higher = a cleaner audience than typical for the space. Lower means a meaningful slice of the engagement is noise.",
   },
   content_fit: {
     label: "Content fit",
-    what: "How naturally this KOL's world connects to yours — whether their usual topics and their audience's interests make a mention of your product feel organic rather than forced.",
+    what: "How naturally this KOL's world connects to yours, and whether their usual topics and their audience's interests make a mention of your product feel organic rather than forced.",
     read: "Higher = the message lands in its natural habitat. Adjacent topics count, not just identical ones.",
   },
   campaign_goal_fit: {
     label: "Campaign goal fit",
-    what: "How well this KOL's audience serves your stated campaign goal — awareness, community growth, user acquisition, developer adoption, and so on.",
+    what: "How well this KOL's audience serves your stated campaign goal: awareness, community growth, user acquisition, developer adoption, and so on.",
     read: "Higher = the right tool for this specific job. The same KOL can score differently for different goals.",
   },
   brand_safety: {
     label: "Brand safety",
-    what: "Whether anything in this KOL's track record poses a reputational risk to your brand — from misleading claims to associations you wouldn't want next to your name.",
+    what: "Whether anything in this KOL's track record poses a reputational risk to your brand, from misleading claims to associations you wouldn't want next to your name.",
     read: "Higher = safer. Anything below a clean score deserves a human look before committing budget.",
   },
   geo_language_fit: {
@@ -46,11 +46,11 @@ export const METRIC_INFO: Record<ScoreMetric, MetricInfo> = {
   paid_promo_risk: {
     label: "Paid-promo risk",
     what: "How much this KOL's feed behaves like a paid billboard. Occasional relevant partnerships are normal; a feed dominated by unrelated promotions dilutes trust and endorsement value.",
-    read: "Risk metric — higher is worse. High risk means their recommendation carries less weight with their audience.",
+    read: "Risk metric: higher is worse. High risk means their recommendation carries less weight with their audience.",
   },
   bot_farm_risk: {
     label: "Bot / farm risk",
-    what: "How much of the visible engagement looks manufactured — automated accounts, engagement rings, or incentive-chasers — rather than real interest.",
-    read: "Risk metric — higher is worse. When this is high, the reach numbers overstate the real audience.",
+    what: "How much of the visible engagement looks manufactured (automated accounts, engagement rings, or incentive-chasers) rather than real interest.",
+    read: "Risk metric: higher is worse. When this is high, the reach numbers overstate the real audience.",
   },
 };

@@ -41,7 +41,7 @@ export function ShareReport({ requestId }: { requestId: string }) {
       setUrl(link);
       void copyToClipboard(link);
     } catch {
-      setError("Network error — please try again.");
+      setError("Network error. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -54,7 +54,7 @@ export function ShareReport({ requestId }: { requestId: string }) {
       await fetch(`/api/analyses/${requestId}/share`, { method: "DELETE" });
       setUrl(null);
     } catch {
-      setError("Network error — please try again.");
+      setError("Network error. Please try again.");
     } finally {
       setBusy(false);
     }
@@ -87,7 +87,7 @@ export function ShareReport({ requestId }: { requestId: string }) {
           size="sm"
           onClick={revoke}
           disabled={busy}
-          title="Revoke the share link — the URL stops working"
+          title="Revoke the share link so the URL stops working"
         >
           <X className="h-3.5 w-3.5" />
         </Button>

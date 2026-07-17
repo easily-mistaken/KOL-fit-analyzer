@@ -2,7 +2,7 @@
 
 ## Architecture Summary
 
-Crypto KOL Fit Analyzer should be built as a serious but lean modular system. It should support deep analysis, background jobs, saved reports, provider abstraction, and future agency workflows without requiring expensive enterprise infrastructure at the start.
+OverlapX should be built as a serious but lean modular system. It should support deep analysis, background jobs, saved reports, provider abstraction, and future agency workflows without requiring expensive enterprise infrastructure at the start.
 
 The architecture is a TypeScript modular monolith with a separate worker process:
 

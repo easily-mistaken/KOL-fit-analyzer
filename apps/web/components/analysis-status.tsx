@@ -15,7 +15,7 @@ import {
   Search,
   Sparkles,
 } from "lucide-react";
-import type { ApiResponse, JobStatus } from "@kol-fit/shared";
+import { APP_NAME, type ApiResponse, type JobStatus } from "@kol-fit/shared";
 
 import { cn } from "@/lib/utils";
 import type { AnalysisStatusResponse } from "@/lib/analysis-status";
@@ -51,7 +51,9 @@ export function AnalysisStatus({ id }: { id: string }) {
     if (typeof document === "undefined" || !document.hidden) return;
     const original = document.title;
     document.title =
-      status === "COMPLETED" ? "✅ Report ready — KOL Fit" : "⚠️ Analysis failed — KOL Fit";
+      status === "COMPLETED"
+        ? `✅ Report ready | ${APP_NAME}`
+        : `⚠️ Analysis failed | ${APP_NAME}`;
     const restore = () => {
       document.title = original;
     };
@@ -215,7 +217,7 @@ export function AnalysisStatus({ id }: { id: string }) {
                 <span className="text-muted-foreground">vs</span>{" "}
                 @{data.kolHandle}
               </CardTitle>
-              <CardDescription>KOL fit analysis</CardDescription>
+              <CardDescription>Fit analysis</CardDescription>
             </div>
             <StatusBadge status={job.status} />
           </div>
@@ -331,13 +333,13 @@ const STAGES: {
   {
     icon: <Search className="h-4 w-4" />,
     title: "Reading the public presence",
-    why: "Getting to know the org and the KOL — what they publish and what they stand for.",
+    why: "Getting to know the org and the KOL: what they publish and what they stand for.",
     until: 35,
   },
   {
     icon: <Radar className="h-4 w-4" />,
     title: "Measuring the real audience",
-    why: "Looking past follower counts at the people who actually engage — this deep pass is the slow part, and the whole point.",
+    why: "Looking past follower counts at the people who actually engage. This deep pass is the slow part, and the whole point.",
     until: 210,
   },
   {
@@ -419,9 +421,9 @@ function RunningExperience({ data }: { data: AnalysisStatusResponse }) {
           <div className="flex items-center gap-2 text-sm text-secondary-foreground">
             <Clock className="h-4 w-4 text-accent-hover" />
             {queued
-              ? "Queued — a worker will pick this up shortly."
+              ? "Queued. A worker will pick this up shortly."
               : overrun
-                ? "Taking a little longer than usual — hang tight."
+                ? "Taking a little longer than usual. Hang tight."
                 : "Most analyses finish in about 5–7 minutes."}
           </div>
         </div>
@@ -484,8 +486,8 @@ function RunningExperience({ data }: { data: AnalysisStatusResponse }) {
         </ol>
 
         <p className="mt-6 text-xs text-muted-foreground">
-          This page updates automatically — no need to refresh. You can leave and
-          come back from{" "}
+          This page updates automatically, so there&apos;s no need to refresh.
+          You can leave and come back from{" "}
           <Link href="/analyses" className="text-accent-hover hover:underline">
             Reports
           </Link>
@@ -562,7 +564,7 @@ function FailedBody({
       }
       setRetryError(body.error?.message ?? "Could not retry. Please try again.");
     } catch {
-      setRetryError("Network error — please try again.");
+      setRetryError("Network error. Please try again.");
     } finally {
       setRetrying(false);
     }
@@ -579,8 +581,7 @@ function FailedBody({
           {job.errorMessage ?? "The analysis could not be completed."}
         </p>
         <p className="text-xs text-secondary-foreground">
-          Failed runs don&apos;t count against your analyses — retrying is
-          free.
+          Failed runs don&apos;t count against your analyses. Retrying is free.
         </p>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1 font-mono text-xs text-muted-foreground">
           {job.errorCode && <span>{job.errorCode}</span>}

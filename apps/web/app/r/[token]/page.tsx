@@ -16,7 +16,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Shared KOL fit report",
+  title: "Shared fit report",
   robots: { index: false, follow: false },
 };
 
@@ -45,8 +45,8 @@ export default async function SharedReportPage({
         <div className="flex items-center gap-2.5 text-sm">
           <Sparkles className="h-4 w-4 shrink-0 text-accent-hover" />
           <span className="text-secondary-foreground">
-            This KOL fit report was shared with you. We check who actually
-            listens — not just who follows.
+            This fit report was shared with you. We check who actually listens,
+            not just who follows.
           </span>
         </div>
         <Link

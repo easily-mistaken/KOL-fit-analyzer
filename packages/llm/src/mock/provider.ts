@@ -127,7 +127,7 @@ export class MockLlmProvider implements LlmProvider {
         : "No engaged audience could be characterised from the sample.",
       `Content centers on ${themes}.`,
       input.kol.content.promoPatterns.length > 0
-        ? "Promotional patterns detected — weigh brand/compliance risk."
+        ? "Promotional patterns detected. Weigh brand/compliance risk."
         : "No strong paid-promo patterns detected.",
     ];
 

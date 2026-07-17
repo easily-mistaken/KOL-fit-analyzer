@@ -6,7 +6,7 @@ import { AppShell } from "@/components/app-shell";
 import "./globals.css";
 
 export const metadata = {
-  title: "Crypto KOL Fit Analyzer",
+  title: "OverlapX",
   description:
     "We don't just check what a KOL posts. We check who actually listens.",
 };

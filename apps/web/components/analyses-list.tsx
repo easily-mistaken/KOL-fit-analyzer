@@ -144,7 +144,7 @@ function EmptyState() {
       <div className="space-y-1">
         <p className="text-sm font-medium text-foreground">No reports yet</p>
         <p className="text-sm text-muted-foreground">
-          Create your first KOL fit analysis to see it here.
+          Create your first fit analysis to see it here.
         </p>
       </div>
       <Button asChild size="sm">

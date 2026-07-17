@@ -1,8 +1,8 @@
-# Crypto KOL Fit Analyzer
+# OverlapX
 
 ## Overview
 
-Crypto KOL Fit Analyzer is an internal-first analysis tool for crypto startups and future agency workflows. It compares a crypto organization/startup with a known Twitter/X KOL and generates a deep fit report showing whether the KOL's actual engaged audience overlaps with the organization's target audience and campaign goal. The product does not only check what a KOL posts; it checks who actually listens, who engages, how useful that audience is, and whether the KOL introduces brand, bot, farming, or paid-promo risk.
+OverlapX is an internal-first analysis tool for crypto startups and future agency workflows. It compares a crypto organization/startup with a known Twitter/X KOL and generates a deep fit report showing whether the KOL's actual engaged audience overlaps with the organization's target audience and campaign goal. The product does not only check what a KOL posts; it checks who actually listens, who engages, how useful that audience is, and whether the KOL introduces brand, bot, farming, or paid-promo risk.
 
 ## Product Positioning
 

@@ -41,7 +41,7 @@ export function buildDetailedRequestNotification(input: {
   if (input.orgHandle || input.kolHandle) {
     lines.push(`Pair: @${input.orgHandle ?? "?"} × @${input.kolHandle ?? "?"}`);
   }
-  lines.push(`Telegram: @${input.telegram} — X: @${input.xHandle}`);
+  lines.push(`Telegram: @${input.telegram} | X: @${input.xHandle}`);
   if (input.email) lines.push(`Email: ${input.email}`);
   if (input.note) {
     const note = input.note.length > 120 ? `${input.note.slice(0, 120)}…` : input.note;

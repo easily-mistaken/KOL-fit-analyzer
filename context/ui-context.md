@@ -159,7 +159,7 @@ Use clear loading states and status text. Do not fake progress percentages unles
 Empty states should be simple and direct:
 
 - No reports yet
-- Create your first KOL fit analysis
+- Create your first fit analysis
 - Analysis failed with reason
 - Data unavailable from provider
 

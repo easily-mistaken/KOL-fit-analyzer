@@ -1,4 +1,4 @@
-**Crypto KOL Fit Analyzer**
+**OverlapX**
 
 **Verified 12-Pair Calibration Set**
 

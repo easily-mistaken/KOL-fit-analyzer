@@ -117,7 +117,7 @@ function computeDrivers(metrics: MetricMap): { pos: Driver[]; neg: Driver[] } {
     const label = METRIC_INFO[metric]?.label ?? metric;
     if (RISK_METRICS.has(metric)) {
       if (score.value >= 55) {
-        neg.push({ label, value: score.value, note: "Elevated — factor this into the decision." });
+        neg.push({ label, value: score.value, note: "Elevated. Factor this into the decision." });
       }
     } else if (score.value >= 65) {
       pos.push({ label, value: score.value, note: "A genuine strength for this pairing." });
@@ -283,7 +283,7 @@ export function FitReportView({
             Want the analyst&apos;s cut of this report?
           </p>
           <p className="mt-0.5 text-xs text-secondary-foreground">
-            A hand-curated deep dive on @{meta.kolHandle} — delivered to your
+            A hand-curated deep dive on @{meta.kolHandle}, delivered to your
             Telegram within a day.
           </p>
         </div>
@@ -364,7 +364,7 @@ export function FitReportView({
 
       {/* AUDIENCE */}
       {(fitReport.audienceMatch || fitReport.audienceBreakdown) && (
-        <Panel title="Engaged audience — who actually listens">
+        <Panel title="Engaged audience: who actually listens">
           {fitReport.audienceBreakdown && (
             <AudienceDonut distribution={fitReport.audienceBreakdown} />
           )}

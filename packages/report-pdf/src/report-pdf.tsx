@@ -8,6 +8,7 @@ import {
   renderToBuffer,
 } from "@react-pdf/renderer";
 import {
+  APP_NAME,
   AUDIENCE_BUCKET_LABELS,
   type AudienceBucket,
   type FitReport,
@@ -147,7 +148,7 @@ function MetricRows({ metrics }: { metrics: Partial<Record<ScoreMetric, ScoreVal
           </View>
         );
       })}
-      <Text style={s.groupLabel}>Risk metrics — higher is worse</Text>
+      <Text style={s.groupLabel}>Risk metrics (higher is worse)</Text>
       {RISK.filter((m) => metrics[m]).map((m) => {
         const v = metrics[m]!.value;
         return (
@@ -189,7 +190,7 @@ function ReportDocument({
   const gen = meta.generatedAt ? new Date(meta.generatedAt).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : null;
 
   return (
-    <Document title={`KOL Fit Report — ${meta.orgHandle} x ${meta.kolHandle}`}>
+    <Document title={`${APP_NAME} report: ${meta.orgHandle} x ${meta.kolHandle}`}>
       <Page size="A4" style={s.page}>
         <View style={s.headerRow}>
           <View>
@@ -199,7 +200,7 @@ function ReportDocument({
             </Text>
             {gen && <Text style={s.metaLine}>Generated {gen}</Text>}
           </View>
-          <Text style={s.brand}>KOL Fit Analyzer</Text>
+          <Text style={s.brand}>{APP_NAME}</Text>
         </View>
 
         <View style={s.rule} />
@@ -316,7 +317,7 @@ function ReportDocument({
         )}
 
         <View style={s.footer} fixed>
-          <Text>KOL Fit Analyzer — engaged-audience fit report</Text>
+          <Text>{APP_NAME}: engaged-audience fit report</Text>
           <Text render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`} />
         </View>
       </Page>

@@ -18,7 +18,7 @@ export type TierGateDecision =
 
 const MESSAGES = {
   login_required:
-    "You've used your 3 free analyses. Sign in with Google to unlock more — it takes ten seconds.",
+    "You've used your 3 free analyses. Sign in with Google to unlock more. It takes ten seconds.",
   upgrade_required:
     "You've used all 12 included analyses. Request a detailed report and we'll deliver a curated analysis straight to your Telegram within a day.",
 } as const;

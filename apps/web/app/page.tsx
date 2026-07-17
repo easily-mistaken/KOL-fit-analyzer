@@ -28,7 +28,7 @@ export default function HomePage() {
             {APP_NAME}
           </h1>
           <p className="mx-auto mt-3 max-w-xl text-base leading-relaxed text-secondary-foreground">
-            We don&apos;t just check what a KOL posts — we check{" "}
+            We don&apos;t just check what a KOL posts. We check{" "}
             <span className="text-foreground">who actually listens</span>. The
             blue accounts below engage; move your cursor to find more.
           </p>

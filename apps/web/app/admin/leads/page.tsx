@@ -55,9 +55,8 @@ export default async function AdminLeadsPage({
           Curated-report requests
         </h1>
         <p className="max-w-2xl text-sm text-secondary-foreground">
-          Everyone who asked for the hand-curated analysis — with their
-          Telegram, X handle, and email. Deliver on Telegram, then mark the
-          request sent.
+          Everyone who asked for the hand-curated analysis, with their Telegram,
+          X handle, and email. Deliver on Telegram, then mark the request sent.
         </p>
       </section>
 
