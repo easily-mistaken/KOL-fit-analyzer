@@ -48,6 +48,10 @@
   --accent-contrast: #0a0c10;
   --accent-ink: #5b830a;
   --accent-hover: #aee93a;
+  /* The logo mark. Pure lime is illegible on the near-white nav (~1.3:1), so on
+     light it uses the deeper accent-ink green (~4.2:1); dark keeps the exact
+     lime the mark was designed in. Consumed by <LogoMark> via currentColor. */
+  --logo-mark: #5b830a;
 
   /* State (semantic — deliberately not the brand lime, so a "good score"
      never reads as a call to action). */
@@ -140,6 +144,8 @@
   /* On near-black the lime carries itself, so ink and hover are both lime. */
   --accent-ink: #d0f87a;
   --accent-hover: #d0f87a;
+  /* The mark's original lime, which reads perfectly on the dark surface. */
+  --logo-mark: #bef54b;
 
   --state-success: #4ade80;
   --state-warning: #fbbf4c;
@@ -226,6 +232,7 @@
   --color-accent-contrast: var(--accent-contrast);
   /* text-accent-ink = the accent as text/icons; bg-accent-hover = fill hover. */
   --color-accent-ink: var(--accent-ink);
+  --color-logo-mark: var(--logo-mark);
   --color-accent-hover: var(--accent-hover);
   --color-default: var(--border-default);
   --color-strong: var(--border-strong);

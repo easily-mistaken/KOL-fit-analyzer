@@ -1,12 +1,12 @@
 "use client";
 
 import * as React from "react";
-import Image from "next/image";
 import { ChevronRight, Lightbulb } from "lucide-react";
 
 import { APP_NAME } from "@kol-fit/shared";
 
 import { cn } from "@/lib/utils";
+import { LogoMark } from "@/components/logo-mark";
 import {
   CREATOR_MARKETING_TIPS,
   type CreatorTip,
@@ -109,17 +109,10 @@ export function WaitingTips() {
 
       {/* Brand signature. These tip cards get screenshotted, so the mark and
           tagline ride along, turning the wait into a small marketing surface.
-          Reuses /logo.svg so it inherits the real logo once it's dropped in.
           Kept outside the keyed tip so it doesn't re-fade on every rotation. */}
       <div className="mt-3 flex items-center justify-between border-t border-default pt-2.5">
         <div className="flex items-center gap-1.5">
-          <Image
-            src="/logo.svg"
-            alt=""
-            width={16}
-            height={16}
-            className="h-4 w-4"
-          />
+          <LogoMark className="h-4 w-4" />
           <span className="text-[11px] font-semibold tracking-tight text-secondary-foreground">
             {APP_NAME}
           </span>
