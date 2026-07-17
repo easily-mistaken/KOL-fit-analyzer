@@ -32,7 +32,7 @@ Do not run deep analysis inside Next.js request/response handlers. API routes cr
 | LLM | OpenAI first | Classification, reasoning, and final report generation |
 | LLM provider abstraction | Custom package | Allows switching or comparing OpenAI, Claude, Gemini, or other models later |
 | Validation | Zod | Runtime validation for API inputs, provider responses, LLM outputs, and internal schemas |
-| Deployment | Vercel + Railway/Render/Fly + Supabase | Web on Vercel, worker on a long-running Node host, database on Supabase |
+| Deployment | Single always-on container (Railway/Render/Fly) + Supabase | **One service** runs web + worker together via `pnpm start` (`scripts/start.mjs` supervises both child processes; either exiting takes the container down for a clean restart). Database on Supabase. Not plain Vercel serverless — the worker must stay alive to drain the queue. See `DEPLOY.md`. |
 | Storage later | Supabase Storage or S3-compatible storage | Optional storage for raw large API payloads and generated exports |
 | Vector search later | pgvector | Optional semantic memory for KOL intelligence and historical matching |
 
