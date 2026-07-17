@@ -2,6 +2,8 @@ import {
   AnalysisRequestInputSchema,
   err,
   ok,
+  resolveReuseWindowSeconds,
+  type AnalysisRequestInput,
   type ApiResponse,
   type JobStatus,
 } from "@kol-fit/shared";
@@ -56,10 +58,60 @@ type AnalysisCreated = {
   jobId: string;
   status: JobStatus;
   createdAt: string;
+  // True when this response points at an existing recent report instead of a
+  // freshly created run (instant reuse, Unit 41).
+  reused?: boolean;
 };
 
 function json(body: ApiResponse<AnalysisCreated>, status: number): Response {
   return Response.json(body, { status });
+}
+
+/**
+ * Instant reuse (Unit 41): finds this owner's most recent COMPLETED analysis for
+ * the EXACT same pair + brief within the freshness window. Every brief field is
+ * matched (null-for-null), so changing any single input produces a genuinely
+ * new run rather than silently reusing a differently-scoped report. Returns null
+ * when there is no reusable match. Scoped to `ownerId` so one user never sees
+ * another's report (anonymous history is reassigned to the user on login, so
+ * this match survives the login boundary).
+ */
+async function findReusableAnalysis(
+  ownerId: string,
+  input: AnalysisRequestInput,
+  windowSeconds: number
+): Promise<AnalysisCreated | null> {
+  const cutoff = new Date(Date.now() - windowSeconds * 1000);
+  const existing = await prisma.analysisRequest.findFirst({
+    where: {
+      ownerId,
+      createdAt: { gte: cutoff },
+      orgHandle: input.orgHandle,
+      kolHandle: input.kolHandle,
+      websiteUrl: input.websiteUrl ?? null,
+      docsUrl: input.docsUrl ?? null,
+      productCategory: input.productCategory ?? null,
+      targetUser: input.targetUser ?? null,
+      campaignGoal: input.campaignGoal ?? null,
+      stage: input.stage ?? null,
+      region: input.region ?? null,
+      report: { is: { status: "COMPLETED" } },
+    },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      createdAt: true,
+      job: { select: { id: true, status: true } },
+    },
+  });
+  if (!existing?.job) return null;
+  return {
+    id: existing.id,
+    jobId: existing.job.id,
+    status: existing.job.status,
+    createdAt: existing.createdAt.toISOString(),
+    reused: true,
+  };
 }
 
 // Flattens Zod issues into a single concise, human-readable message.
@@ -101,6 +153,20 @@ export async function POST(req: Request): Promise<Response> {
     // Tag the analysis with the browser's anonymous owner (sets the cookie on
     // first submit), so it can be scoped to them later.
     const ownerId = await ensureOwnerId();
+
+    // Instant reuse (Unit 41): if this owner already ran this EXACT pair + brief
+    // and the report completed within the reuse window, return that report
+    // instead of re-running the 5-7 min pipeline. Deliberately BEFORE the tier
+    // gate + rate limit: re-viewing an answer you already ran must never be
+    // blocked by, or consume, your analysis quota. Creates nothing, calls no
+    // external API. `0` (env) disables reuse.
+    const reuseWindow = resolveReuseWindowSeconds(process.env);
+    if (reuseWindow > 0) {
+      const reused = await findReusableAnalysis(ownerId, input, reuseWindow);
+      if (reused) {
+        return json(ok(reused), 200);
+      }
+    }
 
     // Tiered access funnel (Unit 34): 3 lifetime anonymous → login → 12
     // lifetime per account → concierge tier. Runs BEFORE the daily abuse

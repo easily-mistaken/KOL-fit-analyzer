@@ -5,14 +5,12 @@ import type { AuthUser } from "@kol-fit/auth";
 // ============================================================================
 // Supabase auth adapter (Unit 28) — SUPABASE MODE ONLY.
 //
-// ACTIVATE + VERIFY AT DEPLOY — NOT YET LIVE-VERIFIED. This adapter cannot be
-// run locally (there is no Supabase project on the dev path). It is built to the
-// current official @supabase/ssr App-Router guide
+// Built to the current official @supabase/ssr App-Router guide
 // (https://supabase.com/docs/guides/auth/server-side/nextjs — server client +
-// getClaims), typechecked, and kept fully isolated behind resolveAuthMode():
-// nothing here executes in dev mode, and @supabase/ssr is imported dynamically
-// so the dev runtime never loads it. The server-side user is read via
-// getClaims() (JWT-verified) — NEVER getSession().
+// getClaims), and kept fully isolated behind resolveAuthMode(): nothing here
+// executes in dev mode, and @supabase/ssr is imported dynamically so the dev
+// runtime never loads it. The server-side user is read via getClaims()
+// (JWT-verified) — NEVER getSession().
 // ============================================================================
 
 /**

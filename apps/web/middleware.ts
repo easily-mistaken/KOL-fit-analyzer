@@ -7,7 +7,7 @@ import { NextResponse, type NextRequest } from "next/server";
 //
 // SUPABASE MODE: refreshes the Supabase session per the current official
 // @supabase/ssr middleware pattern (getClaims + request/response cookie
-// passthrough). ACTIVATE + VERIFY AT DEPLOY — NOT YET LIVE-VERIFIED.
+// passthrough).
 //
 // The Supabase-mode branch dynamic-imports @supabase/ssr so it never loads on
 // the dev path. The mode check is inlined (rather than importing

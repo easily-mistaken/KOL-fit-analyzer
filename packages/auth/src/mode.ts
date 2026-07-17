@@ -1,7 +1,7 @@
 import type { AuthEnv, AuthMode } from "./types.js";
 
-// Auth-mode resolution (Unit 28). The seam flips from the dev email login to
-// real Supabase Auth purely on the presence of Supabase env — no app code
+// Auth-mode resolution (Unit 28). The seam flips from anonymous-only (no login)
+// to real Supabase Auth purely on the presence of Supabase env — no app code
 // change at deploy.
 
 /** Non-empty string helper (trims). */

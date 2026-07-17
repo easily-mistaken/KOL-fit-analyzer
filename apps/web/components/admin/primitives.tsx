@@ -5,13 +5,11 @@ import {
   Clock,
   Inbox,
   Loader2,
-  MinusCircle,
   ShieldAlert,
 } from "lucide-react";
 import type { JobStatus } from "@kol-fit/shared";
 
 import { cn } from "@/lib/utils";
-import type { DeliveryStatus } from "@/lib/admin/types";
 
 // Shared, server-safe building blocks for the four admin pages: formatters, the
 // table shell, status pills and the empty/not-configured notices. Kept in one
@@ -66,26 +64,6 @@ const JOB_STATUS: Record<
 export function JobStatusPill({ status }: { status: JobStatus | null }) {
   if (!status) return <Dash />;
   const s = JOB_STATUS[status];
-  return (
-    <span className={cn("inline-flex items-center gap-1.5 text-[13px]", s.className)}>
-      {s.icon}
-      {s.label}
-    </span>
-  );
-}
-
-const DELIVERY_STATUS: Record<
-  DeliveryStatus,
-  { label: string; className: string; icon: React.ReactNode }
-> = {
-  PENDING: { label: "Pending", className: "text-warning", icon: <Clock className="h-3.5 w-3.5" /> },
-  SENT: { label: "Sent", className: "text-success", icon: <CheckCircle2 className="h-3.5 w-3.5" /> },
-  FAILED: { label: "Failed", className: "text-error", icon: <AlertTriangle className="h-3.5 w-3.5" /> },
-  SKIPPED: { label: "Skipped", className: "text-muted-foreground", icon: <MinusCircle className="h-3.5 w-3.5" /> },
-};
-
-export function DeliveryPill({ status }: { status: DeliveryStatus }) {
-  const s = DELIVERY_STATUS[status];
   return (
     <span className={cn("inline-flex items-center gap-1.5 text-[13px]", s.className)}>
       {s.icon}

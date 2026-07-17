@@ -27,7 +27,7 @@ const JOB_TONE: Partial<Record<JobStatus, "success" | "warning" | "error">> = {
 };
 const VERDICT_ORDER: ReportVerdict[] = ["STRONG", "GOOD", "OKAY", "WEAK", "AVOID"];
 
-/** Operator overview: usage, job health, leads, spend and cap headroom. */
+/** Operator overview: usage, job health, spend and cap headroom. */
 export default async function AdminOverviewPage() {
   if (!isAdminConfigured()) return <NotConfigured />;
   await requireAdmin();
@@ -70,22 +70,6 @@ export default async function AdminOverviewPage() {
           label="Browsers (24h)"
           value={formatInt(o.owners.last24h)}
           hint={`7d ${formatInt(o.owners.last7d)} · all-time ${formatInt(o.owners.allTime)}`}
-        />
-        <StatCard
-          label="Leads (all-time)"
-          value={formatInt(o.leads.total.allTime)}
-          hint={`24h ${formatInt(o.leads.total.last24h)} · 7d ${formatInt(o.leads.total.last7d)}`}
-        />
-        <StatCard
-          label="Distinct contacts"
-          value={formatInt(o.leads.distinctEmails)}
-          hint={`emails · ${formatInt(o.leads.distinctTelegram)} Telegram handles`}
-        />
-        <StatCard
-          label="Emails delivered"
-          value={formatInt(o.leads.emailsSent)}
-          hint={`${formatInt(o.leads.emailsFailed)} failed`}
-          tone={o.leads.emailsFailed > 0 ? "warning" : undefined}
         />
         <StatCard
           label="Spend (24h)"

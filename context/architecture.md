@@ -231,8 +231,8 @@ rotating the password invalidates all sessions. A valid admin session is the one
 documented exception to Unit 25 owner scoping — it may read any report via
 `GET /api/analyses/[id]` (a non-owner without it still gets 404). The panel adds
 **no new data collection**: it only reads `AnalysisRequest`, `AnalysisJob`,
-`Report`, `ReportDelivery`, and `ProviderUsageLog`, and performs **no mutations**
-(no delete/re-run/export). This is a shared-secret gate for an internal tool, not
+`Report`, `DetailedReportRequest`, and `ProviderUsageLog`, and performs **no
+mutations** (no delete/re-run/export). This is a shared-secret gate for an internal tool, not
 an identity system — real accounts/roles remain the future auth unit.
 
 ### User Authentication (Unit 28)
@@ -241,35 +241,30 @@ Real per-user identity now exists behind a small **auth seam**, mirroring the
 Twitter/LLM provider abstractions. The seam has two modes selected purely by env
 (`resolveAuthMode`, `@kol-fit/auth`): **dev** (default) and **supabase**.
 
-- **`@kol-fit/auth`** is the pure, framework-agnostic security core (no Next,
-  Prisma, Supabase, or zod — only `node:crypto`; dist-testable like
-  `resolveAbuseLimits`). It owns the stateless dev-session token
-  (`signSessionToken`/`verifySessionToken`: `${userId}.${base64url(hmacSHA256(userId, secret))}`,
-  compared with `crypto.timingSafeEqual`, never throws), `resolveAuthMode`
-  (→ `supabase` iff both `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-  are set, else `dev`), and `devLoginAllowed` (fail-closed: no passwordless login
-  in production unless `AUTH_DEV_LOGIN=true`).
-- **Dev mode (default, fully local + live-verifiable):** a passwordless email
-  login. `POST /api/auth/session` upserts a `User` by email, sets an httpOnly
-  HMAC session cookie (`kolfit_session`, 30d, secret from `AUTH_SESSION_SECRET`;
-  if the secret is unset, sessions are simply disabled → treated as logged out),
-  and claims the anonymous history. `DELETE` signs out. `apps/web/lib/auth/*`
-  holds the web glue (`session`, `current-user`, `claim`, `index`).
-- **Supabase mode (deploy-activated — NOT yet live-verified):** the
-  `apps/web/lib/auth/supabase.ts` adapter + `apps/web/middleware.ts` are built to
-  the current official `@supabase/ssr` App-Router pattern
-  (`createServerClient({ cookies: { getAll, setAll } })`; the server user is read
-  via **`getClaims()`**, never `getSession()`; middleware refreshes the session).
-  It is fully **isolated behind `resolveAuthMode()`** — `@supabase/ssr` is only
-  ever reached via dynamic `import()` inside supabase-mode branches, so the dev
-  runtime never loads it, and the middleware is a **no-op in dev mode**. This
-  adapter cannot run locally (no Supabase project); it is typechecked and marked
-  "activate + verify at deploy." Flipping to it needs no app-code change.
+- **`@kol-fit/auth`** is the pure, framework-agnostic auth core (no Next, Prisma,
+  Supabase, or zod — no runtime dependencies; dist-testable like
+  `resolveAbuseLimits`). It owns `resolveAuthMode` (→ `supabase` iff both
+  `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` are set, else
+  `dev`) plus the `AuthUser`/`AuthMode`/`AuthEnv` types.
+- **Dev mode (no Supabase env):** anonymous-only — there is no sign-in. `/login`
+  shows a "not configured" notice and `/auth/callback` redirects to `/login`.
+  History is scoped to the browser's `kolfit_owner` cookie.
+- **Supabase mode (Google sign-in, live-verified):** the sole login path is
+  Google OAuth via `/auth/callback`, which exchanges the code, mirror-upserts the
+  local `User`, and claims the anonymous history. The `apps/web/lib/auth/supabase.ts`
+  adapter + `apps/web/middleware.ts` are built to the current official
+  `@supabase/ssr` App-Router pattern (`createServerClient({ cookies: { getAll, setAll } })`;
+  the server user is read via **`getClaims()`**, never `getSession()`; middleware
+  refreshes the session). It is fully **isolated behind `resolveAuthMode()`** —
+  `@supabase/ssr` is only ever reached via dynamic `import()` inside supabase-mode
+  branches, so the dev runtime never loads it, and the middleware is a **no-op in
+  dev mode**. `apps/web/lib/auth/*` holds the web glue (`supabase`,
+  `current-user`, `claim`, `index`). `DELETE /api/auth/session` signs out.
 - **Anonymous + claim (not hard-gated):** anonymous use stays. The key elegance
   is that **the ownership id simply *becomes* the user id when signed in**:
   `apps/web/lib/owner.ts` (`getOwnerId`/`ensureOwnerId`, same names) now returns
   the signed-in user id when present, else the anonymous `kolfit_owner` cookie —
-  so all six existing call sites (list/read/deliver + per-owner rate limit) get
+  so all existing call sites (list/read + per-owner rate limit) get
   per-user scoping and per-user rate limiting automatically. Logging in **claims**
   the current cookie's reports: `claimAnonymousReports` re-assigns
   `AnalysisRequest.ownerId` from the cookie id to the user id (best-effort, logs
@@ -371,21 +366,15 @@ denial-of-wallet exposure without new infrastructure (no Redis; matches the
 Real per-user auth (not per-browser-cookie) and per-IP limiting remain the future
 fix; `ownerId` maps onto a real user id then.
 
-### Report Delivery & Lead Capture (Unit 24)
+### Report Delivery (removed)
 
-The report is fully viewable on screen; to **take a copy** the user leaves an
-**email and/or Telegram** ("Get the full report"). Each submission is stored as
-a `ReportDelivery` row (the leads table) with per-channel status. **Email**
-delivers a generated **PDF**: `POST /api/analyses/[id]/deliver` (thin — validates
-via `ReportDeliverInputSchema`, creates the row, enqueues) → a pg-boss
-`report.deliver` job → the worker renders the PDF (`@kol-fit/report-pdf`, via
-`@react-pdf/renderer`, no browser) and sends it through a **mail-provider
-abstraction** (`@kol-fit/mail`): **mock** logs by default (no credentials);
-**resend** sends for real behind `MAIL_PROVIDER=resend` + `RESEND_API_KEY` +
-`MAIL_FROM`. **Telegram** is captured/stored only — bots can't DM a handle that
-hasn't started the bot, so real Telegram delivery is deferred. Delivery is
-best-effort/idempotent (a SENT row short-circuits; failures mark the row FAILED
-but never lose the captured lead), and addresses/secrets are never logged.
+The original Unit 24 emailed a rendered PDF of the report (a `ReportDelivery`
+row + a `report.deliver` pg-boss job + `@kol-fit/mail`/`@kol-fit/report-pdf`).
+The report-page email-capture UI was retired in Unit 39.1, leaving the pipeline
+unreachable, and the whole feature was removed on 2026-07-18 (packages, route,
+queue job, DB table, mail env). Lead capture now flows solely through the
+**detailed-report concierge** (Unit 35) — see below. Reports remain fully
+viewable on screen; there is no automated email delivery.
 
 ## Analysis Depth and Cost Controls
 

@@ -7,7 +7,7 @@
     "build": "pnpm -r build",
     "start": "node scripts/start.mjs",
     "lint": "pnpm -r --if-present lint",
-    "check": "node scripts/checks/base-url.regression.cjs && node scripts/checks/openai-reasoning.regression.cjs && node scripts/checks/twitterapi-envelope.regression.cjs && node scripts/checks/cache-and-caps.regression.cjs && node scripts/checks/error-taxonomy.regression.cjs && node scripts/checks/llm-cache.regression.cjs && node scripts/checks/report-delivery.regression.cjs && node scripts/checks/abuse-and-retry.regression.cjs && node scripts/checks/auth.regression.cjs && node scripts/checks/data-enrichment.regression.cjs && node scripts/checks/classification-v2.regression.cjs && node scripts/checks/scoring-v2.regression.cjs && node scripts/checks/pipeline-latency.regression.cjs && node scripts/checks/authority-rules.regression.cjs && node scripts/checks/negative-controls.regression.cjs && node scripts/checks/cache-poisoning.regression.cjs && node scripts/checks/intent-overlap.regression.cjs && node scripts/checks/media-scoring.regression.cjs && node scripts/checks/goal-conditional.regression.cjs && node scripts/calibration/run-pairs.cjs --selftest && node scripts/checks/pgboss-pool.regression.cjs && node scripts/checks/tier-gates.regression.cjs && node scripts/checks/detailed-requests.regression.cjs && node scripts/checks/audience-segments.regression.cjs",
+    "check": "node scripts/checks/base-url.regression.cjs && node scripts/checks/openai-reasoning.regression.cjs && node scripts/checks/twitterapi-envelope.regression.cjs && node scripts/checks/cache-and-caps.regression.cjs && node scripts/checks/error-taxonomy.regression.cjs && node scripts/checks/llm-cache.regression.cjs && node scripts/checks/abuse-and-retry.regression.cjs && node scripts/checks/auth.regression.cjs && node scripts/checks/data-enrichment.regression.cjs && node scripts/checks/classification-v2.regression.cjs && node scripts/checks/scoring-v2.regression.cjs && node scripts/checks/pipeline-latency.regression.cjs && node scripts/checks/authority-rules.regression.cjs && node scripts/checks/negative-controls.regression.cjs && node scripts/checks/cache-poisoning.regression.cjs && node scripts/checks/intent-overlap.regression.cjs && node scripts/checks/media-scoring.regression.cjs && node scripts/checks/goal-conditional.regression.cjs && node scripts/calibration/run-pairs.cjs --selftest && node scripts/checks/pgboss-pool.regression.cjs && node scripts/checks/tier-gates.regression.cjs && node scripts/checks/detailed-requests.regression.cjs && node scripts/checks/audience-segments.regression.cjs && node scripts/checks/analysis-reuse.regression.cjs",
     "check:base-url": "node scripts/checks/base-url.regression.cjs",
     "check:data-enrichment": "node scripts/checks/data-enrichment.regression.cjs",
     "check:classification-v2": "node scripts/checks/classification-v2.regression.cjs",
@@ -24,7 +24,6 @@
     "check:cache-and-caps": "node scripts/checks/cache-and-caps.regression.cjs",
     "check:error-taxonomy": "node scripts/checks/error-taxonomy.regression.cjs",
     "check:llm-cache": "node scripts/checks/llm-cache.regression.cjs",
-    "check:report-delivery": "node scripts/checks/report-delivery.regression.cjs",
     "check:abuse-and-retry": "node scripts/checks/abuse-and-retry.regression.cjs",
     "check:auth": "node scripts/checks/auth.regression.cjs",
     "calibrate": "node scripts/calibration/run-pairs.cjs",
@@ -33,6 +32,7 @@
     "check:pgboss-pool": "node scripts/checks/pgboss-pool.regression.cjs",
     "check:tier-gates": "node scripts/checks/tier-gates.regression.cjs",
     "check:detailed-requests": "node scripts/checks/detailed-requests.regression.cjs",
-    "check:audience-segments": "node scripts/checks/audience-segments.regression.cjs"
+    "check:audience-segments": "node scripts/checks/audience-segments.regression.cjs",
+    "check:analysis-reuse": "node scripts/checks/analysis-reuse.regression.cjs"
   }
 }

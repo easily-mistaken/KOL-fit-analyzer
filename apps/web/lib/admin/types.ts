@@ -1,8 +1,5 @@
 import type { JobStatus, ReportVerdict } from "@kol-fit/shared";
 
-/** Mirrors the Prisma DeliveryStatus enum (Unit 24); not in @kol-fit/shared. */
-export type DeliveryStatus = "PENDING" | "SENT" | "FAILED" | "SKIPPED";
-
 // DTOs for the admin panel (Unit 27). Defined once here so the query layer
 // (lib/admin/queries.ts) and the admin pages/components cannot drift apart.
 // Everything is a read-only projection of saved DB state — no scoring, no
@@ -21,15 +18,6 @@ export type AdminOverview = {
   jobs: Record<JobStatus, number>;
   /** Distinct owner cookies = distinct browsers/devices that used the tool. */
   owners: WindowCount;
-  leads: {
-    total: WindowCount;
-    /** Distinct addresses/handles ever captured. */
-    distinctEmails: number;
-    distinctTelegram: number;
-    /** Rows whose email actually went out. */
-    emailsSent: number;
-    emailsFailed: number;
-  };
   spend: {
     /** Summed ProviderUsageLog.costUsd (null cost counts as 0). */
     costUsd: WindowCount;
@@ -68,20 +56,6 @@ export type AdminAnalysisRow = {
   errorCode: string | null;
   verdict: ReportVerdict | null;
   overallScore: number | null;
-};
-
-export type AdminLeadRow = {
-  id: string; // ReportDelivery.id
-  createdAt: string; // ISO
-  email: string | null;
-  telegramHandle: string | null;
-  emailStatus: DeliveryStatus;
-  telegramStatus: DeliveryStatus;
-  errorCode: string | null;
-  /** The analysis the lead asked for — null if the request row is gone. */
-  requestId: string | null;
-  orgHandle: string | null;
-  kolHandle: string | null;
 };
 
 // Detailed-report concierge requests (Unit 35).

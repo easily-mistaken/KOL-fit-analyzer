@@ -35,7 +35,6 @@ Set these in the platform's env settings (not a committed file). See
 | `NEXT_PUBLIC_APP_URL` | the deployed origin, e.g. `https://overlapx.com` |
 | `TWITTER_PROVIDER=twitterapi` + `TWITTERAPI_IO_KEY` | live X data |
 | `LLM_PROVIDER=openai` + `OPENAI_API_KEY` | live analysis |
-| `MAIL_PROVIDER` + `RESEND_API_KEY` + `MAIL_FROM` | set to `resend` for real report delivery (default `mock` sends nothing) |
 | `ADMIN_PASSWORD` | optional; leave empty to keep the admin panel disabled |
 | `MAX_DAILY_SPEND_USD`, `MAX_ANALYSES_PER_*` | cost/abuse caps |
 

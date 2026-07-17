@@ -2,12 +2,11 @@ import { NextResponse } from "next/server";
 import { resolveAuthMode } from "@kol-fit/auth";
 
 // ============================================================================
-// Supabase OAuth / magic-link callback (Unit 28) — SUPABASE MODE ONLY.
-// ACTIVATE + VERIFY AT DEPLOY — NOT YET LIVE-VERIFIED. Unused on the dev path
-// (dev logs in via POST /api/auth/session). Exchanges the code for a session,
-// mirror-upserts the local User, claims the anonymous browser's reports, and
-// redirects home. @supabase/ssr is reached only via dynamic import() so the dev
-// runtime never loads it.
+// Supabase OAuth callback (Unit 28) — SUPABASE MODE ONLY. This is the sole
+// sign-in path (Google via Supabase); dev mode has no login and redirects to
+// /login. Exchanges the code for a session, mirror-upserts the local User,
+// claims the anonymous browser's reports, and redirects to History.
+// @supabase/ssr is reached only via dynamic import() so dev never loads it.
 // ============================================================================
 
 export const runtime = "nodejs";

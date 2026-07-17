@@ -221,3 +221,89 @@ Update this file after every meaningful implementation change.
 - 2026-07-08: Created `context/specs/04-shared-schemas-and-types.md` per explicit request (spec only, not implemented). Scopes shared Zod schemas + inferred types in `packages/shared`: analysis request input (mirrors `AnalysisRequest` columns), 15-section fit report output, 9-metric score schema (no weights — those stay in `packages/scoring`), 15 audience buckets + distribution, status/verdict/engagement-source enums mirrored from the Unit 03 Prisma enums (shared stays a dependency-free leaf — no import of `@kol-fit/db`; DB remains the source of truth, drift check in verification), provider-neutral Twitter/X normalized types, provider-neutral LLM structured-output types, `ANALYSIS_CAPS` constants, and `ApiResponse`/error-code shapes with `ok()`/`err()` helpers. New dep at implementation: `zod` (in `packages/shared`). Proposed a small per-concern module layout under `src/` with a barrel `index.ts` (keeps `APP_NAME` importable). No DB/API/queue/worker/provider/LLM/scoring logic.
 - 2026-07-08: Implemented and verified Unit 03 (Prisma Database Schema) in `packages/db`. Offline verification passes (`prisma validate`/`format`/`generate`, runtime export smoke test, `pnpm build`); live-DB steps (`migrate dev`, connection test) deferred pending Supabase credentials — no migration generated yet. Resolved Prisma 7.8.0 forced setup adaptations (config-file datasource, `prisma-client` generator with cjs output, driver adapter) — see Architecture Decisions. `next-env.d.ts` shows an unrelated Next-managed churn line (dev↔build routes-types path) from running `next build`. No commits made.
 - 2026-07-08: Created `context/specs/03-prisma-database-schema.md` per explicit request (spec only, not implemented). Scopes Prisma setup in `packages/db`, the initial Supabase Postgres schema, client generation, and DB package exports. Models: `Workspace`, `AnalysisRequest`, `AnalysisJob`, `OrgProfile`, `KolProfile`, `Report`, `ReportEvidence`, optional `EngagedAccountSample`, `ProviderUsageLog`. Enums: `JobStatus`, `ReportStatus`, `ReportVerdict`, `EngagementSource`. Workspace-ready (nullable `workspaceId` on request + report), reports persisted from day one, deterministic `scores` kept separate from LLM `report` JSON, no raw-payload columns, indexes for workspace/history + job status + org/KOL handle + `createdAt`. New deps at implementation: `prisma`, `@prisma/client`, `dotenv-cli` (root-`.env` loading for the Prisma CLI). No new env vars (`DATABASE_URL`/`DIRECT_URL` already in `.env.example`). No queue/worker/provider/LLM/scoring/API/UI logic. Reconciliation with `architecture.md` model names recorded as an open item above.
+
+- 2026-07-18: Extended provider + classification cache TTLs to 30 days
+  (`CACHE_TTL_SECONDS`, `CACHE_TTL_TWEETS_SECONDS`, `CACHE_TTL_PROFILE_SECONDS`,
+  `CLASSIFICATION_CACHE_TTL_SECONDS` = 2592000) in `.env` and documented the
+  rationale + trade-off in `.env.example`. Motivation: repeat analyses of the
+  same creator serve from the DB `ProviderCache`/classification cache instead of
+  re-fetching TwitterAPI.io + re-calling OpenAI, cutting the 5-7 min wait to
+  seconds on a cache hit. Trade-off documented: an analysis reflects a snapshot
+  up to 30 days old. Reviewed the `ProviderCache` schema for the fetch/store
+  path: it is already optimal — PK point lookup on `key` (`findUnique`), `Json`
+  payload (Prisma maps to Postgres `jsonb`, binary/fast), `@@index([expiresAt])`
+  for lazy cleanup. No schema change made (none warranted). Noted but did NOT
+  build: result-level reuse (short-circuit a repeat of the same brand×creator
+  pair to an existing recent Report) as the only higher-leverage latency win —
+  it is a product decision left to the user.
+
+- 2026-07-18: Built the instant-reuse path (Unit 41). Re-submitting the SAME
+  brand × creator + brief by the SAME owner now returns the prior COMPLETED
+  report immediately instead of re-running the 5-7 min pipeline, when that report
+  is newer than a freshness window. Pieces:
+  * `packages/shared/src/reuse.ts` — pure `resolveReuseWindowSeconds(env)`
+    (default 30d = 2592000; `0` disables; invalid/blank → default), mirrors the
+    resolveAbuseLimits idiom. Exported from the shared index.
+  * `apps/web/app/api/analyses/route.ts` — `findReusableAnalysis(ownerId, input,
+    window)` (findFirst, newest-first, matches every brief field null-for-null,
+    `report: { is: { status: COMPLETED } }`). Short-circuits in POST BEFORE the
+    tier gate + rate limit, so reuse never consumes or is blocked by quota and
+    calls no external API. Returns `{ ...ids, reused: true }` (HTTP 200).
+  * Schema: added `@@index([ownerId, orgHandle, kolHandle, createdAt])` on
+    AnalysisRequest; applied to live Supabase via `prisma db push` (single
+    non-destructive CREATE INDEX; `migrate diff` now reports no drift).
+  * Env: `ANALYSIS_REUSE_WINDOW_SECONDS=2592000` in `.env`, documented in
+    `.env.example`.
+  * Tests: `scripts/checks/analysis-reuse.regression.cjs` (11 assertions) wired
+    into `pnpm check` + `check:analysis-reuse`. Full suite green; `pnpm -r build`
+    green. Verified the Prisma query against real rows (exact HIT with correct
+    id; changed-brief MISS; stale-window MISS; wrong-owner MISS = no leak).
+  * Client needs no change: the detail page already renders a COMPLETED report
+    immediately, so navigating to the reused id shows the finished report; its
+    "Generated <date>" line is the honest signal that it's a prior run.
+  * Not built (offered): a force-refresh bypass (`?fresh=1`) and in-flight
+    duplicate dedup — left as follow-ups.
+
+- 2026-07-18: Cleanup sweep (dead code / envs / stale docs). Audited the repo —
+  found NO orphan source files, NO unused dependencies, NO unused env vars in
+  .env.example (all 56 consumed), NO dead code files. Everything removed was
+  residue from the Google-only auth migration:
+  * `.env`: removed the dead `AUTH_SESSION_SECRET` and `# AUTH_DEV_LOGIN=true`
+    (dev login was deleted; both unreferenced in source and already absent from
+    .env.example). Rewrote the auth-section comment to describe Google-only.
+  * Stale comments corrected (now factually accurate): `auth/callback/route.ts`
+    ("NOT YET LIVE-VERIFIED / dev logs in via POST /api/auth/session" → sole
+    Google sign-in path), `middleware.ts` + `lib/auth/supabase.ts` (dropped the
+    "NOT YET LIVE-VERIFIED / cannot run locally" markers — verified live 2026-07-18),
+    `packages/auth/{index,types,mode}.ts` ("only node:crypto" → no runtime deps;
+    "dev email login" → anonymous-only).
+  * `context/architecture.md`: rewrote the auth section — @kol-fit/auth now only
+    owns `resolveAuthMode` + types (removed the deleted `signSessionToken`/
+    `verifySessionToken`/`devLoginAllowed` descriptions); dev mode = anonymous-only;
+    supabase mode = live-verified Google sign-in.
+  * Left untouched by design: append-only history (progress-tracker), historical
+    spec `context/specs/28-*.md`, generated/`.next` artifacts.
+  * Verified: auth pkg build OK, web typecheck OK, auth regression 5/5 green,
+    no stale markers remain in source.
+
+- 2026-07-18: Removed report delivery entirely (the Unit 24 email-a-PDF feature).
+  Investigation found it was already unreachable dead code — the report-page
+  email-capture UI was retired in Unit 39.1, so nothing called `/deliver`; the
+  `ReportDelivery` table was empty (0 rows, verified), so no data was lost.
+  Removed: `packages/mail` + `packages/report-pdf` (whole packages; 14→12
+  workspace projects), the worker `report-deliver` handler + its registration,
+  `POST /api/analyses/[id]/deliver`, the pg-boss `report.deliver` job
+  (`enqueueReportDeliver`, `ReportDeliverPayload`, `REPORT_DELIVER` constant +
+  its `createQueue` in boss.ts), `ReportDeliverInputSchema`/`ReportDeliverInput`
+  (shared), the `ReportDelivery` model + `DeliveryStatus` enum + `Report.deliveries`
+  relation (dropped from live Supabase via `prisma db push` — DropTable/DropEnum),
+  the admin legacy-leads surface (`listAdminLeads`, `AdminLeadsTable`,
+  `AdminLeadRow`, `DeliveryStatus` admin type, `DeliveryPill`, the 3 overview lead
+  StatCards + the `leads` overview stat/queries), the MAIL_* env vars (.env +
+  .env.example), and `report-delivery.regression.cjs` (+ its check wiring).
+  Kept intact: the detailed-report concierge (Unit 35) — `/detailed`,
+  `DetailedReportRequest`, the admin `/admin/leads` queue + nav badge — which is
+  the current lead-capture funnel. Docs updated: architecture.md (Unit 24 section
+  → "removed" note; admin read-list; owner call-sites), DEPLOY.md (dropped the
+  MAIL env row). Verified: `pnpm -r build` green, full `pnpm check` 413/0,
+  zero dangling references to mail/delivery in source.

@@ -9,7 +9,6 @@ import { DEFAULT_LIST_LIMIT, MAX_LIST_LIMIT } from "@/lib/analyses-list";
 import type {
   AdminAnalysisRow,
   AdminDetailedRequestRow,
-  AdminLeadRow,
   AdminOverview,
   AdminUsage,
   AdminUsageRow,
@@ -119,12 +118,6 @@ export async function getAdminOverview(): Promise<AdminOverview> {
       prisma.analysisRequest.count({ where: in7d }),
       prisma.analysisRequest.count(),
 
-      prisma.reportDelivery.count({ where: in24h }),
-      prisma.reportDelivery.count({ where: in7d }),
-      prisma.reportDelivery.count(),
-      prisma.reportDelivery.count({ where: { emailStatus: "SENT" } }),
-      prisma.reportDelivery.count({ where: { emailStatus: "FAILED" } }),
-
       prisma.providerUsageLog.aggregate({ ...spendAgg, where: in24h }),
       prisma.providerUsageLog.aggregate({ ...spendAgg, where: in7d }),
       prisma.providerUsageLog.aggregate(spendAgg),
@@ -153,15 +146,6 @@ export async function getAdminOverview(): Promise<AdminOverview> {
         where: { ownerId: { not: null } },
       }),
 
-      prisma.reportDelivery.groupBy({
-        by: ["email"],
-        where: { email: { not: null } },
-      }),
-      prisma.reportDelivery.groupBy({
-        by: ["telegramHandle"],
-        where: { telegramHandle: { not: null } },
-      }),
-
       prisma.report.groupBy({
         by: ["verdict"],
         where: { verdict: { not: null } },
@@ -187,11 +171,6 @@ export async function getAdminOverview(): Promise<AdminOverview> {
     analyses24h,
     analyses7d,
     analysesAll,
-    leads24h,
-    leads7d,
-    leadsAll,
-    emailsSent,
-    emailsFailed,
     spend24h,
     spend7d,
     spendAll,
@@ -203,8 +182,6 @@ export async function getAdminOverview(): Promise<AdminOverview> {
     owners24h,
     owners7d,
     ownersAll,
-    emailGroups,
-    telegramGroups,
     verdictGroups,
     topKolGroups,
     topOrgGroups,
@@ -259,13 +236,6 @@ export async function getAdminOverview(): Promise<AdminOverview> {
       last24h: owners24h.length,
       last7d: owners7d.length,
       allTime: ownersAll.length,
-    },
-    leads: {
-      total: { last24h: leads24h, last7d: leads7d, allTime: leadsAll },
-      distinctEmails: emailGroups.length,
-      distinctTelegram: telegramGroups.length,
-      emailsSent,
-      emailsFailed,
     },
     spend: {
       costUsd,
@@ -339,66 +309,6 @@ export async function listAdminAnalyses({
 
   return {
     items: page.map(toAnalysisRow),
-    nextCursor: hasMore ? page[page.length - 1].id : null,
-  };
-}
-
-/**
- * The leads table: every ReportDelivery row (who gave an email / Telegram
- * handle), newest first, with the org/KOL pair it was for. `cursor` is a
- * ReportDelivery.id. The request behind a delivery can be missing (requestId is
- * nullable and set-null on delete), so the handles are nullable too.
- */
-export async function listAdminLeads({
-  limit,
-  cursor,
-}: {
-  limit?: number;
-  cursor?: string | null;
-} = {}): Promise<Page<AdminLeadRow>> {
-  const take = takeFor(limit);
-
-  const rows = await prisma.reportDelivery.findMany({
-    orderBy: { createdAt: "desc" },
-    take: take + 1,
-    ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
-    select: {
-      id: true,
-      createdAt: true,
-      email: true,
-      telegramHandle: true,
-      emailStatus: true,
-      telegramStatus: true,
-      errorCode: true,
-      report: {
-        select: {
-          request: { select: { id: true, orgHandle: true, kolHandle: true } },
-        },
-      },
-    },
-  });
-
-  const hasMore = rows.length > take;
-  const page = hasMore ? rows.slice(0, take) : rows;
-
-  const items: AdminLeadRow[] = page.map((r) => {
-    const request = r.report?.request ?? null;
-    return {
-      id: r.id,
-      createdAt: iso(r.createdAt),
-      email: r.email,
-      telegramHandle: r.telegramHandle,
-      emailStatus: r.emailStatus,
-      telegramStatus: r.telegramStatus,
-      errorCode: r.errorCode,
-      requestId: request?.id ?? null,
-      orgHandle: request?.orgHandle ?? null,
-      kolHandle: request?.kolHandle ?? null,
-    };
-  });
-
-  return {
-    items,
     nextCursor: hasMore ? page[page.length - 1].id : null,
   };
 }

@@ -3,4 +3,4 @@
 export * from "./constants.js";
 export * from "./payloads.js";
 export { getBoss, stopBoss, resolvePgBossOptions } from "./boss.js";
-export { enqueueAnalysisRun, enqueueReportDeliver } from "./enqueue.js";
+export { enqueueAnalysisRun } from "./enqueue.js";

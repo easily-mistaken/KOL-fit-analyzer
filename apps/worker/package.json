@@ -13,9 +13,7 @@
     "@kol-fit/cache": "workspace:^",
     "@kol-fit/db": "workspace:^",
     "@kol-fit/llm": "workspace:^",
-    "@kol-fit/mail": "workspace:^",
     "@kol-fit/queue": "workspace:^",
-    "@kol-fit/report-pdf": "workspace:^",
     "@kol-fit/shared": "workspace:*",
     "@kol-fit/twitter": "workspace:^",
     "dotenv": "^17.4.2"

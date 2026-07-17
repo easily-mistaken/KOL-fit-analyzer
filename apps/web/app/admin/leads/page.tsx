@@ -3,13 +3,9 @@ import { Inbox } from "lucide-react";
 import { prisma } from "@kol-fit/db";
 
 import { isAdminConfigured, requireAdmin } from "@/lib/admin/auth";
-import {
-  listAdminDetailedRequests,
-  listAdminLeads,
-} from "@/lib/admin/queries";
+import { listAdminDetailedRequests } from "@/lib/admin/queries";
 import { AdminNav } from "@/components/admin/admin-nav";
 import { AdminDetailedRequestsTable } from "@/components/admin/detailed-requests-table";
-import { AdminLeadsTable } from "@/components/admin/leads-table";
 import { NotConfigured } from "@/components/admin/primitives";
 
 // Live DB state behind an auth gate: never cached, never prerendered.
@@ -18,8 +14,7 @@ export const dynamic = "force-dynamic";
 
 /**
  * Leads (consolidated, Unit 39.1): the concierge detailed-report queue IS the
- * lead list now that the old email-capture component is gone. Legacy email
- * captures (pre-concierge ReportDelivery rows) are preserved below.
+ * lead list.
  */
 export default async function AdminLeadsPage({
   searchParams,
@@ -30,10 +25,7 @@ export default async function AdminLeadsPage({
   await requireAdmin();
 
   const { cursor } = await searchParams;
-  const [requests, legacy] = await Promise.all([
-    listAdminDetailedRequests({ cursor }),
-    listAdminLeads({ limit: 50 }),
-  ]);
+  const requests = await listAdminDetailedRequests({ cursor });
 
   // Chat-style read semantics (Unit 40.1): opening the queue marks everything
   // seen — the nav badge (counts unseen) clears on the next fetch. Best-effort;
@@ -61,15 +53,6 @@ export default async function AdminLeadsPage({
       </section>
 
       <AdminDetailedRequestsTable data={requests} />
-
-      {legacy.items.length > 0 && (
-        <section className="space-y-3 border-t border-default pt-6">
-          <h2 className="text-sm font-semibold text-muted-foreground">
-            Legacy email captures (pre-concierge)
-          </h2>
-          <AdminLeadsTable data={{ items: legacy.items, nextCursor: null }} />
-        </section>
-      )}
     </div>
   );
 }
