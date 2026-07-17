@@ -4,5 +4,5 @@
 // via dynamic import() from the supabase-mode branches so the dev runtime never
 // loads @supabase/ssr.
 export { getCurrentUserId, getCurrentUser } from "./current-user";
-export { readDevUserId, setDevSession, clearDevSession } from "./session";
+export { clearDevSession } from "./session";
 export { claimAnonymousReports } from "./claim";

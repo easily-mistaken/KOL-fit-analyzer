@@ -19,15 +19,3 @@ export function resolveAuthMode(env: AuthEnv): AuthMode {
     ? "supabase"
     : "dev";
 }
-
-/**
- * Whether passwordless dev login is permitted. Fail-closed: disabled in
- * production unless AUTH_DEV_LOGIN === "true" is explicitly set. Always allowed
- * outside production.
- */
-export function devLoginAllowed(env: AuthEnv): boolean {
-  if (env.NODE_ENV === "production" && env.AUTH_DEV_LOGIN !== "true") {
-    return false;
-  }
-  return true;
-}

@@ -9,8 +9,9 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * Login page (Unit 28). Already signed in → straight to the reports list.
- * Otherwise render the mode-appropriate form (dev email login vs Supabase).
+ * Login page (Unit 28, Google-only). Already signed in → straight to the reports
+ * list. Otherwise render the Google sign-in (or a notice when Supabase isn't
+ * configured here).
  */
 export default async function LoginPage() {
   if (await getCurrentUserId()) redirect("/analyses");

@@ -3,4 +3,4 @@
 // dist-testable security core (mirrors how limits live in @kol-fit/shared).
 export type { AuthUser, AuthMode, AuthEnv } from "./types.js";
 export { signSessionToken, verifySessionToken } from "./session.js";
-export { resolveAuthMode, devLoginAllowed } from "./mode.js";
+export { resolveAuthMode } from "./mode.js";

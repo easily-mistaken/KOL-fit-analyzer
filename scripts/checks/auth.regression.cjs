@@ -1,6 +1,6 @@
 // Regression check for Unit 28 (User Authentication) — the pure @kol-fit/auth
-// security core: the signed dev-session token and the auth-mode / dev-login
-// gates. Offline, no DB, no keys, no network.
+// security core: the signed session token and the auth-mode gate. Offline, no
+// DB, no keys, no network.
 //
 // Run after `pnpm build`:  node scripts/checks/auth.regression.cjs
 // (or `pnpm check:auth`). Requires packages/auth/dist/index.js.
@@ -9,7 +9,6 @@ const {
   signSessionToken,
   verifySessionToken,
   resolveAuthMode,
-  devLoginAllowed,
 } = require("../../packages/auth/dist/index.js");
 
 let pass = 0,
@@ -104,23 +103,6 @@ ck(
     NEXT_PUBLIC_SUPABASE_URL: "  ",
     NEXT_PUBLIC_SUPABASE_ANON_KEY: "",
   }) === "dev"
-);
-
-// --- devLoginAllowed -------------------------------------------------------
-
-ck(
-  "prod + no flag -> false (fail-closed)",
-  devLoginAllowed({ NODE_ENV: "production" }) === false
-);
-ck(
-  "prod + AUTH_DEV_LOGIN=true -> true",
-  devLoginAllowed({ NODE_ENV: "production", AUTH_DEV_LOGIN: "true" }) === true
-);
-ck("non-prod -> true", devLoginAllowed({ NODE_ENV: "development" }) === true);
-ck("no NODE_ENV -> true", devLoginAllowed({}) === true);
-ck(
-  "prod + AUTH_DEV_LOGIN=1 (not 'true') -> false",
-  devLoginAllowed({ NODE_ENV: "production", AUTH_DEV_LOGIN: "1" }) === false
 );
 
 console.log(`\nAUTH REGRESSION: ${pass} passed, ${fail} failed`);
