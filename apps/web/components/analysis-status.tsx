@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   Clock,
   Loader2,
+  RotateCcw,
   Radar,
   Search,
   Sparkles,
@@ -228,7 +229,13 @@ export function AnalysisStatus({ id }: { id: string }) {
                 Completed, but the report is unavailable.
               </p>
             ))}
-          {job.status === "FAILED" && <FailedBody job={job} />}
+          {job.status === "FAILED" && (
+            <FailedBody
+              job={job}
+              requestId={data.id}
+              onRetried={() => setReloadKey((k) => k + 1)}
+            />
+          )}
         </CardContent>
       </Card>
     </StatusShell>
@@ -527,7 +534,40 @@ function CompletedBody({ data }: { data: AnalysisStatusResponse }) {
   );
 }
 
-function FailedBody({ job }: { job: AnalysisStatusResponse["job"] }) {
+function FailedBody({
+  job,
+  requestId,
+  onRetried,
+}: {
+  job: AnalysisStatusResponse["job"];
+  requestId: string;
+  onRetried: () => void;
+}) {
+  const [retrying, setRetrying] = React.useState(false);
+  const [retryError, setRetryError] = React.useState<string | null>(null);
+
+  // Manual retry (Unit 40): re-queues the same analysis — the caches make the
+  // re-run fast — then re-enters the queued/running experience.
+  async function retry() {
+    setRetrying(true);
+    setRetryError(null);
+    try {
+      const res = await fetch(`/api/analyses/${requestId}/retry`, {
+        method: "POST",
+      });
+      const body = (await res.json()) as { ok: boolean; error?: { message: string } };
+      if (body.ok) {
+        onRetried();
+        return;
+      }
+      setRetryError(body.error?.message ?? "Could not retry. Please try again.");
+    } catch {
+      setRetryError("Network error — please try again.");
+    } finally {
+      setRetrying(false);
+    }
+  }
+
   return (
     <div className="space-y-4">
       <div className="space-y-2 rounded-xl border border-error/40 bg-error/5 p-4">
@@ -538,6 +578,10 @@ function FailedBody({ job }: { job: AnalysisStatusResponse["job"] }) {
         <p className="text-sm text-secondary-foreground">
           {job.errorMessage ?? "The analysis could not be completed."}
         </p>
+        <p className="text-xs text-secondary-foreground">
+          Failed runs don&apos;t count against your analyses — retrying is
+          free.
+        </p>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1 font-mono text-xs text-muted-foreground">
           {job.errorCode && <span>{job.errorCode}</span>}
           {job.attempts > 1 && <span>{job.attempts} attempts</span>}
@@ -547,11 +591,25 @@ function FailedBody({ job }: { job: AnalysisStatusResponse["job"] }) {
         </div>
       </div>
 
+      {retryError && (
+        <p className="text-xs text-error" role="alert">
+          {retryError}
+        </p>
+      )}
+
       <div className="flex flex-wrap gap-3">
-        <Button asChild size="sm">
-          <Link href="/">Start a new analysis</Link>
+        <Button size="sm" onClick={retry} disabled={retrying}>
+          {retrying ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <RotateCcw className="h-4 w-4" />
+          )}
+          Retry analysis
         </Button>
         <Button asChild variant="outline" size="sm">
+          <Link href="/">Start a new analysis</Link>
+        </Button>
+        <Button asChild variant="ghost" size="sm">
           <Link href="/analyses">Back to reports</Link>
         </Button>
       </div>

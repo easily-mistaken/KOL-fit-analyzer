@@ -24,9 +24,13 @@ const MESSAGES = {
 } as const;
 
 /** Lifetime analyses counted against the funnel tiers. Single source of truth
- *  for the gate AND the quota indicator (Unit 39). */
+ *  for the gate AND the quota indicator (Unit 39). FAILED runs don't count
+ *  (Unit 40 fairness) — the DAILY abuse caps still count everything, since
+ *  they are spend protection rather than product allowance. */
 export async function countLifetimeAnalyses(ownerId: string): Promise<number> {
-  return prisma.analysisRequest.count({ where: { ownerId } });
+  return prisma.analysisRequest.count({
+    where: { ownerId, job: { status: { not: "FAILED" } } },
+  });
 }
 
 export async function checkTierGate(
