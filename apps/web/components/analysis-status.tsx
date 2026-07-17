@@ -20,6 +20,7 @@ import { APP_NAME, type ApiResponse, type JobStatus } from "@kol-fit/shared";
 import { cn } from "@/lib/utils";
 import type { AnalysisStatusResponse } from "@/lib/analysis-status";
 import { AudienceField } from "@/components/audience-field";
+import { WaitingTips } from "@/components/waiting-tips";
 import { FitReportView } from "@/components/report/fit-report-view";
 import { VerdictBadge } from "@/components/report/verdict-badge";
 import { Badge } from "@/components/ui/badge";
@@ -484,6 +485,10 @@ function RunningExperience({ data }: { data: AnalysisStatusResponse }) {
             );
           })}
         </ol>
+
+        {/* Fill the ~5-7 min wait with something useful for the captive,
+            on-topic audience (a brand about to spend on a creator). */}
+        <WaitingTips />
 
         <p className="mt-6 text-xs text-muted-foreground">
           This page updates automatically, so there&apos;s no need to refresh.
