@@ -1,7 +1,17 @@
-<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="OverlapX">
-  <!-- OverlapX mark: two audiences intersecting; the filled lens is the
-       engaged overlap the product measures. -->
-  <circle cx="12.5" cy="16" r="8" stroke="#BEF54B" stroke-width="2" />
-  <circle cx="19.5" cy="16" r="8" stroke="#BEF54B" stroke-width="2" />
-  <path d="M16 8.94a8 8 0 0 0 0 14.12A8 8 0 0 0 16 8.94Z" fill="#BEF54B" />
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" role="img" aria-label="OverlapX">
+  <!-- OverlapX mark: two audiences intersecting; the filled lens is the engaged
+       overlap. A favicon can't read the app theme, but it can follow the OS
+       colour scheme: deep green on light tab bars (matching the light theme),
+       lime on dark ones, so it stays legible on both. -->
+  <style>
+    .ring { stroke: #5b830a; }
+    .lens { fill: #5b830a; }
+    @media (prefers-color-scheme: dark) {
+      .ring { stroke: #bef54b; }
+      .lens { fill: #bef54b; }
+    }
+  </style>
+  <circle class="ring" cx="12.5" cy="16" r="8" fill="none" stroke-width="2" />
+  <circle class="ring" cx="19.5" cy="16" r="8" fill="none" stroke-width="2" />
+  <path class="lens" d="M16 8.94a8 8 0 0 0 0 14.12A8 8 0 0 0 16 8.94Z" />
 </svg>
