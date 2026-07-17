@@ -178,7 +178,7 @@ export function scoreAnalysis(input: ScoringInput): ScoringResult {
   if (relationship && relationship !== "none") {
     const evidence = input.contentFitAssessment?.relationshipEvidence;
     overallReasons.push(
-      `KOL relationship to the org: ${relationship.replace(/_/g, " ")}${evidence ? ` — ${evidence}` : "."}`
+      `Creator's relationship to the brand: ${relationship.replace(/_/g, " ")}${evidence ? `. ${evidence}` : "."}`
     );
   }
   if (authorityBoost > 0) {

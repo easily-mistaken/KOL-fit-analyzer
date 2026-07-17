@@ -10,6 +10,7 @@ export * from "./request.js";
 export * from "./detailed.js";
 export * from "./scores.js";
 export * from "./audience.js";
+export * from "./audience-segments.js";
 export * from "./twitter.js";
 export * from "./llm.js";
 export * from "./report.js";

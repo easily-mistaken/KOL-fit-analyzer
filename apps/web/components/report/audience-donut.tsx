@@ -2,19 +2,14 @@
 
 import * as React from "react";
 import {
-  AUDIENCE_BUCKET_LABELS,
+  AUDIENCE_LOW_QUALITY_KEY,
+  AUDIENCE_OTHER_KEY,
+  foldAudienceSegments,
   type AudienceBucket,
   type AudienceDistribution,
 } from "@kol-fit/shared";
 
 import { cn } from "@/lib/utils";
-
-// Buckets that indicate low-value engagement (mirrors the scoring signal).
-const LOW_QUALITY = new Set<AudienceBucket>([
-  "bots_spam",
-  "giveaway_hunters",
-  "airdrop_farmers",
-]);
 
 /*
  * Categorical identity palette, kept deliberately separate from the brand lime
@@ -28,11 +23,11 @@ const LOW_QUALITY = new Set<AudienceBucket>([
  *   node scripts/validate_palette.js "<hexes>" --mode dark  --surface "#0a0c10"
  *   node scripts/validate_palette.js "<hexes>" --mode light --surface "#ffffff"
  *
- * Known limit: 11 hues exceed what an 8-slot categorical system can separate
- * under all-pairs, and segment order here is share-dependent, so any two can
- * touch. Identity therefore never rests on colour alone — every slice carries a
- * legend swatch, a label, a percentage, and a hover tooltip. (Light mode also
- * sits in the contrast relief band, which those same labels cover.)
+ * Only MAX_SEGMENTS slices ever render (see below), so the number of hues that
+ * can touch in one chart stays inside what the palette actually separates.
+ * Identity still never rests on colour alone: every slice carries a legend
+ * swatch, a label, a percentage, and a hover tooltip. (Light mode sits in the
+ * contrast relief band, which those same labels cover.)
  */
 const BUCKET_COLOR: Record<AudienceBucket, string> = {
   developers: "var(--viz-developers)",
@@ -56,15 +51,19 @@ const BUCKET_COLOR: Record<AudienceBucket, string> = {
 };
 
 const LOW_QUALITY_COLOR = "var(--viz-low-quality)";
+const OTHER_COLOR = "var(--viz-other)";
 
-type Entry = {
-  bucket: AudienceBucket;
-  label: string;
-  share: number;
-  count: number;
-  color: string;
-  low: boolean;
-};
+const TIP_WIDTH = 210;
+/** Below this pointer height there isn't room to sit above the cursor. */
+const TIP_FLIP_Y = 150;
+
+/** Which slices exist (and the fold rules) is pure logic in @kol-fit/shared;
+ *  this component only paints them. */
+function colorFor(key: string): string {
+  if (key === AUDIENCE_LOW_QUALITY_KEY) return LOW_QUALITY_COLOR;
+  if (key === AUDIENCE_OTHER_KEY) return OTHER_COLOR;
+  return BUCKET_COLOR[key as AudienceBucket] ?? OTHER_COLOR;
+}
 
 function pctLabel(share: number): string {
   const p = share * 100;
@@ -76,31 +75,21 @@ export function AudienceDonut({
 }: {
   distribution: AudienceDistribution;
 }) {
-  const [hover, setHover] = React.useState<AudienceBucket | null>(null);
+  const [hover, setHover] = React.useState<string | null>(null);
+  // The floating tooltip is anchored to the pointer's position inside the ring,
+  // so it may only show for a hover that originated there. Legend rows also set
+  // `hover` (to cross-highlight the slice) but never move `pos`, which would
+  // otherwise render the tooltip at a stale origin, clipped off-screen.
+  const [tipFor, setTipFor] = React.useState<string | null>(null);
   const [pos, setPos] = React.useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const wrapRef = React.useRef<HTMLDivElement>(null);
 
-  const entries: Entry[] = React.useMemo(
+  const entries = React.useMemo(
     () =>
-      (
-        Object.entries(distribution.buckets) as [
-          AudienceBucket,
-          { count: number; share: number } | undefined,
-        ][]
-      )
-        .filter(([, v]) => (v?.share ?? 0) > 0)
-        .map(([bucket, v]) => {
-          const low = LOW_QUALITY.has(bucket);
-          return {
-            bucket,
-            label: AUDIENCE_BUCKET_LABELS[bucket] ?? bucket,
-            share: v?.share ?? 0,
-            count: v?.count ?? 0,
-            color: low ? LOW_QUALITY_COLOR : BUCKET_COLOR[bucket] ?? "var(--viz-neutral)",
-            low,
-          };
-        })
-        .sort((a, b) => b.share - a.share),
+      foldAudienceSegments(distribution).map((s) => ({
+        ...s,
+        color: colorFor(s.key),
+      })),
     [distribution]
   );
 
@@ -122,7 +111,7 @@ export function AudienceDonut({
     return seg;
   });
 
-  const active = entries.find((e) => e.bucket === hover) ?? null;
+  const active = entries.find((e) => e.key === hover) ?? null;
 
   function onMove(e: React.MouseEvent) {
     const rect = wrapRef.current?.getBoundingClientRect();
@@ -144,10 +133,10 @@ export function AudienceDonut({
           style={{ transform: "rotate(-90deg)" }}
         >
           {segments.map((s) => {
-            const isHover = hover === s.entry.bucket;
+            const isHover = hover === s.entry.key;
             return (
               <circle
-                key={s.entry.bucket}
+                key={s.entry.key}
                 cx={cx}
                 cy={cx}
                 r={r}
@@ -161,8 +150,14 @@ export function AudienceDonut({
                   opacity: hover && !isHover ? 0.35 : 1,
                   transition: "opacity 120ms, stroke-width 120ms",
                 }}
-                onMouseEnter={() => setHover(s.entry.bucket)}
-                onMouseLeave={() => setHover((h) => (h === s.entry.bucket ? null : h))}
+                onMouseEnter={() => {
+                  setHover(s.entry.key);
+                  setTipFor(s.entry.key);
+                }}
+                onMouseLeave={() => {
+                  setHover((h) => (h === s.entry.key ? null : h));
+                  setTipFor((t) => (t === s.entry.key ? null : t));
+                }}
               />
             );
           })}
@@ -191,24 +186,52 @@ export function AudienceDonut({
           )}
         </div>
 
-        {active && (
+        {active && tipFor === active.key && (
           <div
-            className="pointer-events-none absolute z-30 flex items-center gap-2 whitespace-nowrap rounded-md border border-strong bg-elevated px-2.5 py-1.5 text-xs shadow-[0_8px_24px_rgba(0,0,0,0.5)]"
+            className="pointer-events-none absolute z-30 w-[210px] rounded-md border border-strong bg-elevated px-2.5 py-1.5 text-xs shadow-card"
             style={{
-              left: pos.x,
+              // The ring is only ~216px wide, so a tooltip anchored to the
+              // pointer would hang off its left edge and out of the card. Keep
+              // it clamped, and drop it below the pointer when a folded slice's
+              // breakdown is too tall to sit above.
+              left: Math.max(pos.x, TIP_WIDTH / 2),
               top: pos.y,
-              transform: "translate(-50%, -140%)",
+              transform:
+                pos.y > TIP_FLIP_Y
+                  ? "translate(-50%, calc(-100% - 12px))"
+                  : "translate(-50%, 12px)",
             }}
           >
-            <span
-              className="h-2.5 w-2.5 rounded-sm"
-              style={{ backgroundColor: active.color }}
-            />
-            <span className="text-foreground">{active.label}</span>
-            <span className="font-mono text-secondary-foreground">
-              {pctLabel(active.share)}
-            </span>
-            <span className="font-mono text-muted-foreground">({active.count})</span>
+            <div className="flex items-center gap-2 whitespace-nowrap">
+              <span
+                className="h-2.5 w-2.5 shrink-0 rounded-sm"
+                style={{ backgroundColor: active.color }}
+              />
+              <span className="text-foreground">{active.label}</span>
+              <span className="font-mono text-secondary-foreground">
+                {pctLabel(active.share)}
+              </span>
+              <span className="font-mono text-muted-foreground">
+                ({active.count})
+              </span>
+            </div>
+            {/* A folded slice breaks itself down, so the fold summarises the
+                tail rather than hiding it. */}
+            {active.members && (
+              <ul className="mt-1.5 space-y-0.5 border-t border-default pt-1.5 text-[11px] leading-snug">
+                {active.members.map((m) => (
+                  <li
+                    key={m.label}
+                    className="flex items-center justify-between gap-3 whitespace-nowrap"
+                  >
+                    <span className="text-secondary-foreground">{m.label}</span>
+                    <span className="font-mono text-muted-foreground">
+                      {pctLabel(m.share)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         )}
       </div>
@@ -216,13 +239,18 @@ export function AudienceDonut({
       <ul className="grid gap-x-5 gap-y-1.5 sm:grid-cols-2">
         {entries.map((e) => (
           <li
-            key={e.bucket}
+            key={e.key}
+            title={
+              e.members
+                ? `${e.label}: ${e.members.map((m) => `${m.label} ${pctLabel(m.share)}`).join(", ")}`
+                : undefined
+            }
             className={cn(
               "grid cursor-default grid-cols-[12px_1fr_auto] items-center gap-2 rounded px-1 text-[13px] transition-colors",
-              hover === e.bucket && "bg-elevated"
+              hover === e.key && "bg-elevated"
             )}
-            onMouseEnter={() => setHover(e.bucket)}
-            onMouseLeave={() => setHover((h) => (h === e.bucket ? null : h))}
+            onMouseEnter={() => setHover(e.key)}
+            onMouseLeave={() => setHover((h) => (h === e.key ? null : h))}
           >
             <span
               className="h-2.5 w-2.5 rounded-sm"
@@ -230,6 +258,11 @@ export function AudienceDonut({
             />
             <span className="flex items-center gap-1.5 truncate text-secondary-foreground">
               <span className="truncate">{e.label}</span>
+              {e.members && (
+                <span className="shrink-0 text-[11px] text-muted-foreground">
+                  ({e.members.length})
+                </span>
+              )}
               {e.low && (
                 <span className="shrink-0 rounded border border-error/40 px-1 py-px text-[9px] uppercase tracking-wide text-error">
                   low-quality

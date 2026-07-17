@@ -485,9 +485,9 @@ export function paidPromoRisk(
     }
     if (promoCount > 0) {
       reasons.push(
-        `${pct(unrelatedShare)} of promos are outside the KOL's domain; ${pct(lowQualityShare)} promote low-quality projects.`,
+        `${pct(unrelatedShare)} of promos are outside the creator's domain; ${pct(lowQualityShare)} promote low-quality projects.`,
         quality < 0.25
-          ? "In-domain, decent-quality promotion is the KOL business model — risk discounted accordingly."
+          ? "In-domain, decent-quality promotion is the creator business model, so the risk is discounted accordingly."
           : "Unrelated/low-quality promotion drives the risk up."
       );
     } else {

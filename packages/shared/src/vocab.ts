@@ -36,7 +36,7 @@ export const AUDIENCE_BUCKET_LABELS: Record<AudienceBucket, string> = {
   ai_crypto: "AI x crypto",
   infra_research: "Infra / research",
   community_managers: "Community managers",
-  kols_creators: "KOLs / creators",
+  kols_creators: "Creators",
   bots_spam: "Bots / spam",
   giveaway_hunters: "Giveaway hunters",
   non_crypto: "Non-crypto audience",

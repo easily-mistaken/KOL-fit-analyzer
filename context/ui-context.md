@@ -73,7 +73,7 @@ The hero canvas (`audience-field.tsx`) can't read CSS tokens directly, so it rea
 
 The audience donut carries its own **categorical identity palette** (the `--viz-*` tokens), deliberately separate from the brand lime so a slice never reads as a control, and from the status tones. Colour follows the bucket, never its rank. Light and dark are each stepped for their own surface and validated separately (lightness band, chroma floor, adjacent-pair CVD, normal-vision floor, contrast) — see the header comment in `audience-donut.tsx` for the re-validation commands. Low-quality buckets always render in the reserved error tone.
 
-Known limit: 11 fixed buckets exceed what an 8-slot categorical system separates under all-pairs, and slice order is share-dependent. Identity therefore never rests on colour alone — the legend swatch, label, percentage, and tooltip carry it. Folding low-share buckets into "Other" is the real fix if this ever needs to be airtight.
+The chart never draws more than `AUDIENCE_MAX_SEGMENTS` (6) slices. The 15-bucket taxonomy is folded first by `foldAudienceSegments` in `@kol-fit/shared` (pure, unit-tested in `audience-segments.regression.cjs`): the three low-quality buckets collapse into one reserved-tone slice, and the categorical tail folds into a neutral "Other". Both folded slices sort last, so the ring's tail is a fixed neutral→red pair rather than two share-dependent hues. Nothing is lost — a folded slice breaks itself down (each member with its own share) in the tooltip and the `title`, and the full per-bucket table stays in the PDF. This keeps the live palette at ≤ 6 hues, inside what the validated set separates.
 
 Score color usage:
 

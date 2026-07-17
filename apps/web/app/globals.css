@@ -86,8 +86,12 @@
   --viz-community-managers: #9a5510;
   --viz-nft-gaming: #7a52c9;
   --viz-meme-degens: #5f7d24;
-  /* Neutral "outside our space" slot + reserved low-quality status tone. */
+  /* Two neutrals, separated by lightness (which survives colour-blindness) so
+     the "outside our space" bucket and the folded "Other" tail never read as
+     the same slice. Both clear 3:1 on their surface. */
   --viz-neutral: #83878d;
+  --viz-other: #55595f;
+  /* Reserved low-quality status tone — never a categorical hue. */
   --viz-low-quality: #d6433b;
 
   /* Radius scale baseline. Controls are pills (rounded-full); this drives
@@ -164,6 +168,7 @@
   --viz-nft-gaming: #8a5cd6;
   --viz-meme-degens: #6f8f2a;
   --viz-neutral: #6b7480;
+  --viz-other: #aab1ba;
   --viz-low-quality: #ff5c5c;
 }
 
