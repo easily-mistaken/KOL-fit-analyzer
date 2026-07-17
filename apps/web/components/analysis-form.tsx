@@ -283,7 +283,7 @@ export function AnalysisForm() {
               </div>
               <span
                 className={cn(
-                  "inline-flex shrink-0 items-center gap-1 rounded-lg border border-accent/50 px-2.5 py-1.5 text-xs font-medium text-accent-hover transition-colors",
+                  "inline-flex shrink-0 items-center gap-1 rounded-lg border border-accent/50 px-2.5 py-1.5 text-xs font-medium text-accent-ink transition-colors",
                   "group-hover:bg-accent group-hover:text-accent-foreground group-hover:border-accent"
                 )}
               >
@@ -467,7 +467,7 @@ export function AnalysisForm() {
 
           <p className="text-center text-xs text-muted-foreground">
             Prefer a hands-on review?{" "}
-            <a href="/detailed" className="text-accent-hover underline-offset-2 hover:underline">
+            <a href="/detailed" className="text-accent-ink underline-offset-2 hover:underline">
               Request a curated detailed report
             </a>
             , delivered to your Telegram by an analyst.

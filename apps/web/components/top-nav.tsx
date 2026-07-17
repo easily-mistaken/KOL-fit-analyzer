@@ -7,12 +7,12 @@ import { FileText, Plus } from "lucide-react";
 import { APP_NAME } from "@kol-fit/shared";
 
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 /**
  * Top navigation bar: product mark (links home), primary links with an
- * active-route indicator, a build-stage marker, and the user menu (Unit 28),
- * which is resolved on the server and passed in as `userMenu`.
+ * active-route indicator, the theme switch, and the user menu (Unit 28), which
+ * is resolved on the server and passed in as `userMenu`.
  */
 export function TopNav({ userMenu }: { userMenu?: React.ReactNode }) {
   const pathname = usePathname();
@@ -40,25 +40,20 @@ export function TopNav({ userMenu }: { userMenu?: React.ReactNode }) {
 
         <nav className="flex items-center gap-1">
           <NavLink href="/" active={isNew} icon={<Plus className="h-4 w-4" />}>
-            New
+            Analyze
           </NavLink>
           <NavLink
             href="/analyses"
             active={isReports}
             icon={<FileText className="h-4 w-4" />}
           >
-            Reports
+            History
           </NavLink>
-          <Badge
-            variant="outline"
-            className="ml-2 hidden text-muted-foreground sm:inline-flex"
-          >
-            Internal
-          </Badge>
+          <span className="ml-1 flex items-center border-l border-default pl-1">
+            <ThemeToggle />
+          </span>
           {userMenu ? (
-            <span className="ml-1 flex items-center border-l border-default pl-1">
-              {userMenu}
-            </span>
+            <span className="flex items-center">{userMenu}</span>
           ) : null}
         </nav>
       </div>

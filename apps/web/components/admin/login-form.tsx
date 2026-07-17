@@ -49,7 +49,7 @@ export function LoginForm() {
     >
       <div className="space-y-1">
         <div className="flex items-center gap-2">
-          <Lock className="h-5 w-5 text-accent-hover" />
+          <Lock className="h-5 w-5 text-accent-ink" />
           <h1 className="text-[15px] font-semibold text-foreground">Admin</h1>
         </div>
         <p className="text-sm text-secondary-foreground">

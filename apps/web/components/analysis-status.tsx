@@ -270,7 +270,7 @@ function StateIcon({
     muted: "text-muted-foreground",
     error: "text-error",
     success: "text-success",
-    accent: "text-accent-hover",
+    accent: "text-accent-ink",
   }[tone];
   return (
     <span
@@ -390,7 +390,7 @@ function RunningExperience({ data }: { data: AnalysisStatusResponse }) {
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "linear-gradient(to bottom, rgba(10,12,16,0.58), rgba(10,12,16,0.85))",
+            "linear-gradient(to bottom, rgba(var(--field-veil),0.58), rgba(var(--field-veil),0.85))",
         }}
       />
 
@@ -419,7 +419,7 @@ function RunningExperience({ data }: { data: AnalysisStatusResponse }) {
             </div>
           </div>
           <div className="flex items-center gap-2 text-sm text-secondary-foreground">
-            <Clock className="h-4 w-4 text-accent-hover" />
+            <Clock className="h-4 w-4 text-accent-ink" />
             {queued
               ? "Queued. A worker will pick this up shortly."
               : overrun
@@ -454,7 +454,7 @@ function RunningExperience({ data }: { data: AnalysisStatusResponse }) {
                       done
                         ? "bg-success/15 text-success"
                         : active
-                          ? "bg-accent-primary/15 text-accent-hover"
+                          ? "bg-accent-primary/15 text-accent-ink"
                           : "bg-elevated text-muted-foreground"
                     )}
                   >
@@ -488,7 +488,7 @@ function RunningExperience({ data }: { data: AnalysisStatusResponse }) {
         <p className="mt-6 text-xs text-muted-foreground">
           This page updates automatically, so there&apos;s no need to refresh.
           You can leave and come back from{" "}
-          <Link href="/analyses" className="text-accent-hover hover:underline">
+          <Link href="/analyses" className="text-accent-ink hover:underline">
             Reports
           </Link>
           .

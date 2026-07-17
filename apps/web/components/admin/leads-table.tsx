@@ -72,7 +72,7 @@ export function AdminLeadsTable({ data }: { data: Page<AdminLeadRow> }) {
               {row.requestId ? (
                 <Link
                   href={`/analyses/${row.requestId}`}
-                  className="inline-flex items-center gap-1 text-xs text-secondary-foreground transition-colors group-hover:text-accent-hover"
+                  className="inline-flex items-center gap-1 text-xs text-secondary-foreground transition-colors group-hover:text-accent-ink"
                 >
                   @{row.kolHandle} → @{row.orgHandle}
                   <ArrowRight className="h-3.5 w-3.5" />

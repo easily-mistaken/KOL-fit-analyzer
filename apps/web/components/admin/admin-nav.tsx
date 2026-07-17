@@ -66,7 +66,7 @@ export function AdminNav() {
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-default bg-surface px-3 py-2 shadow-card">
       <nav className="flex flex-wrap items-center gap-1">
         <span className="mr-2 flex items-center gap-1.5 px-2 text-xs font-medium text-muted-foreground">
-          <ShieldCheck className="h-4 w-4 text-accent-hover" />
+          <ShieldCheck className="h-4 w-4 text-accent-ink" />
           Admin
         </span>
         {LINKS.map((link) => (

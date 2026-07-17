@@ -3,10 +3,10 @@
 import * as React from "react";
 
 // Interactive "engaged audience" field (landing hero). A drifting crowd of
-// faint particles; a subset are the genuinely *engaged* audience — electric
-// blue, brighter, and networked. The cursor acts like the analyzer: nearby
-// accounts light up (crowd → engaged) and connect to it. Canvas + rAF, no deps;
-// respects prefers-reduced-motion.
+// faint particles; a subset are the genuinely *engaged* audience — brighter and
+// networked. The cursor acts like the analyzer: nearby accounts light up
+// (crowd → engaged) and connect to it. Canvas + rAF, no deps; respects
+// prefers-reduced-motion.
 
 type P = {
   x: number;
@@ -18,10 +18,49 @@ type P = {
   glow: number; // 0..1 current "lit" amount
 };
 
-// Brand lime, mirroring --accent-primary / --accent-hover. Canvas can't read
-// CSS tokens, so these are the one intentional hardcode; keep them in sync.
-const ENGAGED_COLOR = [190, 245, 75]; // #BEF54B
-const ENGAGED_HI = [208, 248, 122]; // #D0F87A
+type Rgb = [number, number, number];
+
+// Cursor physics. CORE is what stops the pile-up: attraction alone (with no
+// falloff as distance → 0) pulled every nearby particle onto the exact same
+// point, where they fused into a permanent blob. Inside CORE the force
+// reverses, so the crowd gathers into a ring around the cursor and disperses
+// again when it leaves. MAX_SPEED keeps the attraction from running away.
+const REACH = 190;
+const CORE = 58;
+const MAX_SPEED = 1.15;
+
+const FALLBACK: Rgb = [190, 245, 75];
+
+function hexToRgb(hex: string): Rgb | null {
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.trim());
+  if (!m) return null;
+  return [parseInt(m[1], 16), parseInt(m[2], 16), parseInt(m[3], 16)];
+}
+
+function parseRgbList(v: string): Rgb | null {
+  const parts = v.split(",").map((n) => Number(n.trim()));
+  return parts.length === 3 && parts.every((n) => Number.isFinite(n))
+    ? (parts as Rgb)
+    : null;
+}
+
+/**
+ * The field is drawn on a canvas, which can't consume CSS tokens, so the theme
+ * is read off the document and re-read whenever `data-theme` flips. Lime on
+ * white is invisible, so light mode steps the engaged colour down to a deeper
+ * green rather than reusing the brand fill.
+ */
+function readFieldTheme() {
+  if (typeof window === "undefined") {
+    return { engaged: FALLBACK, engagedHi: FALLBACK, crowd: [139, 143, 148] as Rgb };
+  }
+  const cs = getComputedStyle(document.documentElement);
+  return {
+    engaged: hexToRgb(cs.getPropertyValue("--field-engaged")) ?? FALLBACK,
+    engagedHi: hexToRgb(cs.getPropertyValue("--field-engaged-hi")) ?? FALLBACK,
+    crowd: parseRgbList(cs.getPropertyValue("--field-crowd")) ?? ([139, 143, 148] as Rgb),
+  };
+}
 
 export function AudienceField({ className }: { className?: string }) {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
@@ -42,6 +81,7 @@ export function AudienceField({ className }: { className?: string }) {
     let particles: P[] = [];
     const pointer = { x: -9999, y: -9999, active: false };
     let raf = 0;
+    let theme = readFieldTheme();
 
     const rand = (a: number, b: number) => a + Math.random() * (b - a);
 
@@ -88,7 +128,7 @@ export function AudienceField({ className }: { className?: string }) {
           const d = Math.hypot(dx, dy);
           if (d < linkDist) {
             const alpha = (1 - d / linkDist) * 0.32 * Math.min(1, (a.glow + b.glow) / 1.4 + 0.4);
-            ctx!.strokeStyle = `rgba(${ENGAGED_HI[0]},${ENGAGED_HI[1]},${ENGAGED_HI[2]},${alpha})`;
+            ctx!.strokeStyle = `rgba(${theme.engagedHi[0]},${theme.engagedHi[1]},${theme.engagedHi[2]},${alpha})`;
             ctx!.lineWidth = 1;
             ctx!.beginPath();
             ctx!.moveTo(a.x, a.y);
@@ -104,7 +144,7 @@ export function AudienceField({ className }: { className?: string }) {
           if (p.glow <= 0.2) continue;
           const d = Math.hypot(p.x - pointer.x, p.y - pointer.y);
           if (d < 190) {
-            ctx!.strokeStyle = `rgba(${ENGAGED_COLOR[0]},${ENGAGED_COLOR[1]},${ENGAGED_COLOR[2]},${(1 - d / 190) * 0.5 * p.glow})`;
+            ctx!.strokeStyle = `rgba(${theme.engaged[0]},${theme.engaged[1]},${theme.engaged[2]},${(1 - d / 190) * 0.5 * p.glow})`;
             ctx!.lineWidth = 1;
             ctx!.beginPath();
             ctx!.moveTo(p.x, p.y);
@@ -118,7 +158,7 @@ export function AudienceField({ className }: { className?: string }) {
       for (const p of particles) {
         const lit = p.glow;
         if (lit > 0.02) {
-          const [r, g, b] = lit > 0.6 ? ENGAGED_HI : ENGAGED_COLOR;
+          const [r, g, b] = lit > 0.6 ? theme.engagedHi : theme.engaged;
           // soft halo
           ctx!.fillStyle = `rgba(${r},${g},${b},${0.18 * lit})`;
           ctx!.beginPath();
@@ -126,7 +166,8 @@ export function AudienceField({ className }: { className?: string }) {
           ctx!.fill();
           ctx!.fillStyle = `rgba(${r},${g},${b},${0.62 + 0.38 * lit})`;
         } else {
-          ctx!.fillStyle = "rgba(139,143,148,0.62)";
+          const [r, g, b] = theme.crowd;
+          ctx!.fillStyle = `rgba(${r},${g},${b},0.62)`;
         }
         ctx!.beginPath();
         ctx!.arc(p.x, p.y, p.r, 0, Math.PI * 2);
@@ -144,26 +185,36 @@ export function AudienceField({ className }: { className?: string }) {
         if (p.y < -10) p.y = h + 10;
         else if (p.y > h + 10) p.y = -10;
 
-        // cursor energizes + gently attracts nearby accounts.
+        // cursor energizes + gathers nearby accounts into a ring around itself.
         let target = p.engaged ? 0.7 : 0;
         if (pointer.active) {
           const dx = pointer.x - p.x;
           const dy = pointer.y - p.y;
-          const d = Math.hypot(dx, dy);
-          if (d < 190) {
-            const f = 1 - d / 190;
+          const d = Math.hypot(dx, dy) || 1;
+          if (d < REACH) {
+            const f = 1 - d / REACH;
             target = Math.max(target, 0.45 + 0.55 * f);
-            p.vx += (dx / (d || 1)) * f * 0.028;
-            p.vy += (dy / (d || 1)) * f * 0.028;
+            // Pull from range, push back inside CORE. Without the push the force
+            // stayed at full strength all the way to d = 0 and the crowd fused
+            // into a single clump that never recovered.
+            const pull = d > CORE;
+            const strength = pull ? f : (1 - d / CORE) * 0.8;
+            const dir = pull ? 1 : -1;
+            p.vx += (dx / d) * strength * dir * 0.026;
+            p.vy += (dy / d) * strength * dir * 0.026;
           }
         }
         p.glow += (target - p.glow) * 0.08;
         // friction so attraction doesn't run away
         p.vx *= 0.985;
         p.vy *= 0.985;
-        // keep a minimum ambient drift
         const sp = Math.hypot(p.vx, p.vy);
-        if (sp < 0.05) {
+        // hard speed ceiling: repeated passes could otherwise stack velocity
+        if (sp > MAX_SPEED) {
+          p.vx = (p.vx / sp) * MAX_SPEED;
+          p.vy = (p.vy / sp) * MAX_SPEED;
+        } else if (sp < 0.05) {
+          // keep a minimum ambient drift
           p.vx += (Math.random() - 0.5) * 0.06;
           p.vy += (Math.random() - 0.5) * 0.06;
         }
@@ -191,6 +242,16 @@ export function AudienceField({ className }: { className?: string }) {
     });
     ro.observe(wrap);
 
+    // Re-read the palette when the theme toggle flips data-theme.
+    const themeObserver = new MutationObserver(() => {
+      theme = readFieldTheme();
+      if (reduce) draw();
+    });
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+
     if (reduce) {
       draw();
     } else {
@@ -202,6 +263,7 @@ export function AudienceField({ className }: { className?: string }) {
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
+      themeObserver.disconnect();
       wrap.removeEventListener("pointermove", onMove);
       wrap.removeEventListener("pointerleave", onLeave);
     };

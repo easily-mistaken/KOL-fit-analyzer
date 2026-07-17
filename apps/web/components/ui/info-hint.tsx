@@ -91,7 +91,7 @@ export function InfoHint({
               alignRight ? "right-3" : "left-3"
             )}
           />
-          <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-accent-hover">
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-accent-ink">
             {title}
           </p>
           {paras.map((p, i) => (

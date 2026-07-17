@@ -2,19 +2,34 @@
 
 ## Theme
 
-The product serves AI and Web3 brands alike, so nothing in the surface should read as crypto-specific. The visual language takes after **Robinhood and Higgsfield**: near-black surfaces, a single acid-lime brand accent, pill-shaped controls, tight geometric headlines, and flat surfaces. Confident and instrument-like rather than decorative.
+The product serves AI and Web3 brands alike, so nothing in the surface should read as crypto-specific. The visual language takes after **Robinhood and Higgsfield**: a single acid-lime brand accent, pill-shaped controls, tight geometric headlines, and flat surfaces. Confident and instrument-like rather than decorative.
 
-Use a dark technical workspace:
+**Light is the default and dark is opt-in** ("white first"). Both themes are first-class:
 
-- near-black page background with a cool cast (not warm charcoal, not blue-black)
+- light: off-white paper (`#F7F7F5`), white cards, near-black type
+- dark: near-black with a cool cast (`#0A0C10`), not warm charcoal
 - flat layered surfaces; no glassmorphism, no decorative gradients
 - subtle borders, generous padding, pill controls (`rounded-full`)
-- high-contrast text (pure white headlines)
-- a single acid-lime brand accent
-- semantic score colors (green/amber/red) kept **separate** from the lime accent
+- a single acid-lime brand accent, in both themes
+- semantic score colors kept **separate** from the lime accent
 - minimal decorative elements
 
-**The lime is a LIGHT accent.** Anything sitting on it (button labels, badge text) must use `--accent-contrast` (near-black), never `--text-primary`. This is the most common way to break the theme.
+### Theming rules
+
+Dark is applied as `data-theme="dark"` on `<html>` by `ThemeToggle`, persisted to `localStorage`, and replayed before first paint by the inline script in `layout.tsx` (`lib/theme.ts`). OS `prefers-color-scheme` is deliberately **not** auto-applied — the product opens light unless the reader chose otherwise.
+
+Only the raw values in the two blocks at the top of `globals.css` change between themes. Every mapping below them is written once. To retheme, edit those blocks and nothing else.
+
+**The lime is a LIGHT colour**, which drives the whole accent split:
+
+| Token | Job |
+| --- | --- |
+| `--accent-primary` | the lime fill itself (identical in both themes) |
+| `--accent-contrast` | what sits ON the lime (near-black, both themes) |
+| `--accent-ink` | the accent as **text/icons** on the page background (`text-accent-ink`) |
+| `--accent-hover` | hover state for lime **fills** (`bg-accent-hover`) |
+
+Lime text on white is illegible, so `--accent-ink` darkens in light mode. **Never use `--accent-primary` as a text colour**, and never put `--text-primary` on a lime fill. Those are the two ways to break this theme.
 
 Avoid the generic-AI-app tells: no `Sparkles` icons, no glyph-in-a-gradient-rounded-square logo, no electric-blue-on-charcoal, no glass blur panels.
 
@@ -26,37 +41,39 @@ All components should use semantic tokens. Avoid hardcoded random hex values ins
 
 Suggested CSS variables:
 
-Palette (implemented in `apps/web/app/globals.css`):
+Palette (implemented in `apps/web/app/globals.css`). Both modes are **selected**, not flipped:
 
-| Role | CSS Variable | Value |
-| --- | --- | --- |
-| Page background | `--bg-base` | `#0A0C10` |
-| Main surface | `--bg-surface` | `#111419` |
-| Raised surface | `--bg-elevated` | `#191D24` |
-| Muted surface | `--bg-muted` | `#232830` |
-| Primary text | `--text-primary` | `#FFFFFF` |
-| Secondary text | `--text-secondary` | `#9BA3AF` |
-| Muted text | `--text-muted` | `#6B7480` |
-| Brand accent (acid lime) | `--accent-primary` | `#BEF54B` |
-| Accent hover | `--accent-hover` | `#D0F87A` |
-| **Text/icons on the lime** | `--accent-contrast` | `#0A0C10` |
-| Positive | `--state-success` | `#4ADE80` |
-| Warning | `--state-warning` | `#FBBF4C` |
-| Error | `--state-error` | `#FF5C5C` |
-| Info | `--state-info` | `#60A5FA` |
-| Border default | `--border-default` | `#1E232A` |
-| Border strong | `--border-strong` | `#2E353F` |
-| Card shadow | `--shadow-card` | `0 1px 2px rgba(0,0,0,.4), 0 16px 40px rgba(0,0,0,.32)` (→ `shadow-card` utility) |
+| Role | CSS Variable | Light (default) | Dark |
+| --- | --- | --- | --- |
+| Page background | `--bg-base` | `#F7F7F5` | `#0A0C10` |
+| Main surface | `--bg-surface` | `#FFFFFF` | `#111419` |
+| Raised surface | `--bg-elevated` | `#F0F0ED` | `#191D24` |
+| Muted surface | `--bg-muted` | `#E7E7E3` | `#232830` |
+| Primary text | `--text-primary` | `#0A0C10` | `#FFFFFF` |
+| Secondary text | `--text-secondary` | `#55595F` | `#9BA3AF` |
+| Muted text | `--text-muted` | `#83878D` | `#6B7480` |
+| Brand lime (fill) | `--accent-primary` | `#BEF54B` | `#BEF54B` |
+| On the lime | `--accent-contrast` | `#0A0C10` | `#0A0C10` |
+| Accent as text | `--accent-ink` | `#5B830A` | `#D0F87A` |
+| Lime fill hover | `--accent-hover` | `#AEE93A` | `#D0F87A` |
+| Positive | `--state-success` | `#1F9D57` | `#4ADE80` |
+| Warning | `--state-warning` | `#B67611` | `#FBBF4C` |
+| Error | `--state-error` | `#D6433B` | `#FF5C5C` |
+| Info | `--state-info` | `#2563EB` | `#60A5FA` |
+| Border default | `--border-default` | `#E5E5E1` | `#1E232A` |
+| Border strong | `--border-strong` | `#CFCFCA` | `#2E353F` |
 
 Token wiring worth knowing: `--accent` is the **brand lime** here, not shadcn's neutral hover surface. shadcn primitives that want a quiet hover say `bg-elevated` explicitly. `--primary-foreground` and `--accent-foreground` both resolve to `--accent-contrast`, which is what keeps lime buttons readable.
 
 The brand mark is `apps/web/public/logo.svg` (tab icon: `apps/web/app/icon.svg`). Swap those files to rebrand; no component change needed.
 
-The hero canvas (`audience-field.tsx`) can't read CSS tokens, so it mirrors the lime in JS constants. Keep them in sync.
+The hero canvas (`audience-field.tsx`) can't read CSS tokens directly, so it reads the `--field-*` tokens off the document and re-reads them on `data-theme` changes. Lime is invisible on white, so light mode steps the engaged colour down to a deeper green (`--field-engaged`) rather than reusing the brand fill.
 
 ### Chart color
 
-The audience donut carries its own **categorical identity palette**, deliberately separate from the brand lime so a slice never reads as a control, and from the status tones. Colour follows the bucket, never its rank. The hues are validated (dark band, chroma floor, adjacent-pair CVD, normal-vision floor, 3:1 on surface) — see the header comment in `audience-donut.tsx` for the re-validation command. Low-quality buckets always render in the reserved error tone.
+The audience donut carries its own **categorical identity palette** (the `--viz-*` tokens), deliberately separate from the brand lime so a slice never reads as a control, and from the status tones. Colour follows the bucket, never its rank. Light and dark are each stepped for their own surface and validated separately (lightness band, chroma floor, adjacent-pair CVD, normal-vision floor, contrast) — see the header comment in `audience-donut.tsx` for the re-validation commands. Low-quality buckets always render in the reserved error tone.
+
+Known limit: 11 fixed buckets exceed what an 8-slot categorical system separates under all-pairs, and slice order is share-dependent. Identity therefore never rests on colour alone — the legend swatch, label, percentage, and tooltip carry it. Folding low-share buckets into "Other" is the real fix if this ever needs to be airtight.
 
 Score color usage:
 

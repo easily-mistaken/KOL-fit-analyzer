@@ -11,7 +11,7 @@ export default function HomePage() {
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "linear-gradient(180deg, rgba(10,12,16,0.46), rgba(10,12,16,0.2) 34%, rgba(10,12,16,0.55))",
+            "linear-gradient(180deg, rgba(var(--field-veil),0.46), rgba(var(--field-veil),0.2) 34%, rgba(var(--field-veil),0.55))",
         }}
       />
 

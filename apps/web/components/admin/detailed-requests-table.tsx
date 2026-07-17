@@ -19,7 +19,7 @@ import {
 // curated report on Telegram, then flips the status here.
 
 const STATUS_TONE: Record<AdminDetailedRequestRow["status"], string> = {
-  NEW: "border-accent/50 bg-accent/10 text-accent-hover",
+  NEW: "border-accent/50 bg-accent/10 text-accent-ink",
   SENT: "border-success/50 bg-success/10 text-success",
   DISMISSED: "border-default bg-elevated text-muted-foreground",
 };
@@ -90,7 +90,7 @@ export function AdminDetailedRequestsTable({
               {r.analysisRequestId && (
                 <Link
                   href={`/analyses/${r.analysisRequestId}`}
-                  className="ml-2 inline-flex items-center gap-0.5 text-xs text-accent-hover hover:underline"
+                  className="ml-2 inline-flex items-center gap-0.5 text-xs text-accent-ink hover:underline"
                 >
                   report <ArrowRight className="h-3 w-3" />
                 </Link>
@@ -101,7 +101,7 @@ export function AdminDetailedRequestsTable({
                 href={`https://t.me/${r.telegram}`}
                 target="_blank"
                 rel="noreferrer"
-                className="text-accent-hover hover:underline"
+                className="text-accent-ink hover:underline"
               >
                 @{r.telegram}
               </a>
@@ -111,7 +111,7 @@ export function AdminDetailedRequestsTable({
                 href={`https://x.com/${r.xHandle}`}
                 target="_blank"
                 rel="noreferrer"
-                className="text-accent-hover hover:underline"
+                className="text-accent-ink hover:underline"
               >
                 @{r.xHandle}
               </a>

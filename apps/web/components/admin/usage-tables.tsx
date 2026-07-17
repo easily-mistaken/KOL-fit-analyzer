@@ -110,7 +110,7 @@ export function AdminUsageTables({ usage }: { usage: AdminUsage }) {
                     {row.requestId ? (
                       <Link
                         href={`/analyses/${row.requestId}`}
-                        className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors group-hover:text-accent-hover"
+                        className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors group-hover:text-accent-ink"
                       >
                         Open <ArrowRight className="h-3.5 w-3.5" />
                       </Link>

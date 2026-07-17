@@ -17,43 +17,45 @@ const LOW_QUALITY = new Set<AudienceBucket>([
 ]);
 
 /*
- * Categorical identity palette, tuned for the near-black surface (#0a0c10) and
- * kept deliberately separate from the brand lime, so a slice never reads as a
- * control. Colour follows the BUCKET, never its rank, so a bucket keeps its
- * colour as shares move.
+ * Categorical identity palette, kept deliberately separate from the brand lime
+ * so a slice never reads as a control. Colour follows the BUCKET, never its
+ * rank, so a bucket keeps its colour as shares move.
  *
- * Key order below is the validated order — the 11 hues clear the dark lightness
- * band, chroma floor, adjacent-pair CVD (worst ΔE 9.4 deutan), the normal-vision
- * floor (19.4), and 3:1 on surface. Re-run before editing:
- *   node scripts/validate_palette.js "<hexes>" --mode dark --surface "#0a0c10"
+ * The values live in globals.css as --viz-* tokens because light and dark are
+ * SELECTED, not flipped: each mode is stepped for its own surface and validated
+ * on its own. Both runs clear the lightness band, chroma floor, adjacent-pair
+ * CVD, and the normal-vision floor. Re-validate before editing either set:
+ *   node scripts/validate_palette.js "<hexes>" --mode dark  --surface "#0a0c10"
+ *   node scripts/validate_palette.js "<hexes>" --mode light --surface "#ffffff"
  *
  * Known limit: 11 hues exceed what an 8-slot categorical system can separate
  * under all-pairs, and segment order here is share-dependent, so any two can
  * touch. Identity therefore never rests on colour alone — every slice carries a
- * legend swatch, a label, a percentage, and a hover tooltip.
+ * legend swatch, a label, a percentage, and a hover tooltip. (Light mode also
+ * sits in the contrast relief band, which those same labels cover.)
  */
 const BUCKET_COLOR: Record<AudienceBucket, string> = {
-  developers: "#3987e5",
-  founders: "#d95926",
-  defi_users: "#199e70",
-  investors_vcs: "#9085e9",
-  traders: "#c98500",
-  kols_creators: "#d55181",
-  ai_crypto: "#008300",
-  infra_research: "#0d9bb5",
-  community_managers: "#a1662f",
-  nft_gaming: "#8a5cd6",
-  meme_degens: "#6f8f2a",
+  developers: "var(--viz-developers)",
+  founders: "var(--viz-founders)",
+  defi_users: "var(--viz-defi-users)",
+  investors_vcs: "var(--viz-investors-vcs)",
+  traders: "var(--viz-traders)",
+  kols_creators: "var(--viz-creators)",
+  ai_crypto: "var(--viz-ai-crypto)",
+  infra_research: "var(--viz-infra-research)",
+  community_managers: "var(--viz-community-managers)",
+  nft_gaming: "var(--viz-nft-gaming)",
+  meme_degens: "var(--viz-meme-degens)",
   // "Outside our space" is the neutral slot, so it stays grey by intent rather
   // than spending a hue.
-  non_crypto: "#6b7480",
+  non_crypto: "var(--viz-neutral)",
   // Low-quality buckets are a reserved status tone, never a categorical hue.
-  bots_spam: "#ff5c5c",
-  airdrop_farmers: "#ff5c5c",
-  giveaway_hunters: "#ff5c5c",
+  bots_spam: "var(--viz-low-quality)",
+  airdrop_farmers: "var(--viz-low-quality)",
+  giveaway_hunters: "var(--viz-low-quality)",
 };
 
-const LOW_QUALITY_COLOR = "#ff5c5c";
+const LOW_QUALITY_COLOR = "var(--viz-low-quality)";
 
 type Entry = {
   bucket: AudienceBucket;
@@ -94,7 +96,7 @@ export function AudienceDonut({
             label: AUDIENCE_BUCKET_LABELS[bucket] ?? bucket,
             share: v?.share ?? 0,
             count: v?.count ?? 0,
-            color: low ? LOW_QUALITY_COLOR : BUCKET_COLOR[bucket] ?? "#6b7480",
+            color: low ? LOW_QUALITY_COLOR : BUCKET_COLOR[bucket] ?? "var(--viz-neutral)",
             low,
           };
         })

@@ -36,14 +36,14 @@ export default async function AnalysesListPage({
     <div className="space-y-8">
       <section className="space-y-2">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <FileText className="h-5 w-5 text-accent-hover" />
-          <span>Reports</span>
+          <FileText className="h-5 w-5 text-accent-ink" />
+          <span>History</span>
         </div>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Saved analyses
+          Your reports
         </h1>
         <p className="max-w-2xl text-sm text-secondary-foreground">
-          Every fit analysis, newest first. Open any row to view its full
+          Every analysis you&apos;ve run, newest first. Open any row for the full
           report.
         </p>
       </section>

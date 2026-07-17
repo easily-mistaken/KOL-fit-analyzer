@@ -49,7 +49,7 @@ export default async function AdminOverviewPage() {
 
       <section className="space-y-2">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Activity className="h-5 w-5 text-accent-hover" />
+          <Activity className="h-5 w-5 text-accent-ink" />
           <span>Overview</span>
         </div>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">

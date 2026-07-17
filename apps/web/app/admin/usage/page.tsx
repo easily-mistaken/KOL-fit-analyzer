@@ -28,7 +28,7 @@ export default async function AdminUsagePage({
 
       <section className="space-y-2">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Coins className="h-5 w-5 text-accent-hover" />
+          <Coins className="h-5 w-5 text-accent-ink" />
           <span>Usage</span>
         </div>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
