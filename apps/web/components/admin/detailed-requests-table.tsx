@@ -58,7 +58,19 @@ export function AdminDetailedRequestsTable({
   return (
     <div className="space-y-4">
       <AdminTable
-        head={["Requested", "Pair", "Telegram", "X", "Email", "Note", "Status", "Actions"]}
+        minWidth={960}
+        head={
+          <>
+            <th className="px-3 py-3 font-medium">Requested</th>
+            <th className="px-3 py-3 font-medium">Pair</th>
+            <th className="px-3 py-3 font-medium">Telegram</th>
+            <th className="px-3 py-3 font-medium">X</th>
+            <th className="px-3 py-3 font-medium">Email</th>
+            <th className="px-3 py-3 font-medium">Note</th>
+            <th className="px-3 py-3 font-medium">Status</th>
+            <th className="px-3 py-3 font-medium">Actions</th>
+          </>
+        }
       >
         {data.items.map((r) => (
           <AdminRow key={r.id}>

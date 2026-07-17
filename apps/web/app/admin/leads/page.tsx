@@ -1,5 +1,7 @@
 import { Sparkles } from "lucide-react";
 
+import { prisma } from "@kol-fit/db";
+
 import { isAdminConfigured, requireAdmin } from "@/lib/admin/auth";
 import {
   listAdminDetailedRequests,
@@ -32,6 +34,13 @@ export default async function AdminLeadsPage({
     listAdminDetailedRequests({ cursor }),
     listAdminLeads({ limit: 50 }),
   ]);
+
+  // Chat-style read semantics (Unit 40.1): opening the queue marks everything
+  // seen — the nav badge (counts unseen) clears on the next fetch. Best-effort;
+  // workflow status (NEW/SENT/DISMISSED) is untouched.
+  await prisma.detailedReportRequest
+    .updateMany({ where: { seenAt: null }, data: { seenAt: new Date() } })
+    .catch(() => {});
 
   return (
     <div className="space-y-8">

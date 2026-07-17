@@ -27,14 +27,15 @@ function json<T>(body: ApiResponse<T>, status: number): NextResponse {
   return NextResponse.json(body, { status });
 }
 
-/** Unread badge (Unit 39.1): count of NEW (unhandled) requests. */
+/** Unread badge (Unit 40.1): chat-style — counts UNSEEN requests. Viewing the
+ *  leads queue marks everything seen; workflow status is independent. */
 export async function GET(): Promise<NextResponse> {
   if (!(await isAdminRequest())) {
     return json(err("unauthorized", "Admin session required."), 401);
   }
   try {
     const newCount = await prisma.detailedReportRequest.count({
-      where: { status: "NEW" },
+      where: { seenAt: null },
     });
     return json(ok({ newCount }), 200);
   } catch {

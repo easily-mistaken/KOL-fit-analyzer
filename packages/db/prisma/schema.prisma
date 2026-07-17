@@ -336,6 +336,9 @@ model DetailedReportRequest {
   status      DetailedRequestStatus @default(NEW)
   createdAt   DateTime              @default(now()) @db.Timestamptz
   fulfilledAt DateTime?             @db.Timestamptz
+  // Chat-style unread marker (Unit 40.1): set when the operator first views
+  // the leads queue; the nav badge counts unseen, independent of workflow status.
+  seenAt      DateTime?             @db.Timestamptz
 
   @@index([status, createdAt])
   @@index([ownerId, createdAt])
