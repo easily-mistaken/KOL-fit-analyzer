@@ -63,9 +63,13 @@ export function MetricGroups({ metrics }: { metrics: MetricMap }) {
     <div className="space-y-6">
       {fit.length > 0 && (
         <div>
-          <div className="mb-3 text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="mb-1.5 text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">
             Fit metrics
           </div>
+          <p className="mb-3 text-[12px] text-muted-foreground">
+            Weighted by impact — the metrics nearer the top move the overall
+            score the most.
+          </p>
           <div>
             {fit.map((metric) => (
               <MetricRow key={metric} metric={metric} score={metrics[metric]!} />

@@ -1,11 +1,6 @@
 import * as React from "react";
 import Link from "next/link";
-import {
-  ArrowLeft,
-  Check,
-  TriangleAlert,
-  X,
-} from "lucide-react";
+import { ArrowLeft, TrendingDown, TrendingUp } from "lucide-react";
 import type {
   FitReport,
   ReportVerdict,
@@ -104,10 +99,12 @@ function collectMetrics(fit: FitReport, scores: ScoreBreakdown | null): MetricMa
   return metrics;
 }
 
-type Driver = { label: string; value: number; note: string };
-// Compute "what works / what to watch" from the scored metric VALUES. The raw
-// scoring `reasons` strings are intentionally NOT rendered (Unit 33: they
-// describe internal methodology); the ⓘ explainer copy carries the meaning.
+type Driver = { label: string; value: number };
+// What's lifting vs. holding back the overall, read straight from the scored
+// metric VALUES. The raw scoring `reasons` strings are intentionally NOT
+// rendered (Unit 33: they describe internal methodology). Risk metrics only
+// ever count against a pairing, so an elevated one lands on the "held back"
+// side.
 function computeDrivers(metrics: MetricMap): { pos: Driver[]; neg: Driver[] } {
   const pos: Driver[] = [];
   const neg: Driver[] = [];
@@ -116,18 +113,43 @@ function computeDrivers(metrics: MetricMap): { pos: Driver[]; neg: Driver[] } {
     if (metric === "overall_fit" || !score) continue;
     const label = METRIC_INFO[metric]?.label ?? metric;
     if (RISK_METRICS.has(metric)) {
-      if (score.value >= 55) {
-        neg.push({ label, value: score.value, note: "Elevated. Factor this into the decision." });
-      }
+      if (score.value >= 55) neg.push({ label, value: score.value });
     } else if (score.value >= 65) {
-      pos.push({ label, value: score.value, note: "A genuine strength for this pairing." });
+      pos.push({ label, value: score.value });
     } else if (score.value < 45) {
-      neg.push({ label, value: score.value, note: "Below par for this pairing." });
+      neg.push({ label, value: score.value });
     }
   }
   pos.sort((a, b) => b.value - a.value);
   neg.sort((a, b) => a.value - b.value);
   return { pos: pos.slice(0, 3), neg: neg.slice(0, 3) };
+}
+
+// The one line that reconciles the headline number with the metric bars below:
+// the reader sees a mediocre overall sitting next to several high scores, and
+// this says, at a glance, which metrics pulled it each way. Sits inside the
+// hero, directly under the score, so number and reason are never separated.
+function DriverStrip({ pos, neg }: { pos: Driver[]; neg: Driver[] }) {
+  if (pos.length === 0 && neg.length === 0) return null;
+  const fmt = (ds: Driver[]) => ds.slice(0, 2).map((d) => d.label).join(" · ");
+  return (
+    <div className="relative grid gap-x-8 gap-y-2.5 border-t border-default/70 px-6 py-3.5 pl-7 text-[13px] sm:grid-cols-2">
+      <div className="flex items-start gap-2">
+        <TrendingUp className="mt-0.5 h-4 w-4 shrink-0 text-success" />
+        <div className="flex flex-wrap items-baseline gap-x-1.5">
+          <span className="font-medium text-muted-foreground">Lifted by</span>
+          <span className="text-foreground">{pos.length ? fmt(pos) : "—"}</span>
+        </div>
+      </div>
+      <div className="flex items-start gap-2">
+        <TrendingDown className="mt-0.5 h-4 w-4 shrink-0 text-error" />
+        <div className="flex flex-wrap items-baseline gap-x-1.5">
+          <span className="font-medium text-muted-foreground">Held back by</span>
+          <span className="text-foreground">{neg.length ? fmt(neg) : "—"}</span>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // ---- small building blocks ------------------------------------------------
@@ -272,6 +294,7 @@ export function FitReportView({
           </div>
           <ScoreGauge value={overall.value} color={v.tone} />
         </div>
+        <DriverStrip pos={drivers.pos} neg={drivers.neg} />
       </section>
 
       {/* Concierge CTA (Unit 35): the hands-on tier, available any time.
@@ -309,56 +332,6 @@ export function FitReportView({
               </li>
             ))}
           </ul>
-        </Panel>
-      )}
-
-      {/* WHY — drivers */}
-      {(drivers.pos.length > 0 || drivers.neg.length > 0) && (
-        <Panel title="Why">
-          <div className="grid gap-5 sm:grid-cols-2">
-            <div>
-              <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-success">
-                <Check className="h-4 w-4" /> What works
-              </div>
-              <ul className="grid gap-2.5">
-                {drivers.pos.length === 0 && (
-                  <li className="text-[13.5px] text-muted-foreground">
-                    No standout strengths.
-                  </li>
-                )}
-                {drivers.pos.map((d, i) => (
-                  <li key={i} className="grid grid-cols-[16px_1fr] gap-2 text-[13.5px] text-secondary-foreground">
-                    <Check className="mt-0.5 h-3.5 w-3.5 text-success" />
-                    <span>
-                      <span className="text-foreground">{d.label} ({d.value}).</span>{" "}
-                      {d.note}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-warning">
-                <TriangleAlert className="h-4 w-4" /> What to watch
-              </div>
-              <ul className="grid gap-2.5">
-                {drivers.neg.length === 0 && (
-                  <li className="text-[13.5px] text-muted-foreground">
-                    No major concerns.
-                  </li>
-                )}
-                {drivers.neg.map((d, i) => (
-                  <li key={i} className="grid grid-cols-[16px_1fr] gap-2 text-[13.5px] text-secondary-foreground">
-                    <X className="mt-0.5 h-3.5 w-3.5 text-error" />
-                    <span>
-                      <span className="text-foreground">{d.label} ({d.value}).</span>{" "}
-                      {d.note}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
         </Panel>
       )}
 
