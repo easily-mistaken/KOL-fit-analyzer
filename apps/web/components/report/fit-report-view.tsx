@@ -297,27 +297,6 @@ export function FitReportView({
         <DriverStrip pos={drivers.pos} neg={drivers.neg} />
       </section>
 
-      {/* Concierge CTA (Unit 35): the hands-on tier, available any time.
-          The on-page report IS the full report (Unit 36.1: the old
-          "Get the full report" email capture was removed — misleading). */}
-      <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-accent/30 bg-accent/5 p-5">
-        <div className="min-w-0">
-          <p className="text-sm font-semibold text-foreground">
-            Want the analyst&apos;s cut of this report?
-          </p>
-          <p className="mt-0.5 text-xs text-secondary-foreground">
-            A hand-curated deep dive on @{meta.kolHandle}, delivered to your
-            Telegram within a day.
-          </p>
-        </div>
-        <a
-          href={`/detailed?org=${encodeURIComponent(meta.orgHandle)}&kol=${encodeURIComponent(meta.kolHandle)}&analysis=${encodeURIComponent(meta.requestId)}`}
-          className="inline-flex shrink-0 items-center rounded-lg bg-accent px-3.5 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent-hover"
-        >
-          Request curated report
-        </a>
-      </section>
-
       {/* KEY TAKEAWAYS */}
       {points.length > 0 && (
         <Panel title="Key takeaways">
@@ -339,7 +318,16 @@ export function FitReportView({
       {(fitReport.audienceMatch || fitReport.audienceBreakdown) && (
         <Panel title="Engaged audience: who actually listens">
           {fitReport.audienceBreakdown && (
-            <AudienceDonut distribution={fitReport.audienceBreakdown} />
+            <>
+              <AudienceDonut distribution={fitReport.audienceBreakdown} />
+              {/* "Other" folds the smaller/outside-space buckets and sorts last
+                  by design, so it can be the largest wedge without being a
+                  finding — say so, so a big grey slice doesn't read as one. */}
+              <p className="mt-3 text-[11.5px] text-muted-foreground">
+                &ldquo;Other&rdquo; groups smaller and outside-space segments;
+                hover any slice for its full breakdown.
+              </p>
+            </>
           )}
           <div className="mt-4 grid gap-4 border-t border-default pt-4 sm:grid-cols-[auto_1fr] sm:items-start sm:gap-6">
             <div className="flex gap-6">
@@ -492,6 +480,28 @@ export function FitReportView({
         </Panel>
       )}
 
+      {/* Concierge CTA (Unit 35): the hands-on tier. Placed after the report
+          body, not before it — the on-page report IS the full report (Unit
+          36.1), so the offer lands once the reader has the verdict, the scores,
+          and the deep-dive rather than interrupting on the way in. */}
+      <section className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-accent/30 bg-accent/5 p-5">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-foreground">
+            Want the analyst&apos;s cut of this report?
+          </p>
+          <p className="mt-0.5 text-xs text-secondary-foreground">
+            A hand-curated deep dive on @{meta.kolHandle}, delivered to your
+            Telegram within a day.
+          </p>
+        </div>
+        <a
+          href={`/detailed?org=${encodeURIComponent(meta.orgHandle)}&kol=${encodeURIComponent(meta.kolHandle)}&analysis=${encodeURIComponent(meta.requestId)}`}
+          className="inline-flex shrink-0 items-center rounded-lg bg-accent px-3.5 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent-hover"
+        >
+          Request curated report
+        </a>
+      </section>
+
       {/* FOOTER — confidence + timestamp only. Sample sizes and evidence
           notes (providers, models, methodology) stay internal (Unit 33). */}
       <Panel>
@@ -536,12 +546,20 @@ function RiskCard({
       className="rounded-xl border border-default bg-elevated p-4"
       style={{ borderLeft: `3px solid ${color}` }}
     >
-      <div className="mb-1.5 flex items-center justify-between gap-3">
+      <div className="mb-1.5 flex items-start justify-between gap-3">
         <div className="flex items-center gap-2 text-[13.5px] font-semibold text-foreground">
           <span style={{ color }}>◆</span> {title}
         </div>
-        <div className="font-mono text-[15px] font-semibold" style={{ color }}>
-          {score} <span className="text-xs font-normal text-muted-foreground">/ 100</span>
+        <div className="text-right leading-tight">
+          <div className="font-mono text-[15px] font-semibold" style={{ color }}>
+            {score} <span className="text-xs font-normal text-muted-foreground">/ 100</span>
+          </div>
+          {/* A green "9" (low risk) and a green "100" (high safety) both mean
+              "good" for opposite reasons — the direction label is what keeps
+              the two from reading as inconsistent. */}
+          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            {isRisk ? "Lower is better" : "Higher is better"}
+          </div>
         </div>
       </div>
       <p className="text-[13px] text-secondary-foreground">{narrative}</p>
