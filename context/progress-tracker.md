@@ -311,3 +311,22 @@ Update this file after every meaningful implementation change.
   → "removed" note; admin read-list; owner call-sites), DEPLOY.md (dropped the
   MAIL env row). Verified: `pnpm -r build` green, full `pnpm check` 413/0,
   zero dangling references to mail/delivery in source.
+
+- 2026-07-18: Report UI/UX pass on `FitReportView` (3 commits, `apps/web/components/report/`),
+  addressing a scannability review of the finished report page. No data-model or
+  scoring changes; weights stay internal (Unit 33) — the additions convey
+  importance/direction, never percentages.
+  * Reconcile the headline number: an "Okay fit / 55" sat next to a wall of 100s
+    in the breakdown and read as inconsistent. Added a "Lifted by / Held back by"
+    drivers strip inside the hero (directly under the score, derived from the
+    existing `computeDrivers` values), plus a "weighted by impact — metrics nearer
+    the top move the overall most" caption on the fit-metric list.
+  * Removed the now-redundant standalone "Why" panel (its glance value moved into
+    the hero; the detail lives in the breakdown) — tighter page, less repetition.
+  * Risk & safety cards: added per-card direction labels ("Lower is better" for
+    risk, "Higher is better" for brand safety) so a green 9 and a green 100 no
+    longer read as inconsistent.
+  * Moved the concierge CTA from the #2 slot (interrupting before any value) to
+    the end of the report body, and captioned the audience donut so a large grey
+    "Other" wedge isn't misread as a finding.
+  * Verified in light + dark on a live report; web typecheck clean.
