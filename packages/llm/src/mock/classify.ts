@@ -249,55 +249,10 @@ function orgTerms(org: OrgClassification): Set<string> {
   );
 }
 
-/** Deterministic relationship classification from the KOL bio (Unit 29F mock
- *  stand-in): founder terms + org mention -> founder; founder terms alone ->
- *  adjacent; media/news terms -> media; analyst terms -> specialist. */
-export function classifyRelationshipMock(
-  orgHandle: string,
-  profile: TwitterUser | null | undefined
-): Pick<ContentFitAssessment, "relationship" | "relationshipEvidence"> {
-  const bio = (profile?.bio ?? "").toLowerCase();
-  if (bio.trim().length === 0) {
-    return { relationship: "none", relationshipEvidence: "No profile bio available." };
-  }
-  const founderTerms = /founder|co-founder|cofounder|inventor|\bceo\b|core team|creator of/;
-  const mentionsOrg = bio.includes(orgHandle.toLowerCase());
-  if (founderTerms.test(bio) && mentionsOrg) {
-    return {
-      relationship: "founder_or_core_team",
-      relationshipEvidence: `Bio claims a founder/core role at @${orgHandle}.`,
-    };
-  }
-  if (/creator of \w+|ecosystem lead|head of protocol/.test(bio)) {
-    return {
-      relationship: "official_ecosystem_lead",
-      relationshipEvidence: "Bio claims a creator/official-lead role for a platform.",
-    };
-  }
-  if (founderTerms.test(bio)) {
-    return {
-      relationship: "adjacent_ecosystem_authority",
-      relationshipEvidence: "Bio claims a founder/core role, but not at this org.",
-    };
-  }
-  if (/\bnews\b|\bmedia\b|aggregator|daily updates/.test(bio)) {
-    return { relationship: "media_or_news", relationshipEvidence: "Bio reads as a media/news account." };
-  }
-  if (/analyst|investigat|research/.test(bio)) {
-    return {
-      relationship: "independent_specialist",
-      relationshipEvidence: "Bio reads as an independent analyst/investigator.",
-    };
-  }
-  return { relationship: "none", relationshipEvidence: "No special relationship signals in the bio." };
-}
-
 /** Deterministic 0-5 rubric from token overlap (bounded, never a 0-100 score). */
 export function assessContentFitMock(
   org: OrgClassification,
-  content: KolContentClassification,
-  orgHandle = "",
-  profile?: TwitterUser | null
+  content: KolContentClassification
 ): ContentFitAssessment {
   const kolTerms = new Set<string>([
     ...content.verticals.map((v) => v.toLowerCase()),
@@ -315,9 +270,6 @@ export function assessContentFitMock(
     topicalAdjacency: adjacency,
     audienceOverlapPotential: Math.min(5, adjacency + (cryptoKol ? 1 : 0)),
     naturalMentionFit: adjacency,
-    // Unit 30 mock heuristic: direct topical overlap implies audience intent;
-    // crypto-adjacent-without-overlap is plausible-but-unproven (3).
-    audienceIntentOverlap: m >= 2 ? Math.min(5, adjacency + 1) : cryptoKol ? 3 : 1,
     sharedTopics: shared,
     rationale:
       m > 0
@@ -325,7 +277,6 @@ export function assessContentFitMock(
         : cryptoKol
           ? "No direct topic overlap, but both operate in crypto."
           : "No meaningful topical relationship detected.",
-    ...classifyRelationshipMock(orgHandle, profile),
   };
 }
 

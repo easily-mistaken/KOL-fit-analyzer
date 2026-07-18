@@ -140,18 +140,17 @@ or
   - score values
   - reasons/evidence signals
   - confidence impacts
-- Overall score should prioritize engaged audience match.
-
-Default weights:
-
-| Metric | Weight |
-| --- | ---: |
-| Engaged audience match | 35% |
-| Audience quality | 20% |
-| Content fit | 15% |
-| Campaign goal fit | 15% |
-| Brand safety | 10% |
-| Geo/language fit | 5% |
+- The fit score IS the engaged-audience match (Unit 41, "audience-honest"):
+  `overall_fit == engaged_audience_match` — how much of the creator's real,
+  engaged audience is the brand's target customer. There is **no weighted blend**
+  and **no identity/relationship modifiers**.
+  - Content fit, campaign-goal fit, and geo/language are computed for **context
+    only** — they do not move the score.
+  - Brand-safety, bot/farm, and paid-promo act as **verdict gates** — they can
+    only lower the verdict, never raise it.
+  - Expected reach and audience geography are separate **dials**, shown beside
+    the score and never folded into it.
+  - See `context/specs/41-scoring-v3-audience-honest.md` for the full model.
 
 ## LLM Usage
 

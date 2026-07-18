@@ -206,7 +206,7 @@ export class CachingLlmProvider implements LlmProvider {
       kol: {
         handle: norm(input.kol.handle),
         content: input.kol.content,
-        // 29F: the bio drives the relationship classification.
+        // The bio feeds the content-fit rubric, so it's part of the cache key.
         profileId: input.kol.profile?.id ?? null,
         bio: input.kol.profile?.bio ?? null,
       },

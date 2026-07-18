@@ -82,10 +82,11 @@ export interface OpenAiProviderOptions {
   /** Cheaper/faster model for bulk per-account audience batches (Unit 29B
    *  tiering). Defaults to `model`. */
   fastModel?: string;
-  /** Optionally STRONGER model for the single pair-specific content-fit /
-   *  relationship judgment call (Unit 30 tiering — pseudonymous-founder and
-   *  intent judgments are knowledge-bound; the call is tiny so a frontier
-   *  model costs pennies). Defaults to `model`. */
+  /** Optionally STRONGER model for the single pair-specific content-fit rubric
+   *  call — borderline topical-adjacency / audience-overlap judgments benefit
+   *  from a better model, and the call is tiny so a frontier model costs pennies.
+   *  Optional; defaults to `model`. (The Unit 29F/30 relationship + intent
+   *  judgments this once tiered for were removed in Unit 41.) */
   fitModel?: string;
   baseUrl?: string;
   timeoutMs?: number;
@@ -324,9 +325,8 @@ export class OpenAiLlmProvider implements LlmProvider {
         schema: CONTENT_FIT_SCHEMA,
         system: SYSTEM_PROMPT,
         user: buildContentFitPrompt(input),
-        // The one nuanced judgment call (relationship + intent): more
-        // reasoning budget than bulk classification stabilizes borderline
-        // ratings (Unit 30; meow founder-flicker, intent hedging).
+        // The pair-specific content-fit rubric: a little reasoning budget
+        // stabilizes borderline adjacency / audience-overlap ratings.
         reasoningEffort: "low",
         maxOutputTokens: MAX_TOKENS.contentFit,
       },

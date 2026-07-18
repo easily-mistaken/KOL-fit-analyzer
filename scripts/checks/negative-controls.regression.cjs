@@ -1,7 +1,6 @@
-// Unit 41 regression: v3 verdict gates + the v26 SYNTHETIC negative controls
-// (context/krypto-kol-calibration-pairs-v26.md). The synthetic pairs are
-// PATTERNS, not real accounts — encoded here as scoring fixtures (the live
-// calibration runner skips them). Verifies under scoring v3: severe risk gates
+// Unit 41 regression: v3 verdict gates + synthetic negative-control PATTERNS
+// (farm / casino / raid / giveaway / promo-heavy shapes — not real handles,
+// encoded here as scoring fixtures). Verifies under scoring v3: severe risk gates
 // cap to AVOID; keyword/category overlap (content fit) does NOT defeat the
 // gates; the promo gate alone is never AVOID; off-target audiences fall below
 // the 5% target floor to AVOID on their own; identity/relationship is ignored

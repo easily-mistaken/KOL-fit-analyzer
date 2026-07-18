@@ -68,8 +68,8 @@ export type AssessContentFitInput = {
   kol: {
     handle: string;
     content: KolContentClassification;
-    /** KOL profile — the bio is the primary relationship evidence (Unit 29F:
-     *  "inventor of X", "co-founder of Y", "crypto news"). */
+    /** KOL profile — the bio informs the content-fit rubric (topical adjacency
+     *  / audience-overlap judgments). */
     profile?: TwitterUser | null;
   };
 };

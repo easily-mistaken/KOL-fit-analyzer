@@ -172,43 +172,7 @@ export function buildContentFitPrompt(input: AssessContentFitInput): string {
       "DeFi-yield KOL is adjacent (>=3) to a lending protocol even with zero shared words.",
     "- audienceOverlapPotential: how plausibly the KOL's audience contains the org's target users.",
     "- naturalMentionFit: would this KOL talking about this org feel natural (not forced) to their audience?",
-    "Rate audienceIntentOverlap as an INTEGER 0-5 — a SEPARATE question from topic: does what this KOL's " +
-      "engaged audience actually DOES and SEEKS match what this org's product needs users to DO? " +
-      "Category overlap is NOT intent overlap. Contrasts (rate the mismatched side 0-2): " +
-      "DEX traders are not lenders/borrowers; borrowers are not yield depositors; retail wallet users are not " +
-      "multisig administrators; mainstream gamers are not NFT traders or Web3 users; crypto NEWS READERS are " +
-      "not product users or protocol developers; sports-betting tipsters' followers are not researchers. " +
-      "And the reverse holds: a non-crypto audience CAN have high intent (5) when the product serves exactly " +
-      "what they do — e.g. election forecasters for a prediction market. " +
-      "SPECIALIZATION: generalist builders/developers are NOT specialists in a deep-niche technical product " +
-      "(FHE/privacy infra, zk tooling, formal verification) — cap at 3 unless demonstrated specialist interest. " +
-      "0-1 = audience consumes content but would not use this product; 2 = mostly wrong intent; " +
-      "3 = plausible intent WITH positive evidence; 4-5 = the audience demonstrably does/seeks what this product offers. " +
-      "ANTI-HEDGE RULE: 3 is not a safe default — it requires POSITIVE evidence the audience acts with this " +
-      "product-relevant intent. If the audience's primary reason for following is content consumption (news, " +
-      "entertainment, streams, headlines) or their demonstrated activity centers on a DIFFERENT product intent, " +
-      "rate 2 or lower. When torn between 2 and 3, choose 2.",
     "Also list sharedTopics (concrete overlapping topics, may be empty) and a 1-3 sentence rationale.",
-    "Classify `relationship` — the KOL's relationship to THIS ORG specifically. FIRST ask: is this account's " +
-      "owner publicly known as the founder/creator/lead of this org, even under a pseudonym? Check the handle and " +
-      "display name against your knowledge of the org's leadership — identity beats content. Use BOTH the bio AND " +
-      "your public knowledge; when genuinely unsure AFTER that identity check, choose the weaker category:",
-    "- founder_or_core_team: founder/inventor/CEO/core team of THIS org itself. This INCLUDES pseudonymous " +
-      "founders who are publicly known to lead the org even if the bio doesn't state it (a missing legal name " +
-      "or modest bio is not a discount).",
-    "- official_ecosystem_lead: publicly known CREATOR, lead, or official operator of this org's platform or " +
-      "ecosystem program (e.g. the person who created the org's chain/product while working at its parent " +
-      "company, or the org's official ecosystem/community lead), even when the bio understates it. This " +
-      "INCLUDES publicly announced advisors/officers OF THIS ORG. Stronger than adjacent; distinct from " +
-      "founder only in formal title.",
-    "- adjacent_ecosystem_authority: founder or major figure of the underlying chain/ecosystem the org builds on, " +
-      "but NOT this org and NOT its official lead (e.g. a chain co-founder vs an app on that chain).",
-    "- independent_specialist: respected independent analyst/investigator/researcher in the org's domain.",
-    "- media_or_news: a BRAND account rather than an individual voice — media, news, aggregators, AND " +
-      "community/event/organization brands (hackathon series, community programs, publications). What matters " +
-      "is that it is a distribution brand, not a person.",
-    "- none: an ordinary KOL with no special relationship.",
-    "Give `relationshipEvidence`: one sentence naming what grounds the call (bio claim or public role).",
     "Output ONLY the ratings/labels — no scores out of 100, no verdicts, no recommendations.",
   ].join("\n");
 }

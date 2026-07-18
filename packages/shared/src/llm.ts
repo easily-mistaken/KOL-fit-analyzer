@@ -100,25 +100,12 @@ export type KolContentClassification = z.infer<
   typeof KolContentClassificationSchema
 >;
 
-// The KOL's relationship to the org (Unit 29F) — a separate authority signal,
-// not a weighted metric. Drives verdict floors/caps in scoring.
-export const KolRelationshipSchema = z.enum([
-  "founder_or_core_team",
-  // Unit 32 (v26 hierarchy): publicly-known creator/lead/official operator of
-  // the org's platform or ecosystem program — founder-grade authority whose
-  // boost is conditional on the campaign goal.
-  "official_ecosystem_lead",
-  "adjacent_ecosystem_authority",
-  "independent_specialist",
-  "media_or_news",
-  "none",
-]);
-export type KolRelationship = z.infer<typeof KolRelationshipSchema>;
-
-// Output of assessContentFit (Unit 29B): a bounded pair-specific semantic
-// rubric — labels on an ordinal 0-5 scale with rationale. The deterministic
-// scoring module (29C) maps these to a 0-100 metric; the LLM never scores.
-// 29F adds the org↔KOL relationship classification (additive optional).
+// Output of assessContentFit: a bounded pair-specific semantic content-fit
+// rubric — ordinal 0-5 labels with rationale. Deterministic scoring maps these
+// to the content_fit metric (informational in v3); the LLM never scores.
+// (The Unit 29F org↔KOL `relationship` and Unit 30 `audienceIntentOverlap`
+// fields were removed in Unit 41 — v3 scoring is audience-only and consumed
+// neither.)
 export const ContentFitAssessmentSchema = z.object({
   /** How close the KOL's usual topics are to the org's domain. */
   topicalAdjacency: z.number().int().min(0).max(5),
@@ -126,15 +113,8 @@ export const ContentFitAssessmentSchema = z.object({
   audienceOverlapPotential: z.number().int().min(0).max(5),
   /** Would this KOL mentioning the org feel natural to their audience? */
   naturalMentionFit: z.number().int().min(0).max(5),
-  /** Unit 30: does what this KOL's engaged audience actually DOES/SEEKS match
-   *  what the org's product needs users to do? Category ≠ intent (v26 rule 4):
-   *  DEX traders ≠ lenders, mainstream gamers ≠ NFT traders, news readers ≠
-   *  product users, forecasters DO have prediction-market intent. */
-  audienceIntentOverlap: z.number().int().min(0).max(5).optional(),
   sharedTopics: z.array(z.string()).default([]),
   rationale: z.string(),
-  relationship: KolRelationshipSchema.optional(),
-  relationshipEvidence: z.string().optional(),
 });
 export type ContentFitAssessment = z.infer<typeof ContentFitAssessmentSchema>;
 

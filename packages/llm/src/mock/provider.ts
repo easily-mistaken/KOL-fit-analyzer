@@ -72,12 +72,7 @@ export class MockLlmProvider implements LlmProvider {
     input: AssessContentFitInput
   ): Promise<ContentFitAssessment> {
     return ContentFitAssessmentSchema.parse(
-      assessContentFitMock(
-        input.org.classification,
-        input.kol.content,
-        input.org.handle,
-        input.kol.profile
-      )
+      assessContentFitMock(input.org.classification, input.kol.content)
     );
   }
 

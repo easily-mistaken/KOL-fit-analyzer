@@ -127,3 +127,26 @@ Chosen so the share cutoffs land right through `EAM_ANCHORS`
 Scoring stays deterministic and in `packages/scoring` (Invariant 4); numbers are
 computed here, never by the LLM; output validated against `ScoreBreakdownSchema`;
 missing data lowers confidence, never breaks (Invariant 8).
+
+## Robustness (live-verification fixes)
+
+- **Empty-org-profile guard:** a null `getUserProfile` for the brand (e.g. a
+  renamed/dead handle) with no manual brief throws, mirroring the empty-KOL-posts
+  guard — never a confident verdict from nothing.
+- **Unknown-target cap:** when targets fall back to the generic "any real crypto"
+  set, the fit is capped at `GENERIC_TARGET_MAX_FIT` (STRONG−1 → max GOOD) and
+  forced to low confidence with an "add your target" caveat.
+
+## Cleanup (obsolete pre-v3 scaffolding removed)
+
+v3 deletes not just the identity *scoring* but the artifacts built around it:
+
+- **Calibration harness** (`scripts/calibration/*`, the `krypto-kol-calibration-*`
+  docs, `pnpm calibrate`, and the `--selftest` in `pnpm check`) — it encoded
+  hand-labeled *identity-based* expected verdicts. Correctness is now the
+  `scoring-v3` unit tests, not hand-labeled live pairs.
+- **Vestigial LLM fields** the model emitted but v3 never consumed: the Unit 29F
+  `relationship`/`relationshipEvidence` (+ `KolRelationship`) and the Unit 30
+  `audienceIntentOverlap` — removed from the shared schema, the OpenAI
+  schema+prompt, and the mock. `assessContentFit` now returns only the
+  content-fit rubric.
