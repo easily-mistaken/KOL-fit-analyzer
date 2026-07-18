@@ -598,8 +598,21 @@ function RunningExperience({ data }: { data: AnalysisStatusResponse }) {
           </div>
         </div>
 
-        {/* staged walkthrough — what's happening & why it's worth the wait */}
-        <ol className="mt-6 space-y-1.5">
+        {/* Engagement first (user-directed order): give the captive user
+            something to read + do right away, before the "what we're doing"
+            transparency below — so the wait never reads as a bare spinner. */}
+        <WaitingTips />
+
+        {/* Queue the next creator now — this run keeps going in the background,
+            and queued runs process one-at-a-time (worker is sequential) so the
+            same brand isn't re-fetched/re-paid on each queued creator. */}
+        <QueueNextAnalysis defaultOrg={data.orgHandle} />
+
+        {/* What we're doing — the staged walkthrough (proof of work). */}
+        <div className="mt-7 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+          What we&apos;re doing
+        </div>
+        <ol className="mt-2 space-y-1.5">
           {STAGES.map((s, i) => {
             const done = activeIdx > i;
             const active = activeIdx === i;
@@ -675,13 +688,6 @@ function RunningExperience({ data }: { data: AnalysisStatusResponse }) {
             />
           </div>
         </div>
-
-        {/* Give the captive, high-intent user something to DO: queue the next
-            creator (this run keeps going in the background). */}
-        <QueueNextAnalysis defaultOrg={data.orgHandle} />
-
-        {/* Useful, on-topic content for the wait. */}
-        <WaitingTips />
 
         <p className="mt-6 text-xs text-muted-foreground">
           Updates live — no need to refresh. Everything is saved in your{" "}

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { UserCheck } from "lucide-react";
 
 import { getCurrentUser } from "@/lib/auth";
+import { BackButton } from "@/components/back-button";
 import { DetailedRequestForm } from "@/components/detailed-request-form";
 import {
   Card,
@@ -26,6 +27,7 @@ export default async function DetailedRequestPage({
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
+      <BackButton fallbackHref="/" label="Back" />
       <div className="space-y-2">
         <div className="flex items-center gap-2 text-sm text-accent-ink">
           <UserCheck className="h-4 w-4" />

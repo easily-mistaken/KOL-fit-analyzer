@@ -3,6 +3,7 @@ import { resolveAuthMode } from "@kol-fit/auth";
 
 import { getCurrentUserId } from "@/lib/auth/current-user";
 import { LoginForm } from "@/components/auth/login-form";
+import { BackButton } from "@/components/back-button";
 
 // Reads env + cookies; never prerender or cache an auth surface.
 export const runtime = "nodejs";
@@ -18,7 +19,8 @@ export default async function LoginPage() {
   const mode = resolveAuthMode(process.env);
 
   return (
-    <div className="py-10">
+    <div className="mx-auto max-w-sm space-y-4 py-10">
+      <BackButton fallbackHref="/" label="Back" />
       <LoginForm mode={mode} />
     </div>
   );

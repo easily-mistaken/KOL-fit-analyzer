@@ -28,10 +28,16 @@ async function main(): Promise<void> {
 
   const boss = await getBoss();
 
-  // pg-boss 12 delivers jobs in a batch array; iterate and isolate per-job
-  // errors (handled inside processAnalysisRun).
+  // Sequential processing (batchSize 1): pg-boss delivers ONE job at a time and
+  // won't fetch the next until this handler resolves. So queued analyses run
+  // strictly one-after-another — the first run fully completes (warming the
+  // brand's cached Twitter profile + org classification) before the next starts,
+  // so queuing several creators for the same brand never re-fetches/re-pays for
+  // that brand. Trade-off: one analysis processes at a time (fine at this scale;
+  // revisit with per-brand concurrency if throughput ever matters).
   await boss.work(
     QUEUE_NAMES.ANALYSIS_RUN,
+    { batchSize: 1 },
     async (jobs: { id: string; data: unknown }[]) => {
       for (const job of jobs) {
         await processAnalysisRun(job.data, job.id);
