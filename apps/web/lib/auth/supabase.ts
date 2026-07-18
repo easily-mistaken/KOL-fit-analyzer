@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { cookies } from "next/headers";
 import { prisma } from "@kol-fit/db";
 import type { AuthUser } from "@kol-fit/auth";
@@ -47,12 +48,20 @@ export async function createServerSupabase() {
 
 type SupabaseClaims = { sub?: unknown; email?: unknown } | null | undefined;
 
-/** Extracts the JWT-verified claims (getClaims, never getSession). */
-async function readClaims(): Promise<SupabaseClaims> {
+/**
+ * Extracts the JWT-verified claims (getClaims, never getSession).
+ *
+ * Wrapped in React `cache()` so it runs AT MOST ONCE per request: several
+ * callers resolve the user in a single request (e.g. the quota route calls
+ * getCurrentUser AND getOwnerId), and with an HS256 project key getClaims is a
+ * network round-trip to Supabase Auth — deduping it removes redundant hops.
+ * Per-request scoped, so it never leaks one user's claims into another request.
+ */
+const readClaims = cache(async (): Promise<SupabaseClaims> => {
   const supabase = await createServerSupabase();
   const { data } = await supabase.auth.getClaims();
   return data?.claims as SupabaseClaims;
-}
+});
 
 /** The signed-in Supabase user id (claims.sub), or null. */
 export async function getSupabaseUserId(): Promise<string | null> {
