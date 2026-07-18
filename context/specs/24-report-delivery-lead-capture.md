@@ -1,5 +1,12 @@
 # Unit 24: Report Delivery & Lead Capture (email PDF)
 
+> **REMOVED (commit `834ef06`).** Email delivery, the PDF send, and the `MAIL_*`
+> env vars no longer exist anywhere in the codebase. The current lead-capture
+> funnel is the detailed-report concierge (Unit 35): `/detailed`,
+> `DetailedReportRequest`, and the admin `/admin/leads` queue.
+> This spec is kept as a historical record of the original design and why it was
+> dropped. Do not implement from it.
+
 ## Goal
 
 Turn the finished report into a lead-capture moment: the report is viewable on screen, but to **take a copy** the user hands over their **email and/or Telegram**, we **store it** (a lead), and — for email — we **send them a PDF of the report**. Telegram is captured and stored now; actual Telegram delivery is deferred (platform constraint below).

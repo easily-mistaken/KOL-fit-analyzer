@@ -1,5 +1,13 @@
 # Unit 28 — User Authentication (real per-user identity; anonymous + claim)
 
+> **PARTLY SUPERSEDED.** The core of this unit is live: real accounts, the
+> anonymous-then-claim flow, and the `User` table all still work as described.
+> But sign-in is now **Google-only** (commit `adc7566`, final cleanup in
+> `834ef06`). The dev email login this spec describes is gone, along with
+> `devLoginAllowed`, `setDevSession`, `readDevUserId`, `DevEmailForm`, and the
+> `POST /api/auth/session` handler (only `DELETE`, for sign-out, remains).
+> Read the auth sections here as history, not as current behaviour.
+
 ## Goal
 
 Replace the per-browser `kolfit_owner` cookie as the *sole* notion of ownership

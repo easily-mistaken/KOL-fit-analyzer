@@ -30,9 +30,6 @@ pnpm-debug.log*
 packages/db/src/generated/
 .claude/
 
-# Calibration runner output (Unit 29E)
-scripts/calibration/last-run.json
-
 # Next.js auto-generated (rewritten by every `next dev` / `next build`;
 # the typed-routes import flips between .next/dev/types and .next/types)
 apps/web/next-env.d.ts

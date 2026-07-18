@@ -361,3 +361,30 @@ Update this file after every meaningful implementation change.
   (green, file regenerated with the build path) and `pnpm check` (exit 0).
   No source or config changes; `tsconfig.json` still lists it under `include`,
   which is a glob and does not error when the file is absent.
+
+- 2026-07-18: Dead-code / stale-docs audit. Swept the repo for unused code,
+  unused dependencies, and docs describing removed features.
+  **Found no dead code and no unused dependencies** — an import-graph walk from
+  55 entrypoints reached all 183 source files (the only unreachable files are
+  `next.config.mjs`, `postcss.config.mjs`, `prisma.config.ts`, which are loaded
+  by tooling, not imported). Two near-misses worth recording, since both would
+  have broken production if deleted on a naive scan:
+  `apps/worker/src/env.ts` is reached only through a **bare side-effect import**
+  (`import "./env.js"` in `index.ts`, no `from` clause) and loads `.env` before
+  Prisma/pg-boss read `process.env`; and `@supabase/supabase-js` is never
+  imported directly but is a **peer dependency** of `@supabase/ssr` (pnpm:
+  `@supabase+ssr@0.7.0_@supabase+supabase-js@2.110.3`), so dropping it breaks
+  the install. `tw-animate-css` is likewise used from `globals.css`, not TS.
+  **The staleness was all in docs.** Since CLAUDE.md directs every session to
+  read `context/` before implementing, specs describing removed features read as
+  current design. Annotated (not deleted — they are the record of *why* those
+  features died): `24-report-delivery-lead-capture.md` (email/PDF delivery,
+  removed `834ef06`), `29e-calibration-harness.md` (removed `73d379d`), and
+  `28-user-authentication.md` (partly superseded: sign-in is Google-only as of
+  `adc7566`, cleanup in `834ef06`; core anonymous-then-claim flow still live).
+  Also dropped the `.gitignore` line for `scripts/calibration/last-run.json`
+  (directory removed with the harness) and filled in the previously 19-byte
+  `README.md`. Correction to an earlier claim in this same audit: `AGENTS.md`
+  was reported as out of sync with `CLAUDE.md`, but it already lists all 7
+  context files — that was a truncated-read artifact, and no edit was made.
+  Verified: `pnpm -r build` green, `pnpm check` exit 0.

@@ -1,5 +1,11 @@
 # Unit 29E: Calibration Harness + Tuning
 
+> **REMOVED (commit `73d379d`).** The calibration runner and its
+> `scripts/calibration/` output were deleted as obsolete pre-v3 scaffolding.
+> Scoring is now covered by the v3 regression suites (`scoring-v3`,
+> `negative-controls`, `media-scoring`) run via `pnpm check`.
+> This spec is kept as a historical record. Do not implement from it.
+
 Part of the Unit 29 accuracy overhaul (`29-analysis-accuracy-overhaul.md`).
 Two halves: (1) the **calibration runner** (buildable now), (2) the **tuning
 pass** against the user's ground-truth pairs (blocked until the user supplies
