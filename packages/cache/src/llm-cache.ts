@@ -30,7 +30,12 @@ type Parseable<T> = {
 // Versioned namespace — bump the version to invalidate on a prompt/shape change.
 // v2: Unit 29B classification overhaul (target buckets, post labels, safety
 // flags, media, text-aware audience classification, content-fit rubric).
-const NS = "cls:v2";
+// v3: Unit 41 Phase C added AudienceClassification.region and
+// OrgClassification.valuedRegions. Both are OPTIONAL, so a v2 payload still
+// passes safeParse and would be served as a hit with no region data at all —
+// silently zeroing geoTiltFactor() and the region dial. The namespace bump is
+// what actually invalidates them; the shape-mismatch fallthrough cannot.
+const NS = "cls:v3";
 
 /** The provider KIND is part of the cache identity (live-calibration incident,
  *  2026-07-14): the mock provider echoes LLM_MODEL, so model-only keys let a
@@ -90,7 +95,7 @@ export class CachingLlmProvider implements LlmProvider {
     fit: { hits: 0, misses: 0 },
   };
 
-  /** Kind-namespaced key prefix, e.g. `cls:v2:openai`. */
+  /** Kind-namespaced key prefix, e.g. `cls:v3:openai`. */
   private readonly ns: string;
 
   constructor(

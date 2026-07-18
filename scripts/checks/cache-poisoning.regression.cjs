@@ -80,7 +80,7 @@ const llmConfig = { enabled: true, ttls: { orgSeconds: 60, contentSeconds: 60, a
     const input = { handle: "uniswap", profile: null };
     const a = await mocked.classifyOrgProfile(input); // poison attempt
     const b = await live.classifyOrgProfile(input);
-    ck("llm keys carry the kind", shared.keys.some((k) => k.startsWith("cls:v2:mock:")) && shared.keys.some((k) => k.startsWith("cls:v2:openai:")));
+    ck("llm keys carry the kind", shared.keys.some((k) => k.startsWith("cls:v3:mock:")) && shared.keys.some((k) => k.startsWith("cls:v3:openai:")));
     ck("same model+input, different kind -> live NOT served mock payload", liveCalls.n === 1 && a.keywords[0] === "mock" && b.keywords[0] === "live");
   }
 

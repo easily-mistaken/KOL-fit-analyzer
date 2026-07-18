@@ -197,7 +197,7 @@ const userText = (req) => (typeof req.input[1].content === "string" ? req.input[
     await p.classifyAudienceAccounts({ accounts: [acct("gm")] });
     await p.classifyAudienceAccounts({ accounts: [acct("substantive reply")] });
     ck("audience cache text-sensitive (2 inner calls, 1 hit)", calls.audience === 2 && p.cacheStats.audience.hits === 1);
-    ck("keys use the cls:v2 namespace", keys.length > 0 && keys.every((k) => k.startsWith("cls:v2:")));
+    ck("keys use the cls:v3 namespace", keys.length > 0 && keys.every((k) => k.startsWith("cls:v3:")));
   }
 
   console.log(`\nCLASSIFICATION V2 REGRESSION (29B): ${pass} passed, ${fail} failed`);
