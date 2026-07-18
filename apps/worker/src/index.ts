@@ -28,20 +28,32 @@ async function main(): Promise<void> {
 
   const boss = await getBoss();
 
-  // Sequential processing (batchSize 1): pg-boss delivers ONE job at a time and
-  // won't fetch the next until this handler resolves. So queued analyses run
-  // strictly one-after-another — the first run fully completes (warming the
-  // brand's cached Twitter profile + org classification) before the next starts,
-  // so queuing several creators for the same brand never re-fetches/re-pays for
-  // that brand. Trade-off: one analysis processes at a time (fine at this scale;
-  // revisit with per-brand concurrency if throughput ever matters).
+  // Strictly sequential processing. NOTE: batchSize:1 alone does NOT serialize —
+  // pg-boss polls on an interval and invokes this handler for the next job
+  // WITHOUT waiting for the previous handler to resolve, so analyses overlap
+  // (verified: two runs RUNNING at once). We serialize with an app-level mutex:
+  // handler bodies are chained through `tail`, so only one processAnalysisRun
+  // runs at a time. A queued analysis therefore waits for the current one to
+  // fully complete (warming the brand's cached Twitter profile + org
+  // classification) before it starts, so queuing several creators for the same
+  // brand never re-fetches/re-pays for that brand. Trade-off: one analysis at a
+  // time (fine at this scale; per-brand concurrency is the future upgrade).
+  let tail: Promise<unknown> = Promise.resolve();
   await boss.work(
     QUEUE_NAMES.ANALYSIS_RUN,
     { batchSize: 1 },
     async (jobs: { id: string; data: unknown }[]) => {
-      for (const job of jobs) {
-        await processAnalysisRun(job.data, job.id);
-      }
+      const run = async () => {
+        for (const job of jobs) {
+          await processAnalysisRun(job.data, job.id);
+        }
+      };
+      // Run after everything already queued settles (ok OR error), so one bad
+      // job can't break the chain. pg-boss marks THIS job done only once its
+      // turn finishes, so a waiting job's row stays QUEUED until it starts.
+      const turn = tail.then(run, run);
+      tail = turn.catch(() => {});
+      await turn;
     }
   );
 
