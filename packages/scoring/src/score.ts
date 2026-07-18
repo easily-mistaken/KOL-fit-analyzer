@@ -129,9 +129,20 @@ export function scoreAnalysis(input: ScoringInput): ScoringResult {
     );
   }
 
+  // Unknown-target guard (Unit 41): a generic-target fallback (org couldn't be
+  // classified) is capped + low-confidence in the EAM already — mirror that on
+  // the overall so a mystery brand never surfaces a confident STRONG.
+  const genericTarget = targets.source === "generic";
+  if (genericTarget) {
+    overallReasons.push(
+      "Fit capped and low-confidence: the brand's target audience couldn't be determined, so this was matched against a generic crypto audience. Add product/target context for a real fit."
+    );
+  }
+  const effectiveConfidence = genericTarget ? "low" : sampleLevel;
+
   const overall: ScoreValue = {
     value: overallValue,
-    confidence: sampleLevel,
+    confidence: effectiveConfidence,
     reasons: overallReasons,
   };
 
@@ -149,7 +160,7 @@ export function scoreAnalysis(input: ScoringInput): ScoringResult {
   const scores = ScoreBreakdownSchema.parse({
     overall,
     components,
-    confidence: sampleLevel,
+    confidence: effectiveConfidence,
   });
 
   return { scores, verdict, expectedReach: reach, audienceRegions };

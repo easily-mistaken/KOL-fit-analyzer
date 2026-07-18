@@ -180,6 +180,19 @@ export async function runAnalysis(
     );
   }
 
+  // Guard (Unit 41 live-verification finding): an empty/failed ORG profile fetch
+  // (null after normalization — e.g. a renamed/suspended handle) with no manual
+  // brief leaves the brand unclassifiable. Org classification would then fall
+  // back to a generic "any crypto" target and, under v3 (where the fit IS the
+  // audience match), surface a confident STRONG from nothing. Fail loudly,
+  // mirroring the empty-KOL-posts guard. (With a manual brief the brief defines
+  // the target, so the run can still proceed.)
+  if (orgProfile === null && buildManualBrief(request) === undefined) {
+    throw new Error(
+      `No profile could be fetched for the brand @${request.orgHandle} and no manual brief was provided — the brand can't be classified, so a meaningful audience match can't be computed. Check the handle or add product/target context.`
+    );
+  }
+
   // Stage 0 "reading" done: profiles are in hand. Advance to "measuring" (the
   // slow engagement pass) and hand the UI the real, public who-they-are facts.
   emitProgress("measuring", {

@@ -257,5 +257,26 @@ ck("curve interpolates linearly", Math.abs(s.curve(0.225, s.EAM_ANCHORS) - 65) <
   ck(`goal: developer_adoption folds developers into targets, lifting a dev audience (${devGoal} > ${noGoal})`, devGoal > noGoal);
 }
 
+// --- 15. unknown-target guard (Unit 41 live-verification fix) ----------------
+// When the brand can't be classified, targets fall back to a generic "any real
+// crypto" set. A high generic match must NOT surface a confident STRONG.
+{
+  const genericAud = audienceOf({ defi_users: 80, non_crypto: 20 }); // ~80% "match"
+  const g = s.scoreAnalysis(
+    baseInput(genericAud, {
+      org: { targetBuckets: { primary: [], secondary: [] }, productCategory: "", targetUser: "", keywords: [] },
+      brief: {},
+    })
+  );
+  const eam = g.scores.components.engaged_audience_match.value;
+  ck(`generic target: high match (raw ~100) capped to <= 84 (got ${eam})`, eam <= 84);
+  ck("generic target: overall still == EAM (invariant holds, both capped)", g.scores.overall.value === eam);
+  ck(`generic target: verdict is NOT a confident STRONG (got ${g.verdict})`, g.verdict !== "STRONG");
+  ck("generic target: confidence forced to low", g.scores.confidence === "low");
+  // A KNOWN target with the same audience is NOT capped (control).
+  const known = s.scoreAnalysis(baseInput(genericAud, { org: { targetBuckets: { primary: ["defi_users"], secondary: [] } }, brief: {} }));
+  ck(`known target: same audience NOT capped (got ${known.scores.overall.value} > 84)`, known.scores.overall.value > 84);
+}
+
 console.log(`\nSCORING V3 REGRESSION (Unit 41): ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

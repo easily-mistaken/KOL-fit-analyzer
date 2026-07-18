@@ -105,6 +105,13 @@ export const SOURCE_WEIGHTS: Record<
 /** Secondary target buckets count at half weight. */
 export const SECONDARY_TARGET_WEIGHT = 0.5;
 
+/** When the brand's target can't be determined (org profile empty + no brief,
+ *  or a sparse classification) scoring falls back to a generic "any real crypto
+ *  audience" target. That measures crypto-ness, not confirmed brand fit — so the
+ *  fit is capped here (max GOOD, never a confident STRONG) and forced to low
+ *  confidence (Unit 41). One below the STRONG band. */
+export const GENERIC_TARGET_MAX_FIT = VERDICT_THRESHOLDS.STRONG - 1;
+
 /** Max soft tilt audience geography can apply to the fit (± fraction of the
  *  base match). Bounded because X location data is thin; scaled further by how
  *  much of the matched audience we could actually place (Unit 41 Phase C).

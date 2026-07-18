@@ -24,6 +24,7 @@ import {
   FARMER_WEIGHT_QUALITY,
   FARMER_WEIGHT_RISK,
   GENERIC_TARGET_BUCKETS,
+  GENERIC_TARGET_MAX_FIT,
   GEO_ANCHORS,
   GEO_TILT_MAX,
   GEO_NEUTRAL_SCORE,
@@ -367,14 +368,27 @@ export function engagedAudienceMatch(
   // Soft geography tilt (Phase C): are the matched target accounts in the
   // brand's economically-valued regions?
   const geo = geoTiltFactor(accounts, targets, valuedRegions ?? EMPTY_REGIONS);
-  const value = clampRound(base * geo.factor);
+  let value = clampRound(base * geo.factor);
   if (geo.placed > 0 && geo.factor !== 1) {
     const dir = geo.factor >= 1 ? "up" : "down";
     reasons.push(
       `Audience geography: ${pct(geo.valuedShare)} of placed target accounts sit in the brand's valued regions (${geo.placed} placed, coverage ${pct(geo.coverage)}); fit tilted ${dir} ${Math.abs(Math.round((geo.factor - 1) * 100))}%.`
     );
   }
-  return sv(value, audienceConfidence(dist, sampleLevel), reasons);
+
+  // Unknown-target guard (Unit 41): when the brand's target couldn't be
+  // determined we matched against a generic "any real crypto audience" set —
+  // that reflects crypto-ness, not confirmed brand fit. Cap it (never a
+  // confident STRONG off a mystery brand) and drop confidence to low.
+  let confidence = audienceConfidence(dist, sampleLevel);
+  if (targets.source === "generic") {
+    value = Math.min(value, GENERIC_TARGET_MAX_FIT);
+    confidence = "low";
+    reasons.push(
+      "Brand's target audience could not be determined — matched against a generic real-crypto audience, so this reflects crypto-ness, not confirmed fit. Capped and low-confidence; add product/target details for a true match."
+    );
+  }
+  return sv(value, confidence, reasons);
 }
 
 export function audienceQuality(
