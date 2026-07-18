@@ -197,10 +197,6 @@ export class CachingLlmProvider implements LlmProvider {
   /** Pair-specific but content-addressed + deterministic — cached under the
    *  `fit` kind (reuses the content TTL; Unit 29B). */
   assessContentFit(input: AssessContentFitInput): Promise<ContentFitAssessment> {
-    // Unit 30: fit calls may run on a stronger tier (LLM_MODEL_FIT) — key on
-    // the model that actually judges, falling back to the provider model.
-    const fitModel =
-      (this.inner as { fitModel?: string }).fitModel ?? this.inner.model;
     const key = `${this.ns}:fit:${hash({
       org: { handle: norm(input.org.handle), classification: input.org.classification },
       kol: {
@@ -210,7 +206,7 @@ export class CachingLlmProvider implements LlmProvider {
         profileId: input.kol.profile?.id ?? null,
         bio: input.kol.profile?.bio ?? null,
       },
-      model: fitModel,
+      model: this.inner.model,
     })}`;
     return this.cached(
       "fit",

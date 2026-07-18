@@ -37,8 +37,7 @@ export function createLlmProvider(options?: {
       // Optional cheaper/faster tier for bulk audience batches (Unit 29B) and
       // optional stronger tier for the content-fit judgment call (Unit 30).
       const fastModel = process.env.LLM_MODEL_FAST?.trim() || undefined;
-      const fitModel = process.env.LLM_MODEL_FIT?.trim() || undefined;
-      return createOpenAiLlmProvider({ apiKey, model: model.trim(), fastModel, fitModel });
+      return createOpenAiLlmProvider({ apiKey, model: model.trim(), fastModel });
     }
     default:
       throw new Error(`Unknown LLM_PROVIDER: ${String(kind)}`);

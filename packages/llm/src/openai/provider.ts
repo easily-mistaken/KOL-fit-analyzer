@@ -82,12 +82,6 @@ export interface OpenAiProviderOptions {
   /** Cheaper/faster model for bulk per-account audience batches (Unit 29B
    *  tiering). Defaults to `model`. */
   fastModel?: string;
-  /** Optionally STRONGER model for the single pair-specific content-fit rubric
-   *  call — borderline topical-adjacency / audience-overlap judgments benefit
-   *  from a better model, and the call is tiny so a frontier model costs pennies.
-   *  Optional; defaults to `model`. (The Unit 29F/30 relationship + intent
-   *  judgments this once tiered for were removed in Unit 41.) */
-  fitModel?: string;
   baseUrl?: string;
   timeoutMs?: number;
   fetchImpl?: FetchImpl;
@@ -147,16 +141,10 @@ function parseLimit(raw: string | undefined): number | undefined {
  */
 export class OpenAiLlmProvider implements LlmProvider {
   readonly model: string;
-  /** Model actually used for assessContentFit (the fit tier when configured).
-   *  Exposed so the classification cache can key fit entries correctly. */
-  readonly fitModel: string;
   private readonly client: OpenAiClient;
   /** Separate client for bulk audience batches when fastModel is configured;
    *  otherwise the same instance as `client`. */
   private readonly fastClient: OpenAiClient;
-  /** Separate client for the content-fit judgment call when fitModel is
-   *  configured; otherwise the same instance as `client`. */
-  private readonly fitClient: OpenAiClient;
   private readonly maxRetries: number;
   private readonly audienceLimit: number;
   private readonly mediaImageLimit: number;
@@ -168,12 +156,6 @@ export class OpenAiLlmProvider implements LlmProvider {
       fastModel && fastModel !== options.model
         ? new OpenAiClient({ ...options, model: fastModel })
         : this.client;
-    const fitModel = options.fitModel?.trim();
-    this.fitClient =
-      fitModel && fitModel !== options.model
-        ? new OpenAiClient({ ...options, model: fitModel })
-        : this.client;
-    this.fitModel = fitModel || options.model;
     this.model = options.model;
     this.maxRetries = options.maxRetries ?? DEFAULT_MAX_RETRIES;
     this.audienceLimit =
@@ -189,7 +171,6 @@ export class OpenAiLlmProvider implements LlmProvider {
   getUsageStats(): LlmUsageStats {
     const clients = [this.client];
     if (this.fastClient !== this.client) clients.push(this.fastClient);
-    if (this.fitClient !== this.client) clients.push(this.fitClient);
     const stats = clients.map((c) => c.getUsageStats());
     if (stats.length === 1) return stats[0];
     const byMethod: Record<string, number> = {};
@@ -333,9 +314,7 @@ export class OpenAiLlmProvider implements LlmProvider {
       (parsed) => {
         const r = ContentFitAssessmentSchema.safeParse(deepNullToUndefined(parsed));
         return r.success ? { ok: true, data: r.data } : { ok: false, errorSummary: summarize(r.error) };
-      },
-      // Judgment call runs on the fit tier when configured (LLM_MODEL_FIT).
-      this.fitClient
+      }
     );
   }
 

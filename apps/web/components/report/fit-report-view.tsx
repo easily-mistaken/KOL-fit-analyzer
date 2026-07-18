@@ -12,7 +12,7 @@ import type {
 import { cn } from "@/lib/utils";
 import { METRIC_INFO } from "@/lib/metric-info";
 import { Avatar } from "@/components/ui/avatar";
-import { ConfidenceChip } from "@/components/report/score-meter";
+import { ConfidenceChip } from "@/components/report/confidence-chip";
 import { ScoreGauge } from "@/components/report/score-gauge";
 import { AudienceDonut } from "@/components/report/audience-donut";
 import { MetricGroups, type MetricMap } from "@/components/report/metric-groups";
