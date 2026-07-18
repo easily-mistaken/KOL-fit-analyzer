@@ -21,7 +21,7 @@ export function TopNav({ userMenu }: { userMenu?: React.ReactNode }) {
 
   return (
     <header className="sticky top-0 z-20 border-b border-default bg-surface/80 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-6">
+      <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2">
           <LogoMark className="h-7 w-7" />
           <Wordmark className="text-[17px] text-foreground" />
@@ -65,14 +65,16 @@ function NavLink({
     <Link
       href={href}
       className={cn(
-        "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm transition-colors",
+        "flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm transition-colors sm:px-3",
         active
           ? "bg-elevated text-foreground"
           : "text-secondary-foreground hover:bg-elevated/60 hover:text-foreground"
       )}
     >
       {icon}
-      {children}
+      {/* Labels collapse to icons on mobile so the nav fits a phone width;
+          kept in the a11y tree via sr-only, shown from sm up. */}
+      <span className="sr-only sm:not-sr-only">{children}</span>
     </Link>
   );
 }
