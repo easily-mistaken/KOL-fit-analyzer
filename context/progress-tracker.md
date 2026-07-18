@@ -349,3 +349,15 @@ Update this file after every meaningful implementation change.
   dev window can't be resized below ~1462px here): report page overflow gone
   and every section reads cleanly; Home/Analyze already clean; the History
   table is intentionally swipe-scrollable inside its `overflow-x-auto` wrapper.
+
+- 2026-07-18: Build hygiene, stopped tracking `apps/web/next-env.d.ts`.
+  The file was showing up dirty after every session. Cause: Next 16 typed
+  routes rewrites its import line on each run, pointing at
+  `.next/dev/types/routes.d.ts` after `next dev` and `.next/types/routes.d.ts`
+  after `next build`, so the file flipped whenever we switched between the two
+  (8 commits of churn). It is fully generated and regenerated at the start of
+  every dev/build, and `create-next-app` ignores it by default, so it is now in
+  `.gitignore` and untracked. Verified by deleting it, running `pnpm -r build`
+  (green, file regenerated with the build path) and `pnpm check` (exit 0).
+  No source or config changes; `tsconfig.json` still lists it under `include`,
+  which is a glob and does not error when the file is absent.
