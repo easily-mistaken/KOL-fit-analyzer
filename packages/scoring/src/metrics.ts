@@ -2,10 +2,13 @@ import type {
   AudienceAccount,
   AudienceBucket,
   AudienceDistribution,
+  AudienceRegion,
   ConfidenceLevel,
   ContentFitAssessment,
+  ExpectedReach,
   KolContentClassification,
   OrgClassification,
+  RegionDistribution,
   ScoreValue,
 } from "@kol-fit/shared";
 
@@ -22,10 +25,9 @@ import {
   FARMER_WEIGHT_RISK,
   GENERIC_TARGET_BUCKETS,
   GEO_ANCHORS,
+  GEO_TILT_MAX,
   GEO_NEUTRAL_SCORE,
   GOAL_BUCKETS,
-  INTENT_DAMP,
-  INTENT_FLOOR,
   KEYWORD_BUCKETS,
   LOWQ_BASELINE,
   NON_TARGET_BUCKETS,
@@ -144,9 +146,18 @@ export function resolveTargets(
   brief: ScoringBrief,
   goalKey: string | undefined
 ): TargetSets {
+  // Goal picks who counts (Unit 41 v3): the campaign goal's buckets fold into
+  // the PRIMARY target set, so the goal acts THROUGH the audience match rather
+  // than as its own score (e.g. developer_adoption makes developers a target;
+  // awareness makes any real crypto audience count).
+  const goalBuckets =
+    goalKey && GOAL_BUCKETS[goalKey] ? GOAL_BUCKETS[goalKey] : [];
+
   const tb = org.targetBuckets;
   if (tb && tb.primary.length > 0) {
-    const primary = new Set(tb.primary.filter((b) => !NON_TARGET.has(b)));
+    const primary = new Set(
+      [...tb.primary, ...goalBuckets].filter((b) => !NON_TARGET.has(b))
+    );
     const secondary = new Set(
       tb.secondary.filter((b) => !NON_TARGET.has(b) && !primary.has(b))
     );
@@ -154,9 +165,7 @@ export function resolveTargets(
   }
 
   const primary = new Set<AudienceBucket>();
-  if (goalKey && GOAL_BUCKETS[goalKey]) {
-    for (const b of GOAL_BUCKETS[goalKey]) primary.add(b);
-  }
+  for (const b of goalBuckets) primary.add(b);
   const text = [
     org.productCategory,
     org.targetUser,
@@ -207,6 +216,120 @@ export function weightedMatch(
   return { matchedShare: total > 0 ? matched / total : 0, humanCount };
 }
 
+// --- expected reach (Phase B) ------------------------------------------------
+
+/** Expected reach: typical engaged interactions per post × the matched-target
+ *  share of the classified audience = ~how many of the brand's target customers
+ *  engage per post. A HEADCOUNT (not a quality score), so no source/tier
+ *  weighting — anyone in a primary OR secondary target bucket counts once.
+ *  Realness is baked in: the denominator is ALL classified engagers
+ *  (bots/farmers/giveaway included, exactly as they inflate the raw per-post
+ *  volume), so a fake-heavy audience yields a proportionally smaller matched
+ *  reach. Shown beside the fit score, never blended into it (Unit 41). */
+export function expectedReach(
+  accounts: AudienceAccount[],
+  targets: Pick<TargetSets, "primary" | "secondary">,
+  avgEngagedPerPost: number | undefined,
+  sampleLevel: ConfidenceLevel
+): ExpectedReach {
+  const total = accounts.length;
+  let matched = 0;
+  for (const a of accounts) {
+    if (targets.primary.has(a.bucket) || targets.secondary.has(a.bucket)) {
+      matched++;
+    }
+  }
+  const matchedShareOfEngagers = total > 0 ? matched / total : 0;
+  const avg =
+    typeof avgEngagedPerPost === "number" && Number.isFinite(avgEngagedPerPost)
+      ? Math.max(0, avgEngagedPerPost)
+      : 0;
+  return {
+    avgEngagedPerPost: Math.round(avg),
+    matchedPerPost: Math.round(avg * matchedShareOfEngagers * 10) / 10,
+    matchedShareOfEngagers,
+    confidence: total === 0 ? "low" : sampleLevel,
+  };
+}
+
+// --- audience geography (Phase C) -------------------------------------------
+
+const EMPTY_REGIONS: ReadonlySet<AudienceRegion> = new Set();
+
+const knownRegion = (r: AudienceRegion | undefined): r is AudienceRegion =>
+  r !== undefined && r !== "unknown";
+
+export type GeoTilt = {
+  /** Multiplier applied to the base match (1 = no change). */
+  factor: number;
+  /** Matched-target accounts we could place into a known region. */
+  placed: number;
+  /** Placed matched accounts / all matched accounts (0-1). */
+  coverage: number;
+  /** Share of placed matched accounts sitting in the brand's valued regions. */
+  valuedShare: number;
+};
+
+/** Soft geography tilt on the audience match (Unit 41 Phase C): among the
+ *  MATCHED target accounts, what share sit in the brand's economically-valued
+ *  regions? Bounded (±GEO_TILT_MAX) and scaled by coverage — X location data is
+ *  thin, so a mostly-unplaceable audience barely moves. Neutral (factor 1) when
+ *  the brand has no valued regions or nothing could be placed. Geography is
+ *  part of "is this the right audience", so it tilts the fit — softly. */
+export function geoTiltFactor(
+  accounts: AudienceAccount[],
+  targets: Pick<TargetSets, "primary" | "secondary">,
+  valuedRegions: ReadonlySet<AudienceRegion>
+): GeoTilt {
+  if (valuedRegions.size === 0) {
+    return { factor: 1, placed: 0, coverage: 0, valuedShare: 0 };
+  }
+  let matched = 0;
+  let placed = 0;
+  let valued = 0;
+  for (const a of accounts) {
+    if (!(targets.primary.has(a.bucket) || targets.secondary.has(a.bucket))) {
+      continue;
+    }
+    matched++;
+    if (knownRegion(a.region)) {
+      placed++;
+      if (valuedRegions.has(a.region)) valued++;
+    }
+  }
+  if (matched === 0 || placed === 0) {
+    return { factor: 1, placed: 0, coverage: 0, valuedShare: 0 };
+  }
+  const valuedShare = valued / placed;
+  const coverage = placed / matched;
+  const tilt = GEO_TILT_MAX * coverage * (2 * valuedShare - 1);
+  return { factor: 1 + tilt, placed, coverage, valuedShare };
+}
+
+/** Region breakdown of the engaged audience for the geo dial (Unit 41 Phase C).
+ *  Shares are over PLACED accounts; `coverage` is placed / total classified. */
+export function regionDistribution(
+  accounts: AudienceAccount[]
+): RegionDistribution {
+  const counts = new Map<AudienceRegion, number>();
+  let placed = 0;
+  for (const a of accounts) {
+    if (knownRegion(a.region)) {
+      placed++;
+      counts.set(a.region, (counts.get(a.region) ?? 0) + 1);
+    }
+  }
+  const regions: RegionDistribution["regions"] = {};
+  for (const [region, count] of counts) {
+    regions[region] = { count, share: placed > 0 ? count / placed : 0 };
+  }
+  return {
+    placed,
+    coverage: accounts.length > 0 ? placed / accounts.length : 0,
+    regions,
+  };
+}
+
 // --- metrics --------------------------------------------------------------
 
 export function engagedAudienceMatch(
@@ -214,7 +337,7 @@ export function engagedAudienceMatch(
   dist: AudienceDistribution,
   targets: TargetSets,
   sampleLevel: ConfidenceLevel,
-  intentOverlap?: number
+  valuedRegions?: ReadonlySet<AudienceRegion>
 ): ScoreValue {
   if (dist.sampleSize === 0) {
     return sv(0, "low", ["No engaged accounts were sampled."]);
@@ -227,35 +350,31 @@ export function engagedAudienceMatch(
   }
   const sourceNote =
     targets.source === "llm"
-      ? "org-inferred targets"
+      ? "brand-inferred targets"
       : targets.source === "keywords"
         ? "keyword-derived targets"
         : "generic crypto-audience targets";
   const reasons = [
     `${pct(matchedShare)} of the real engaged audience (${humanCount} humans, reply/quote-weighted) matches ${sourceNote}: ` +
       `primary ${[...targets.primary].join(", ") || "(none)"}${targets.secondary.size > 0 ? `; secondary ${[...targets.secondary].join(", ")}` : ""}.`,
-    "Calibrated: real engaged audiences are heterogeneous — 30% target share is strong, 45%+ exceptional.",
+    "Calibrated: real engaged audiences are heterogeneous — ~30% target share is a strong signal, 45%+ exceptional.",
   ];
 
-  // Intent adjustment (Unit 30, v26 rule 4): category match is damped on a
-  // clear intent mismatch and floored on demonstrated intent.
+  // v3: the fit score IS this match — a straight curve of the matched share.
+  // No intent damp/floor, no identity modifiers. The audience speaks.
   const base = curve(matchedShare, EAM_ANCHORS);
-  const i = typeof intentOverlap === "number" ? intentOverlap : undefined;
-  const damp = i !== undefined ? (INTENT_DAMP[i] ?? 1) : 1;
-  const floor = i !== undefined ? (INTENT_FLOOR[i] ?? 0) : 0;
-  let value = base * damp;
-  if (damp < 1) {
+
+  // Soft geography tilt (Phase C): are the matched target accounts in the
+  // brand's economically-valued regions?
+  const geo = geoTiltFactor(accounts, targets, valuedRegions ?? EMPTY_REGIONS);
+  const value = clampRound(base * geo.factor);
+  if (geo.placed > 0 && geo.factor !== 1) {
+    const dir = geo.factor >= 1 ? "up" : "down";
     reasons.push(
-      `Audience intent overlap ${i}/5 — the matched buckets share the org's CATEGORY but not its user intent; match damped accordingly.`
+      `Audience geography: ${pct(geo.valuedShare)} of placed target accounts sit in the brand's valued regions (${geo.placed} placed, coverage ${pct(geo.coverage)}); fit tilted ${dir} ${Math.abs(Math.round((geo.factor - 1) * 100))}%.`
     );
   }
-  if (floor > value) {
-    value = floor;
-    reasons.push(
-      `Audience intent overlap ${i}/5 — the audience demonstrably seeks what this product offers; match floored despite weak bucket-category overlap.`
-    );
-  }
-  return sv(clampRound(value), audienceConfidence(dist, sampleLevel), reasons);
+  return sv(value, audienceConfidence(dist, sampleLevel), reasons);
 }
 
 export function audienceQuality(

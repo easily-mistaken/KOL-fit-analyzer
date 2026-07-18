@@ -42,6 +42,43 @@ export const AUDIENCE_BUCKET_LABELS: Record<AudienceBucket, string> = {
   non_crypto: "Non-crypto audience",
 };
 
+// Coarse macro-regions for audience geography (Unit 41 v3, Phase C). Country
+// precision isn't reliably inferable from X profile `location` (free text,
+// often blank/joke), so we work at a macro-region grain — enough to judge
+// product-market fit (e.g. a stablecoin chain values high-inflation emerging
+// markets; a capital-heavy trading app values higher-income regions). Any
+// account we cannot place is `unknown` (not scored against, just uncounted).
+export const AudienceRegionSchema = z.enum([
+  "north_america",
+  "latam",
+  "western_europe",
+  "eastern_europe",
+  "mena", // Middle East & North Africa
+  "subsaharan_africa",
+  "south_asia", // India, Pakistan, Bangladesh, Sri Lanka, Nepal
+  "southeast_asia", // Vietnam, Indonesia, Philippines, Thailand, ...
+  "east_asia", // China, Korea, Japan, Taiwan, HK
+  "cis", // Russia & Central Asia
+  "oceania",
+  "unknown",
+]);
+export type AudienceRegion = z.infer<typeof AudienceRegionSchema>;
+
+export const AUDIENCE_REGION_LABELS: Record<AudienceRegion, string> = {
+  north_america: "North America",
+  latam: "Latin America",
+  western_europe: "Western Europe",
+  eastern_europe: "Eastern Europe",
+  mena: "Middle East & N. Africa",
+  subsaharan_africa: "Sub-Saharan Africa",
+  south_asia: "South Asia",
+  southeast_asia: "Southeast Asia",
+  east_asia: "East Asia",
+  cis: "Russia & Central Asia",
+  oceania: "Oceania",
+  unknown: "Unknown",
+};
+
 // Known campaign goals from project-overview.md. The request input accepts a
 // free string; this enum is for later structured use.
 export const CampaignGoalSchema = z.enum([

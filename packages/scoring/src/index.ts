@@ -4,15 +4,16 @@ export { scoreAnalysis } from "./score.js";
 export {
   verdictFromScore,
   riskGateApplied,
-  applyAuthorityRules,
   type RiskGateInput,
-  type AuthorityContext,
-  type AuthorityAdjustment,
 } from "./verdict.js";
 export { confidenceFromEvidence } from "./confidence.js";
-export { curve } from "./metrics.js";
 export {
-  OVERALL_WEIGHTS,
+  curve,
+  expectedReach,
+  geoTiltFactor,
+  regionDistribution,
+} from "./metrics.js";
+export {
   VERDICT_THRESHOLDS,
   EAM_ANCHORS,
   CF_ANCHORS,

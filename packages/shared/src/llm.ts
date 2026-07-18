@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { AudienceAccountSchema, AudienceDistributionSchema } from "./audience.js";
 import { ConfidenceLevelSchema } from "./scores.js";
-import { AudienceBucketSchema } from "./vocab.js";
+import { AudienceBucketSchema, AudienceRegionSchema } from "./vocab.js";
 
 // Provider-neutral LLM structured outputs. These are the shapes an LLM provider
 // (mock in Unit 11, OpenAI in Unit 17) must return; they must pass Zod
@@ -28,6 +28,12 @@ export const OrgClassificationSchema = z.object({
   region: z.string().optional(),
   keywords: z.array(z.string()).default([]),
   targetBuckets: TargetBucketsSchema.optional(),
+  /** Macro-regions where this brand's product is economically relevant (Unit 41
+   *  Phase C), inferred from product economics — e.g. a stablecoin/payments
+   *  product values high-inflation emerging markets; a capital-heavy trading
+   *  product values higher-income regions. Empty/absent = no regional
+   *  preference (a global audience serves it). Brand-confirmable (C2). */
+  valuedRegions: z.array(AudienceRegionSchema).optional(),
   confidence: ConfidenceLevelSchema,
 });
 export type OrgClassification = z.infer<typeof OrgClassificationSchema>;

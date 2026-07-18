@@ -37,3 +37,24 @@ export const ScoreBreakdownSchema = z.object({
   confidence: ConfidenceLevelSchema,
 });
 export type ScoreBreakdown = z.infer<typeof ScoreBreakdownSchema>;
+
+// Expected reach (Unit 41 v3, Phase B). A DIAL shown beside the fit score, never
+// blended into it: the fit score answers "is this the right audience?"; reach
+// answers "how many?". Kept separate because value = reach / price and only the
+// brand knows the price. Counts the engagement we actually classify
+// (reply+quote+retweet) — never impressions/likes (the vanity metrics the
+// product rejects).
+export const ExpectedReachSchema = z.object({
+  /** Typical engaged interactions (reply+quote+retweet) per post, mean over
+   *  fetched posts. */
+  avgEngagedPerPost: z.number().min(0),
+  /** Estimated target customers who engage per post
+   *  (avgEngagedPerPost × matchedShareOfEngagers). The headline reach number. */
+  matchedPerPost: z.number().min(0),
+  /** Matched-target share of ALL classified engagers (0-1). Realness is baked
+   *  in — bots/farmers/giveaway-hunters are not target buckets, so they dilute
+   *  this share exactly as they should. */
+  matchedShareOfEngagers: z.number().min(0).max(1),
+  confidence: ConfidenceLevelSchema,
+});
+export type ExpectedReach = z.infer<typeof ExpectedReachSchema>;

@@ -1,12 +1,15 @@
-// Unit 29C regression: Scoring v2. Verifies the calibration-curve math,
-// human-only engaged-audience match, baseline-adjusted quality/bot risks,
-// saturation-based promo risk + softened gates, flags-based brand safety,
-// rubric-based content fit, goal normalization, geo/language v2, confidence
-// v2, determinism — and the BENCHMARK: a Uniswap × haydenzadams-shaped
-// fixture (v1 scored it 40/WEAK) must land STRONG.
+// Unit 41 regression: Scoring v3 ("audience-honest"). Verifies the
+// calibration-curve math, human-only engaged-audience match — which IS the fit
+// score now (overall_fit == engaged_audience_match) — baseline-adjusted
+// quality/bot risks, saturation-based promo risk + gates, flags-based brand
+// safety, rubric content fit (informational), goal normalization, geo/language
+// (informational), confidence, determinism — and the BENCHMARK: a well-matched
+// Uniswap-shaped audience (~47% real target) lands STRONG on the AUDIENCE
+// ALONE, with NO founder/identity boost (v2 needed a +6 authority modifier +
+// GOOD floor; v3 deletes them).
 //
-// Run after `pnpm build`:  node scripts/checks/scoring-v2.regression.cjs
-// (or `pnpm check:scoring-v2`). Pure math — no network, no keys, no DB.
+// Run after `pnpm build`:  node scripts/checks/scoring-v3.regression.cjs
+// (or `pnpm check:scoring-v3`). Pure math — no network, no keys, no DB.
 
 const s = require("../../packages/scoring/dist/index.js");
 
@@ -69,17 +72,20 @@ ck("curve endpoints", s.curve(0, s.EAM_ANCHORS) === 0 && s.curve(0.6, s.EAM_ANCH
 ck("curve clamps beyond range", s.curve(0.9, s.EAM_ANCHORS) === 100 && s.curve(-1, s.EAM_ANCHORS) === 0);
 ck("curve interpolates linearly", Math.abs(s.curve(0.225, s.EAM_ANCHORS) - 65) < 1e-9);
 
-// --- 2. THE BENCHMARK: Uniswap × hayden shape must be STRONG -----------------
+// --- 2. THE BENCHMARK: a well-matched Uniswap audience is STRONG on the
+//        AUDIENCE alone — no identity boost of any kind ----------------------
 {
   const input = baseInput(UNISWAP_AUDIENCE, {
-    contentFitAssessment: { topicalAdjacency: 5, audienceOverlapPotential: 5, naturalMentionFit: 5, sharedTopics: ["defi", "amm"], rationale: "Founder of the org's own protocol domain." },
+    // A founder relationship is present but MUST be ignored by v3 scoring.
+    contentFitAssessment: { topicalAdjacency: 5, audienceOverlapPotential: 5, naturalMentionFit: 5, sharedTopics: ["defi", "amm"], rationale: "Founder of the org's own protocol domain.", relationship: "founder_or_core_team", relationshipEvidence: "bio" },
   });
   const { scores, verdict } = s.scoreAnalysis(input);
   ck(`benchmark verdict STRONG (got ${verdict}, overall ${scores.overall.value})`, verdict === "STRONG" && scores.overall.value >= 80);
   ck("benchmark EAM >= 85", scores.components.engaged_audience_match.value >= 85);
+  ck("v3 invariant: overall_fit == engaged_audience_match", scores.overall.value === scores.components.engaged_audience_match.value);
   ck("benchmark confidence high (300 classified + text)", scores.confidence === "high");
   const again = s.scoreAnalysis(input);
-  ck("deterministic", JSON.stringify(again) === JSON.stringify({ scores, verdict }));
+  ck("deterministic (full result incl. expectedReach)", JSON.stringify(again) === JSON.stringify(s.scoreAnalysis(input)));
 }
 
 // --- 3. human-only EAM: adding bots must NOT dilute the match ---------------
@@ -176,5 +182,80 @@ ck("curve interpolates linearly", Math.abs(s.curve(0.225, s.EAM_ANCHORS) - 65) <
   ck("300 classified WITHOUT reply text -> medium (text is a confidence lever)", noText === "medium");
 }
 
-console.log(`\nSCORING V2 REGRESSION (29C): ${pass} passed, ${fail} failed`);
+// --- 12. expected reach (Phase B) — a DIAL, never blended into the fit -------
+{
+  const withVol = baseInput(UNISWAP_AUDIENCE, { sample: { avgEngagedPerPost: 100 } });
+  const r = s.scoreAnalysis(withVol).expectedReach;
+  ck("reach: avgEngagedPerPost passthrough (rounded)", r.avgEngagedPerPost === 100);
+  ck("reach: matched share of engagers in (0,1)", r.matchedShareOfEngagers > 0 && r.matchedShareOfEngagers < 1);
+  ck("reach: matchedPerPost = avg × matched share", Math.abs(r.matchedPerPost - 100 * r.matchedShareOfEngagers) < 0.06);
+
+  // The load-bearing v3 property: reach volume must NOT move the fit score.
+  const fitHi = s.scoreAnalysis(baseInput(UNISWAP_AUDIENCE, { sample: { avgEngagedPerPost: 100000 } })).scores.overall.value;
+  const fitLo = s.scoreAnalysis(baseInput(UNISWAP_AUDIENCE, { sample: { avgEngagedPerPost: 1 } })).scores.overall.value;
+  ck("reach: fit score is identical regardless of reach volume (never blended)", fitHi === fitLo);
+
+  const noVol = s.scoreAnalysis(baseInput(UNISWAP_AUDIENCE)).expectedReach;
+  ck("reach: no volume -> 0 matchedPerPost, share still computed", noVol.avgEngagedPerPost === 0 && noVol.matchedPerPost === 0 && noVol.matchedShareOfEngagers > 0);
+
+  const empty = s.scoreAnalysis(baseInput({ accounts: [], distribution: { sampleSize: 0, buckets: {} } }, { sample: { avgEngagedPerPost: 50 } })).expectedReach;
+  ck("reach: empty audience -> 0 matched, low confidence", empty.matchedPerPost === 0 && empty.confidence === "low");
+
+  // Realness baked in: injecting bots (non-target) lowers the matched share.
+  const clean = s.scoreAnalysis(baseInput(audienceOf({ defi_users: 50 }), { sample: { avgEngagedPerPost: 100 } })).expectedReach;
+  const botted = s.scoreAnalysis(baseInput(audienceOf({ defi_users: 50, bots_spam: 50 }), { sample: { avgEngagedPerPost: 100 } })).expectedReach;
+  ck("reach: bots dilute matched reach (realness baked into the denominator)", botted.matchedPerPost < clean.matchedPerPost);
+}
+
+// --- 13. audience geography (Phase C) — soft tilt + dial ---------------------
+{
+  // defi_users (a target) carrying regions, plus non-target filler so the base
+  // match sits mid-curve (~30% -> 75) and the ± tilt is visible (not clamped).
+  const geoAud = (targetRegions, filler = 70) => {
+    const accounts = [];
+    let i = 0;
+    for (const [region, count] of Object.entries(targetRegions)) {
+      for (let k = 0; k < count; k++) {
+        accounts.push({ accountId: `t${i}`, handle: `t${i++}`, source: "REPLY", bucket: "defi_users", ...(region === "none" ? {} : { region }), signals: { botScore: 0.1, farmingSignals: [] } });
+      }
+    }
+    for (let k = 0; k < filler; k++) accounts.push({ accountId: `f${i}`, handle: `f${i++}`, source: "REPLY", bucket: "non_crypto", signals: { botScore: 0.1, farmingSignals: [] } });
+    const counts = {};
+    for (const a of accounts) counts[a.bucket] = (counts[a.bucket] ?? 0) + 1;
+    const buckets = {};
+    for (const [b, c] of Object.entries(counts)) buckets[b] = { count: c, share: c / accounts.length };
+    return { accounts, distribution: { sampleSize: accounts.length, buckets } };
+  };
+  const VALUED = { org: { valuedRegions: ["subsaharan_africa", "latam", "south_asia"] } };
+  const eamOf = (inp) => s.scoreAnalysis(inp).scores.components.engaged_audience_match.value;
+
+  const africaHeavy = eamOf(baseInput(geoAud({ subsaharan_africa: 24, north_america: 6 }), VALUED));
+  const usHeavy = eamOf(baseInput(geoAud({ subsaharan_africa: 6, north_america: 24 }), VALUED));
+  ck(`geo: valued-region audience tilts fit UP vs off-region (${africaHeavy} > ${usHeavy})`, africaHeavy > usHeavy);
+
+  const neutral = eamOf(baseInput(geoAud({ subsaharan_africa: 24, north_america: 6 })));
+  ck(`geo: no valuedRegions -> no tilt (${neutral} unchanged)`, neutral === eamOf(baseInput(geoAud({ subsaharan_africa: 6, north_america: 24 }))));
+
+  const full = eamOf(baseInput(geoAud({ subsaharan_africa: 30 }), VALUED));
+  const noTilt = eamOf(baseInput(geoAud({ subsaharan_africa: 30 })));
+  ck(`geo: tilt bounded to ~15% (${full} <= ${Math.round(noTilt * 1.15) + 1})`, full <= Math.round(noTilt * 1.15) + 1);
+
+  const half = eamOf(baseInput(geoAud({ subsaharan_africa: 15, none: 15 }), VALUED));
+  ck(`geo: lower placement coverage -> smaller tilt (${half} < ${full})`, half < full);
+
+  const rd = s.scoreAnalysis(baseInput(geoAud({ subsaharan_africa: 30, north_america: 10, none: 60 }, 0))).audienceRegions;
+  ck(`geo dial: coverage = placed/total (${rd.placed}/100)`, rd.placed === 40 && Math.abs(rd.coverage - 0.4) < 1e-9);
+  ck("geo dial: shares are over placed accounts", Math.abs(rd.regions.subsaharan_africa.share - 0.75) < 1e-9);
+}
+
+// --- 14. goal picks who counts (folds into the target set) -------------------
+{
+  const devAud = audienceOf({ developers: 50, non_crypto: 50 });
+  const orgDefiOnly = { targetBuckets: { primary: ["defi_users"], secondary: [] } };
+  const noGoal = s.scoreAnalysis(baseInput(devAud, { org: orgDefiOnly, brief: {} })).scores.components.engaged_audience_match.value;
+  const devGoal = s.scoreAnalysis(baseInput(devAud, { org: { ...orgDefiOnly, campaignGoal: "developer adoption" }, brief: {} })).scores.components.engaged_audience_match.value;
+  ck(`goal: developer_adoption folds developers into targets, lifting a dev audience (${devGoal} > ${noGoal})`, devGoal > noGoal);
+}
+
+console.log(`\nSCORING V3 REGRESSION (Unit 41): ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

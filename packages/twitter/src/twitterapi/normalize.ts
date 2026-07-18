@@ -88,6 +88,7 @@ export function normalizeUser(raw: unknown): TwitterUser | null {
     verified: bool(u.isBlueVerified),
     createdAt: str(u.createdAt),
     avatarUrl: str(u.profilePicture),
+    location: str(u.location),
   };
   const parsed = TwitterUserSchema.safeParse(candidate);
   return parsed.success ? parsed.data : null;

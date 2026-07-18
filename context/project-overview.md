@@ -121,31 +121,36 @@ The first user is the internal operator/founder/team member evaluating KOLs for 
 - Detect topic switching that suggests paid promotion.
 - Flag brand risks such as low-quality projects, excessive drama, misleading claims, and weak audience trust.
 
-### Scoring
+### Scoring (v3 — "audience-honest", Unit 41)
 
-The scoring system should include:
+Reworked 2026-07-18. The fit score IS the engaged-audience match — nothing else
+moves it. See `context/specs/41-scoring-v3-audience-honest.md`.
 
-- overall fit score
-- content fit score
-- engaged audience match score
-- audience quality score
-- campaign goal fit score
-- geo/language fit score
-- brand safety score
-- paid promo risk score
-- bot/farm risk score
-- confidence level
+**The fit score (`overall_fit == engaged_audience_match`, 0–100):** of the
+creator's REAL engaged audience (bots/farmers/giveaway-hunters dropped;
+reply/quote 1.0, retweet 0.5, follow 0.25), what share are the brand's target
+customers (target = LLM-inferred + brand-confirmed; the campaign goal reshapes
+which buckets count), curved so ~30% target share is a strong signal and ~45%+
+exceptional. **No identity/relationship modifiers of any kind** — a founder,
+celebrity, or media brand is scored purely on who actually listens.
 
-Recommended overall score weights:
+**Bands:** ≥85 STRONG (~45%+ target) · ≥70 GOOD (~30%) · ≥50 OKAY (~15%) · ≥30
+WEAK (~5%) · <30 AVOID.
 
-| Metric | Weight |
-| --- | ---: |
-| Engaged audience match | 35% |
-| Audience quality | 20% |
-| Content fit | 15% |
-| Campaign goal fit | 15% |
-| Brand safety | 10% |
-| Geo/language fit | 5% |
+**Gates (pull the verdict DOWN only, never up):** a mostly fake/farmed audience
+(`bot_farm_risk`), a brand-safety problem, or high unrelated-promo shilling cap
+the verdict regardless of fit.
+
+**Dials — shown beside the score, never blended in:** expected reach (~how many
+target customers engage per post), audience realness (real vs bot/farm),
+audience geography (country/region mix vs the brand's valued regions),
+confidence. `content_fit`, `campaign_goal_fit`, and `geo_language_fit` are still
+computed but are **informational** — they do not move the score.
+
+Rationale: fit answers "is this the right audience?"; expected reach answers "how
+many?" They stay separate because value = reach ÷ price and only the brand knows
+the price. (Phases B/C/D add expected reach, audience geography, and the report
+surface; Phase A shipped the core purge.)
 
 ### Report Generation
 

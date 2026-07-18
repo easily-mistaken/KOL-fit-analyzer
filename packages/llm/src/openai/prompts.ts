@@ -1,5 +1,6 @@
 import {
   AUDIENCE_BUCKET_LABELS,
+  AUDIENCE_REGION_LABELS,
   type EngagedAccountRaw,
   type Tweet,
 } from "@kol-fit/shared";
@@ -35,6 +36,10 @@ const BUCKET_LIST = Object.entries(AUDIENCE_BUCKET_LABELS)
   .map(([k, label]) => `${k} (${label})`)
   .join(", ");
 
+const REGION_LIST = Object.entries(AUDIENCE_REGION_LABELS)
+  .map(([k, label]) => `${k} (${label})`)
+  .join(", ");
+
 /** Append a bounded repair instruction after an invalid response. */
 export function repairNote(errorSummary: string): string {
   return (
@@ -59,6 +64,12 @@ export function buildOrgPrompt(input: ClassifyOrgInput): string {
     `  primary = the core target users (usually 1-3 buckets), secondary = adjacent-but-valuable (0-3 buckets).`,
     `  Allowed buckets: ${BUCKET_LIST}.`,
     "  Base it on the product category and target user (manual brief wins). Never include bots_spam or giveaway_hunters.",
+    "Also fill valuedRegions — the macro-regions where THIS product is economically relevant (reason from product " +
+      "ECONOMICS, not mere popularity): a stablecoin/payments/savings/remittance product values high-inflation " +
+      "emerging markets (subsaharan_africa, latam, south_asia, southeast_asia, mena); a capital-heavy " +
+      "trading/derivatives/prediction-market product values higher-income regions (north_america, western_europe, " +
+      "east_asia). Use an EMPTY list [] when the product is globally relevant with no economic regional skew.",
+    `  Allowed regions: ${REGION_LIST}.`,
   ];
   return lines.filter(Boolean).join("\n");
 }
@@ -121,8 +132,9 @@ export function buildAudiencePrompt(batch: EngagedAccountRaw[]): string {
       ]
         .filter(Boolean)
         .join(" ");
+      const loc = u.location ? ` location="${truncate(u.location, 60)}"` : "";
       const text = a.text ? ` said="${truncate(a.text, 160)}"` : "";
-      return `- accountId=${u.id} handle=@${u.handle} source=${a.source} ${stats} bio="${truncate(u.bio ?? "", 140)}"${text}`;
+      return `- accountId=${u.id} handle=@${u.handle} source=${a.source} ${stats} bio="${truncate(u.bio ?? "", 140)}"${loc}${text}`;
     })
     .join("\n");
   return [
@@ -133,7 +145,11 @@ export function buildAudiencePrompt(batch: EngagedAccountRaw[]): string {
       'Generic hype ("🚀🚀", "gm", giveaway-claims, "wen airdrop/token") signals bots_spam / giveaway_hunters / ' +
       "airdrop_farmers; substantive on-topic replies signal a real bucket. An empty bio alone does NOT make a bot " +
       "if the reply is substantive.",
-    "For each account echo its accountId, handle, and source, assign a bucket, and give light signals " +
+    "Also assign each account a coarse macro-region from `location=` (plus language/handle cues when clear) — one " +
+      `of: ${REGION_LIST}. Use "unknown" when the location is blank, a joke ("metaverse", "onchain", "gm"), or ` +
+      "genuinely unplaceable. Do NOT guess a region from the audience bucket or topic — only place accounts with a " +
+      "real geographic signal.",
+    "For each account echo its accountId, handle, and source, assign a bucket and a region, and give light signals " +
       "(botScore 0..1 or null, emptyBio true/false/null, farmingSignals list). " +
       "Do NOT output any counts, percentages, or totals — labels only.",
     `Accounts:\n${rows}`,

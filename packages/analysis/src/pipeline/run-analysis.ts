@@ -260,9 +260,21 @@ export async function runAnalysis(
         engagedAccounts.length
       : 0;
 
+  // Typical engaged interactions (reply+quote+retweet) per fetched post — the
+  // volume input for expected reach (Unit 41 Phase B). Mean over all fetched
+  // posts (a representative "typical post", not the engagement-selected top
+  // posts). Likes/impressions are deliberately excluded (vanity metrics).
+  const engagementCounts = kolPosts.map(
+    (t) => (t.replyCount ?? 0) + (t.quoteCount ?? 0) + (t.retweetCount ?? 0)
+  );
+  const avgEngagedPerPost =
+    engagementCounts.length > 0
+      ? engagementCounts.reduce((a, b) => a + b, 0) / engagementCounts.length
+      : 0;
+
   // 4. Deterministic scoring (packages/scoring). Numbers are computed here /
   // there — never by the LLM.
-  const { scores, verdict } = scoreAnalysis({
+  const { scores, verdict, expectedReach, audienceRegions } = scoreAnalysis({
     org: orgClassification,
     content: kolContent,
     audience,
@@ -277,6 +289,7 @@ export async function runAnalysis(
       engagedAccountsSampled: engagedAccounts.length,
       engagedAccountsClassified: audience.distribution.sampleSize,
       repeatEngagerShare,
+      avgEngagedPerPost,
     },
     evidence: {
       websiteFetched: orgContext.website.status === "fetched",
@@ -331,6 +344,13 @@ export async function runAnalysis(
   const report = FitReportSchema.parse({
     ...baseReport,
     profiles: { org: snapshot(orgProfile), kol: snapshot(kolProfile) },
+    expectedReach,
+    audienceRegions,
+    targeting: {
+      primaryBuckets: orgClassification.targetBuckets?.primary ?? [],
+      secondaryBuckets: orgClassification.targetBuckets?.secondary ?? [],
+      valuedRegions: orgClassification.valuedRegions ?? [],
+    },
     evidence: {
       sampleSizes: {
         ...baseReport.evidence.sampleSizes,

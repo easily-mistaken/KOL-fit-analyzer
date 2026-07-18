@@ -17,6 +17,11 @@ import { ScoreGauge } from "@/components/report/score-gauge";
 import { AudienceDonut } from "@/components/report/audience-donut";
 import { MetricGroups, type MetricMap } from "@/components/report/metric-groups";
 import { ShareReport } from "@/components/report/share-report";
+import {
+  AudienceGeography,
+  ExpectedReachCard,
+  MatchedAgainst,
+} from "@/components/report/audience-dials";
 
 // ---- verdict presentation -------------------------------------------------
 const VERDICT: Record<ReportVerdict, { word: string; tone: string }> = {
@@ -28,6 +33,15 @@ const VERDICT: Record<ReportVerdict, { word: string; tone: string }> = {
 };
 
 const RISK_METRICS = new Set<ScoreMetric>(["paid_promo_risk", "bot_farm_risk"]);
+
+// v3 (Unit 41): the fit score IS engaged_audience_match. Content/goal/geo are
+// shown for context but do NOT move the score, so they must never appear as
+// score "drivers" in the hero strip.
+const INFORMATIONAL_METRICS = new Set<ScoreMetric>([
+  "content_fit",
+  "campaign_goal_fit",
+  "geo_language_fit",
+]);
 
 function formatFollowers(n: number | undefined): string | null {
   if (typeof n !== "number") return null;
@@ -110,7 +124,9 @@ function computeDrivers(metrics: MetricMap): { pos: Driver[]; neg: Driver[] } {
   const neg: Driver[] = [];
   for (const [k, score] of Object.entries(metrics)) {
     const metric = k as ScoreMetric;
-    if (metric === "overall_fit" || !score) continue;
+    if (metric === "overall_fit" || INFORMATIONAL_METRICS.has(metric) || !score) {
+      continue;
+    }
     const label = METRIC_INFO[metric]?.label ?? metric;
     if (RISK_METRICS.has(metric)) {
       if (score.value >= 55) neg.push({ label, value: score.value });
@@ -319,8 +335,14 @@ export function FitReportView({
       )}
 
       {/* AUDIENCE */}
-      {(fitReport.audienceMatch || fitReport.audienceBreakdown) && (
+      {(fitReport.audienceMatch ||
+        fitReport.audienceBreakdown ||
+        fitReport.expectedReach ||
+        fitReport.audienceRegions) && (
         <Panel title="Engaged audience: who actually listens">
+          {fitReport.targeting && (
+            <MatchedAgainst targeting={fitReport.targeting} />
+          )}
           {fitReport.audienceBreakdown && (
             <>
               <AudienceDonut distribution={fitReport.audienceBreakdown} />
@@ -368,6 +390,19 @@ export function FitReportView({
               </p>
             )}
           </div>
+          {/* Dials (Unit 41 v3): how MANY + where — shown beside the fit,
+              never blended into it. */}
+          {(fitReport.expectedReach ||
+            (fitReport.audienceRegions?.placed ?? 0) > 0) && (
+            <div className="mt-4 grid gap-4 border-t border-default pt-4 sm:grid-cols-2">
+              {fitReport.expectedReach && (
+                <ExpectedReachCard reach={fitReport.expectedReach} />
+              )}
+              {fitReport.audienceRegions && (
+                <AudienceGeography regions={fitReport.audienceRegions} />
+              )}
+            </div>
+          )}
         </Panel>
       )}
 

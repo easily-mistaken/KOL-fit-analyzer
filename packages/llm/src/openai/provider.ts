@@ -364,11 +364,18 @@ export class OpenAiLlmProvider implements LlmProvider {
           if (typeof signals.botScore === "number") {
             signals.botScore = Math.max(0, Math.min(1, signals.botScore));
           }
+          // Region from the model (Unit 41 Phase C2); "unknown"/absent -> omit
+          // (matches the mock's convention; scoring treats absent as unplaced).
+          const region =
+            typeof m.region === "string" && m.region !== "unknown"
+              ? m.region
+              : undefined;
           candidates.push({
             handle: batch[i].user.handle,
             accountId: batch[i].user.id,
             source: batch[i].source,
             bucket: m.bucket,
+            ...(region ? { region } : {}),
             signals,
           });
         }

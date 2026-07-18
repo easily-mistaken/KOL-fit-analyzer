@@ -2,6 +2,7 @@ import type {
   AudienceAccount,
   AudienceBucket,
   AudienceDistribution,
+  AudienceRegion,
   BrandSafetyFlag,
   ContentFitAssessment,
   EngagedAccountRaw,
@@ -52,6 +53,50 @@ export function classifyBucket(user: TwitterUser): AudienceBucket {
   return "non_crypto";
 }
 
+/** Coarse macro-region from the free-text profile location (mock stand-in for
+ *  the LLM's region inference, Unit 41 Phase C). Unplaceable -> undefined
+ *  (never penalized, just uncounted). The real, higher-recall inference over
+ *  location + language + bio is the OpenAI provider (Phase C2). */
+export function classifyRegion(user: TwitterUser): AudienceRegion | undefined {
+  const loc = (user.location ?? "").toLowerCase().trim();
+  if (loc.length === 0) return undefined;
+  const has = (re: RegExp) => re.test(loc);
+  if (has(/nigeria|lagos|kenya|nairobi|ghana|accra|africa|uganda|ethiopia/)) return "subsaharan_africa";
+  if (has(/india|bangalore|bengaluru|mumbai|delhi|pakistan|bangladesh|sri lanka|nepal/)) return "south_asia";
+  if (has(/vietnam|hanoi|indonesia|jakarta|philippines|manila|thailand|bangkok|malaysia|singapore/)) return "southeast_asia";
+  if (has(/china|beijing|shanghai|korea|seoul|japan|tokyo|taiwan|taipei|hong kong/)) return "east_asia";
+  if (has(/dubai|uae|abu dhabi|saudi|riyadh|qatar|egypt|cairo|turkey|istanbul|israel|tel aviv|morocco/)) return "mena";
+  if (has(/brazil|sao paulo|são paulo|argentina|buenos aires|mexico|colombia|latam|latin america|chile|peru/)) return "latam";
+  if (has(/russia|moscow|ukraine|kyiv|kazakhstan|belarus/)) return "cis";
+  if (has(/australia|sydney|melbourne|new zealand|auckland/)) return "oceania";
+  if (has(/poland|warsaw|romania|czech|prague|hungary|budapest|bulgaria|serbia|balkan/)) return "eastern_europe";
+  if (has(/london|\buk\b|united kingdom|england|france|paris|germany|berlin|spain|madrid|italy|rome|netherlands|amsterdam|europe|portugal|lisbon|ireland|dublin|sweden|switzerland|zurich/)) return "western_europe";
+  if (has(/\busa\b|united states|new york|\bnyc\b|san francisco|los angeles|miami|chicago|canada|toronto|austin|seattle|boston/)) return "north_america";
+  return undefined;
+}
+
+/** Macro-regions where the product is economically relevant (mock stand-in,
+ *  Unit 41 Phase C). Stablecoin/payments/savings -> high-inflation emerging
+ *  markets; capital-heavy trading/derivatives/prediction -> higher-income
+ *  regions; else no regional preference (a global audience serves it). */
+export function inferValuedRegions(input: {
+  productCategory?: string;
+  targetUser?: string;
+  keywords?: string[];
+}): AudienceRegion[] | undefined {
+  const text = [input.productCategory, input.targetUser, ...(input.keywords ?? [])]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  if (/stablecoin|payment|remittance|savings|inflation|off-ramp|on-ramp|neobank|dollar access|financial inclusion/.test(text)) {
+    return ["subsaharan_africa", "latam", "south_asia", "southeast_asia", "mena"];
+  }
+  if (/perp|derivativ|leverage|prediction market|high-frequency|institutional|hedge fund/.test(text)) {
+    return ["north_america", "western_europe", "east_asia"];
+  }
+  return undefined;
+}
+
 function accountSignals(
   user: TwitterUser,
   bucket: AudienceBucket
@@ -69,11 +114,13 @@ function accountSignals(
 /** One engaged account -> a classified AudienceAccount. */
 export function toAudienceAccount(engager: EngagedAccountRaw): AudienceAccount {
   const bucket = classifyBucket(engager.user);
+  const region = classifyRegion(engager.user);
   return {
     handle: engager.user.handle,
     accountId: engager.user.id,
     source: engager.source,
     bucket,
+    ...(region ? { region } : {}),
     signals: accountSignals(engager.user, bucket),
   };
 }
@@ -356,6 +403,7 @@ export function inferOrgClassification(
     region: brief.region ?? "Global / English",
     keywords,
     targetBuckets: inferTargetBuckets({ productCategory, targetUser, keywords }),
+    valuedRegions: inferValuedRegions({ productCategory, targetUser, keywords }),
     confidence: input.profile ? "medium" : "low",
   };
 }

@@ -1,10 +1,18 @@
 import { z } from "zod";
 
 import { REPORT_SCHEMA_VERSION } from "./constants.js";
-import { AudienceDistributionSchema } from "./audience.js";
+import {
+  AudienceDistributionSchema,
+  RegionDistributionSchema,
+} from "./audience.js";
+import { AudienceBucketSchema, AudienceRegionSchema } from "./vocab.js";
 import { ReportVerdictSchema } from "./enums.js";
 import { KolContentClassificationSchema } from "./llm.js";
-import { ConfidenceLevelSchema, ScoreValueSchema } from "./scores.js";
+import {
+  ConfidenceLevelSchema,
+  ExpectedReachSchema,
+  ScoreValueSchema,
+} from "./scores.js";
 
 // Compact org/KOL profile snapshot for report presentation (avatar, name,
 // follower count). Populated by the pipeline from the fetched Twitter profile.
@@ -51,6 +59,25 @@ export const FitReportSchema = z.object({
     .object({
       org: ProfileSnapshotSchema.nullable(),
       kol: ProfileSnapshotSchema.nullable(),
+    })
+    .optional(),
+
+  // Expected reach dial (Unit 41 v3, Phase B) — deterministic, injected by the
+  // pipeline (not the LLM). Optional/additive so older reports still validate.
+  expectedReach: ExpectedReachSchema.optional(),
+
+  // Audience geography dial (Unit 41 v3, Phase C) — deterministic region
+  // breakdown of the engaged audience, injected by the pipeline. Optional.
+  audienceRegions: RegionDistributionSchema.optional(),
+
+  // What the fit score was matched against (Unit 41 v3, Phase D) — the inferred
+  // target audience + economically-valued regions, surfaced so the brand can
+  // SEE (and sanity-check) what the score rests on. Injected by the pipeline.
+  targeting: z
+    .object({
+      primaryBuckets: z.array(AudienceBucketSchema).default([]),
+      secondaryBuckets: z.array(AudienceBucketSchema).default([]),
+      valuedRegions: z.array(AudienceRegionSchema).default([]),
     })
     .optional(),
 

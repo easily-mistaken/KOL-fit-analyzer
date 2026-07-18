@@ -1,30 +1,18 @@
-import type { AudienceBucket, ScoreMetric } from "@kol-fit/shared";
+import type { AudienceBucket } from "@kol-fit/shared";
 
-// Scoring v2 (Unit 29C). EVERY tunable lives here so calibration against the
-// ground-truth pairs (Unit 29E, scripts/calibration/pairs.json) is a constants
-// edit, never a prompt or formula change.
+// Scoring v3 — "audience-honest" (Unit 41). The fit score IS the engaged-audience
+// match; there are NO identity/relationship modifiers and NO weighted blend of
+// other metrics. EVERY tunable lives here. See context/specs/41-scoring-v3-audience-honest.md.
 
-// Overall weights (sum = 1.00). engaged_audience_match dominates (the product's
-// core metric). The two risk metrics are NOT direct terms — they act through
-// audience_quality and the verdict risk gates.
-export const OVERALL_WEIGHTS = {
-  engaged_audience_match: 0.4,
-  audience_quality: 0.15,
-  content_fit: 0.15,
-  campaign_goal_fit: 0.15,
-  brand_safety: 0.1,
-  geo_language_fit: 0.05,
-} as const satisfies Partial<Record<ScoreMetric, number>>;
-
-// Verdict thresholds on overall_fit (0-100), inclusive lower bounds.
-// STRONG raised 80→83 in the 29E live tuning pass (2026-07-14): STRONG is
-// reserved for direct-authority-grade fits; specialist/media pairs at ~80-82
-// belong in GOOD per the v26 labels.
+// Verdict thresholds on the fit score (0-100 = engaged_audience_match),
+// inclusive lower bounds. Chosen so the user's real-target-share bands land
+// right through EAM_ANCHORS (0.45->88 STRONG, 0.30->75 GOOD, 0.15->55 OKAY,
+// 0.05->30 WEAK, below -> AVOID).
 export const VERDICT_THRESHOLDS = {
-  STRONG: 83,
-  GOOD: 65,
+  STRONG: 85,
+  GOOD: 70,
   OKAY: 50,
-  WEAK: 35,
+  WEAK: 30,
   // below WEAK -> AVOID
 } as const;
 
@@ -34,7 +22,8 @@ export const VERDICT_THRESHOLDS = {
 
 export type CurveAnchors = ReadonlyArray<readonly [number, number]>;
 
-/** Engaged-audience match: matched share of REAL (human) engaged accounts. */
+/** Engaged-audience match: matched share of REAL (human) engaged accounts.
+ *  This curve IS the fit score in v3. */
 export const EAM_ANCHORS: CurveAnchors = [
   [0, 0],
   [0.05, 30],
@@ -45,7 +34,7 @@ export const EAM_ANCHORS: CurveAnchors = [
 ];
 
 /** Content fit: weighted 0-5 rubric average from the 29B assessment. 3/5
- *  ("clearly adjacent domains") ≈ 70 — adjacency counts. */
+ *  ("clearly adjacent domains") ~= 70. Informational in v3 (not weighted). */
 export const CF_ANCHORS: CurveAnchors = [
   [0, 10],
   [1, 30],
@@ -56,7 +45,7 @@ export const CF_ANCHORS: CurveAnchors = [
 ];
 
 /** Paid-promo risk base: promo SATURATION (share of labeled posts that are
- *  promos). Occasional promos are the KOL business model, not a risk. */
+ *  promos). Occasional promos are the creator business model, not a risk. */
 export const PROMO_ANCHORS: CurveAnchors = [
   [0, 0],
   [0.1, 10],
@@ -76,7 +65,8 @@ export const BOT_RISK_ANCHORS: CurveAnchors = [
   [1, 100],
 ];
 
-/** Geo/language fit: share of KOL posts in the org's expected language(s). */
+/** Geo/language fit: share of KOL posts in the org's expected language(s).
+ *  Informational in v3 (not weighted). */
 export const GEO_ANCHORS: CurveAnchors = [
   [0, 30],
   [0.3, 60],
@@ -84,37 +74,6 @@ export const GEO_ANCHORS: CurveAnchors = [
   [0.8, 95],
   [1, 100],
 ];
-
-// --- Audience intent overlap (Unit 30, v26 rule 4) ---------------------------
-// Category-matched share is adjusted by the pair's audienceIntentOverlap
-// rating (0-5): clear intent MISMATCH (<=2) damps the match (news readers /
-// mainstream gamers / wrong DeFi sub-intent classify into matching buckets
-// but won't use the product); HIGH intent (>=4) floors it (forecasters have
-// prediction-market intent despite non-crypto buckets). 3 = neutral.
-
-export const INTENT_DAMP: Record<number, number> = {
-  0: 0.3,
-  1: 0.4,
-  2: 0.5,
-  3: 1,
-  4: 1,
-  5: 1,
-};
-
-export const INTENT_FLOOR: Record<number, number> = {
-  0: 0,
-  1: 0,
-  2: 0,
-  3: 0,
-  4: 55,
-  5: 70,
-};
-
-/** Media cap tier bounds on intent (see applyAuthorityRules): media with
- *  intent <= MEDIA_INTENT_WEAK caps at WEAK; the GOOD tier additionally
- *  requires intent >= MEDIA_INTENT_GOOD. */
-export const MEDIA_INTENT_WEAK = 2;
-export const MEDIA_INTENT_GOOD = 4;
 
 // --- Baselines / modifiers ---------------------------------------------------
 
@@ -135,8 +94,9 @@ export const REPEAT_ENGAGER_FULL_SHARE = 0.25;
 export const FARMER_WEIGHT_QUALITY = 0.6; // in audience_quality lowQ
 export const FARMER_WEIGHT_RISK = 0.5; // in bot_farm_risk fakeShare
 
-/** Engagement-source weights for audience-match style metrics: a reply/quote
- *  is real attention; a retweet is cheap; a mere follow is the weakest. */
+/** Engagement-source weights for the audience match: a reply/quote is real
+ *  attention; a retweet is cheap; a follow barely counts (kept small, not zero,
+ *  per the v3 decision — a follow is a mild composition signal, not listening). */
 export const SOURCE_WEIGHTS: Record<
   "REPLY" | "QUOTE" | "RETWEET" | "FOLLOWER",
   number
@@ -145,6 +105,13 @@ export const SOURCE_WEIGHTS: Record<
 /** Secondary target buckets count at half weight. */
 export const SECONDARY_TARGET_WEIGHT = 0.5;
 
+/** Max soft tilt audience geography can apply to the fit (± fraction of the
+ *  base match). Bounded because X location data is thin; scaled further by how
+ *  much of the matched audience we could actually place (Unit 41 Phase C).
+ *  Geography is part of "is this the right audience", so it moves the fit —
+ *  softly. */
+export const GEO_TILT_MAX = 0.15;
+
 /** Paid-promo quality multiplier: related, decent promos run at the floor
  *  (normal business); unrelated/low-quality shills count fully. */
 export const PROMO_QUALITY_FLOOR = 0.4;
@@ -152,65 +119,27 @@ export const PROMO_QUALITY_FLOOR = 0.4;
 /** Legacy paid-promo fallback (no 29B postLabels): pattern heuristic cap. */
 export const PROMO_FALLBACK_CAP = 60;
 
-// --- Verdict risk gates (softened in v2: bots are inevitable; promo presence
-// is not disqualifying) -------------------------------------------------------
+// --- Verdict risk gates (v3: can only pull the verdict DOWN, never up) --------
 
 /** Bot/farm risk at/above this caps the verdict at OKAY. */
 export const BOT_GATE_OKAY = 85;
 /** Bot/farm risk at/above this (majority-fake engagement) caps at WEAK. */
 export const BOT_GATE_WEAK = 95;
 /** Bot/farm risk at/above this (overwhelming fake/farmed engagement — raid
- *  rings, farm hubs, giveaway audiences; ~80%+ fake share) caps at AVOID
- *  (Unit 29G, severe tier). */
+ *  rings, farm hubs, giveaway audiences; ~80%+ fake share) caps at AVOID. */
 export const BOT_GATE_AVOID = 97;
 /** Paid-promo gate: risk at/above these AND unrelatedShare above
  *  PROMO_GATE_UNRELATED_SHARE caps the verdict (OKAY / WEAK tiers). Promo
  *  saturation alone never reaches AVOID — promo-heavy accounts retain
- *  awareness value (v26 calibration rule 14). */
+ *  awareness value. */
 export const PROMO_GATE_OKAY = 85;
 export const PROMO_GATE_WEAK = 95;
 export const PROMO_GATE_UNRELATED_SHARE = 0.5;
-/** Brand-safety gates (Unit 29G): confirmed severe safety findings cap the
- *  verdict regardless of fit — below WEAK-gate caps WEAK; below AVOID-gate
- *  (casino mismatch, deceptive claims, phishing, impersonation) caps AVOID. */
+/** Brand-safety gates: confirmed severe safety findings cap the verdict
+ *  regardless of fit — below WEAK-gate caps WEAK; below AVOID-gate (casino
+ *  mismatch, deceptive claims, phishing, impersonation) caps AVOID. */
 export const BRAND_GATE_WEAK = 40;
 export const BRAND_GATE_AVOID = 20;
-
-// --- Authority modifier (Unit 29F): relationship is a verdict floor/cap, ------
-// NOT a weighted metric (per the user's 12-pair calibration doc).
-
-/** Founder/inventor/CEO/core-team of THIS org: verdict floor. Noisy public
- *  engagement lowers confidence, it must not collapse a founder pair. */
-export const AUTHORITY_FLOOR_FOUNDER = "GOOD" as const;
-/** Founder/core-team pairs also get a flat overall-score modifier (v26 rule 1:
- *  "very large positive modifier AND verdict floor"). 29E live tuning: lifts
- *  real founder pairs whose heterogeneous public audience keeps raw metrics a
- *  few points shy of STRONG (chainlink × Sergey landed 77 pre-boost). */
-export const AUTHORITY_OVERALL_BOOST_FOUNDER = 6;
-/** The founder floor only applies when brand safety is at least this (severe
- *  brand-safety risk always wins) and no risk gate fired. */
-export const AUTHORITY_MIN_BRAND_SAFETY = 60;
-/** Adjacent ecosystem authority (Unit 32, goal-conditional): capped at GOOD
- *  under a normal product-relevant campaign — fame + ecosystem relevance is
- *  not STRONG without direct authority or goal alignment. Goals where
- *  adjacent authority genuinely shines lift the cap. */
-export const ADJACENT_CAP = "GOOD" as const;
-export const ADJACENT_CAP_EXEMPT_GOALS: string[] = [
-  "awareness",
-  "investor_credibility",
-];
-
-/** Media WEAK-tier softens to OKAY under an awareness goal (Unit 32) —
- *  broad reach IS useful for a pure awareness burst. */
-export const MEDIA_WEAK_SOFTEN_GOALS: string[] = ["awareness"];
-
-/** Media/news/community-brand accounts: reach is not fit. Two-tier cap (29E
- *  live tuning — ETHIndia/Bankless-style accounts with a genuinely strong
- *  audience earn GOOD, never STRONG; without audience proof they cap at OKAY):
- *  EAM >= MEDIA_CAP_EAM_EXEMPT -> cap GOOD; below -> cap OKAY. */
-export const MEDIA_CAP_GOOD = "GOOD" as const;
-export const MEDIA_CAP_OKAY = "OKAY" as const;
-export const MEDIA_CAP_EAM_EXEMPT = 75;
 
 // --- Brand safety (29B flags; severity deductions, floor 0, no flags = 100) --
 

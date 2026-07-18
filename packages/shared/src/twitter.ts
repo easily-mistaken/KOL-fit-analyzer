@@ -20,6 +20,9 @@ export const TwitterUserSchema = z.object({
   verified: z.boolean().optional(),
   createdAt: z.string().optional(),
   avatarUrl: z.string().optional(),
+  /** Free-text profile location (Unit 41 Phase C). Often blank/joke on X;
+   *  used only as a best-effort signal for coarse audience-region inference. */
+  location: z.string().optional(),
 });
 export type TwitterUser = z.infer<typeof TwitterUserSchema>;
 

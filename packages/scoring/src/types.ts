@@ -1,8 +1,10 @@
 import type {
   AudienceClassification,
   ContentFitAssessment,
+  ExpectedReach,
   KolContentClassification,
   OrgClassification,
+  RegionDistribution,
   ReportVerdict,
   ScoreBreakdown,
 } from "@kol-fit/shared";
@@ -22,6 +24,10 @@ export type ScoringSampleMeta = {
   /** Share of unique engaged accounts that engaged >=2 analyzed posts
    *  (from 29A `appearances`; computed by the pipeline). */
   repeatEngagerShare?: number;
+  /** Mean engaged interactions (reply+quote+retweet) per fetched post — the
+   *  volume input for expected reach (Unit 41 Phase B). Computed by the
+   *  pipeline from the fetched tweet engagement counts. */
+  avgEngagedPerPost?: number;
 };
 
 // Provider-neutral ingestion evidence as plain booleans — the pipeline maps its
@@ -60,4 +66,8 @@ export type ScoringResult = {
   /** overall (=overall_fit) + the 8 other metrics in components + confidence. */
   scores: ScoreBreakdown;
   verdict: ReportVerdict;
+  /** Expected reach dial (Phase B) — shown beside the fit score, never in it. */
+  expectedReach: ExpectedReach;
+  /** Audience geography dial (Phase C) — region breakdown of engaged accounts. */
+  audienceRegions: RegionDistribution;
 };

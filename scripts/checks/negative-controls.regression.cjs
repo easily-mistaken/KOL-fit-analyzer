@@ -1,10 +1,11 @@
-// Unit 29G regression: severity-tiered risk caps + the v26 SYNTHETIC negative
-// controls (context/krypto-kol-calibration-pairs-v26.md, rule 14). The seven
-// synthetic pairs are PATTERNS, not real accounts — encoded here as scoring
-// fixtures (the live calibration runner skips them). Verifies: severe risk
-// caps to AVOID; keyword/category overlap does not defeat caps; promo-heavy
-// is WEAK, not auto-AVOID; founder authority loses to severe risk; caps
-// combine as the minimum.
+// Unit 41 regression: v3 verdict gates + the v26 SYNTHETIC negative controls
+// (context/krypto-kol-calibration-pairs-v26.md). The synthetic pairs are
+// PATTERNS, not real accounts — encoded here as scoring fixtures (the live
+// calibration runner skips them). Verifies under scoring v3: severe risk gates
+// cap to AVOID; keyword/category overlap (content fit) does NOT defeat the
+// gates; the promo gate alone is never AVOID; off-target audiences fall below
+// the 5% target floor to AVOID on their own; identity/relationship is ignored
+// (no founder floor); caps combine as the minimum.
 //
 // Run after `pnpm build`:  node scripts/checks/negative-controls.regression.cjs
 // (or `pnpm check:negative-controls`). Pure math — no network, no keys.
@@ -110,17 +111,22 @@ const promoLabels = (n, promo, related, quality) =>
   }));
   ck(`UnverifiedSportsTips -> AVOID despite category overlap (got ${tips.verdict}, CF ${tips.scores.components.content_fit.value})`, tips.verdict === "AVOID" && tips.scores.components.content_fit.value >= 70);
 
-  // Founder authority must LOSE to severe risk (rule 1 escape hatch).
+  // v3 has NO founder floor at all — a founder pair with a farm/giveaway
+  // audience is just an off-target + gated audience -> AVOID. The relationship
+  // field is ignored by scoring; there is nothing to "lose to".
   const founderButSevere = s.scoreAnalysis(input(audienceOf({ giveaway_hunters: 55, airdrop_farmers: 30, bots_spam: 12, defi_users: 3 }), {
     fit: { topicalAdjacency: 5, audienceOverlapPotential: 5, naturalMentionFit: 5, sharedTopics: [], rationale: "founder", relationship: "founder_or_core_team", relationshipEvidence: "bio" },
   }));
-  ck(`founder floor loses to severe risk (got ${founderButSevere.verdict})`, founderButSevere.verdict === "AVOID");
+  ck(`identity ignored: farm audience -> AVOID even for a "founder" (got ${founderButSevere.verdict})`, founderButSevere.verdict === "AVOID");
 }
 
-// --- WEAK controls (promo-heavy / off-target ≠ AVOID) ---------------------------
+// --- Off-target controls: audiences that barely contain the target now fall
+//     below the 5% floor -> AVOID (v3 removed the old "awareness value" WEAK
+//     floor; the PROMO gate alone still never forces AVOID — see gate tiers). --
 {
-  // 20. chainlink × CryptoMacroSponsor: promo-heavy but disclosed — WEAK via
-  // low developer intent, NOT capped to AVOID.
+  // 20. chainlink × CryptoMacroSponsor: promo-heavy, but the real driver is a
+  // ~0% developer/infra audience -> below the target floor -> AVOID (v3). The
+  // promo gate itself never forces AVOID; the audience does.
   const sponsor = s.scoreAnalysis(input(
     audienceOf({ non_crypto: 45, traders: 25, meme_degens: 15, bots_spam: 10, investors_vcs: 5 }),
     {
@@ -129,10 +135,11 @@ const promoLabels = (n, promo, related, quality) =>
       fit: { topicalAdjacency: 2, audienceOverlapPotential: 2, naturalMentionFit: 2, sharedTopics: [], rationale: "macro/BTC commentary, not oracle infrastructure", relationship: "none", relationshipEvidence: "large macro account" },
     }
   ));
-  ck(`CryptoMacroSponsor -> WEAK (got ${sponsor.verdict}, overall ${sponsor.scores.overall.value})`, sponsor.verdict === "WEAK");
-  ck(`promo-heavy is NOT auto-AVOID (promo risk ${sponsor.scores.components.paid_promo_risk.value})`, sponsor.verdict !== "AVOID" && sponsor.scores.components.paid_promo_risk.value < 95);
+  ck(`CryptoMacroSponsor -> AVOID (off-target audience, got ${sponsor.verdict}, overall ${sponsor.scores.overall.value})`, sponsor.verdict === "AVOID");
+  ck(`AVOID is audience-driven, not the promo gate (promo risk ${sponsor.scores.components.paid_promo_risk.value} < 95)`, sponsor.scores.components.paid_promo_risk.value < 95);
 
-  // 21. base × AltcoinDealsDesk: deal-seeking retail vs builder targets.
+  // 21. base × AltcoinDealsDesk: deal-seeking retail audience vs builder
+  // targets -> negligible target share -> AVOID (v3).
   const deals = s.scoreAnalysis(input(
     audienceOf({ non_crypto: 30, meme_degens: 25, traders: 20, giveaway_hunters: 11, bots_spam: 11, developers: 3 }),
     {
@@ -141,8 +148,8 @@ const promoLabels = (n, promo, related, quality) =>
       fit: { topicalAdjacency: 2, audienceOverlapPotential: 2, naturalMentionFit: 2, sharedTopics: [], rationale: "deals/listings content, not building on Base", relationship: "none", relationshipEvidence: "retail deals account" },
     }
   ));
-  ck(`AltcoinDealsDesk -> WEAK (got ${deals.verdict}, overall ${deals.scores.overall.value})`, deals.verdict === "WEAK");
+  ck(`AltcoinDealsDesk -> AVOID (builder targets ~absent, got ${deals.verdict}, overall ${deals.scores.overall.value})`, deals.verdict === "AVOID");
 }
 
-console.log(`\nNEGATIVE CONTROLS REGRESSION (29G): ${pass} passed, ${fail} failed`);
+console.log(`\nNEGATIVE CONTROLS REGRESSION (Unit 41 v3): ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

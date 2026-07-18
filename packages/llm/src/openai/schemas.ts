@@ -1,5 +1,6 @@
 import {
   AudienceBucketSchema,
+  AudienceRegionSchema,
   BrandSafetyFlagKindSchema,
   ConfidenceLevelSchema,
   EngagementSourceSchema,
@@ -20,11 +21,20 @@ const SOURCES = [...EngagementSourceSchema.options];
 const CONFIDENCE = [...ConfidenceLevelSchema.options];
 const SAFETY_FLAGS = [...BrandSafetyFlagKindSchema.options];
 const MEDIA_KINDS = [...MediaLabelSchema.shape.kind.options];
+const REGIONS = [...AudienceRegionSchema.options];
 
 const bucketArray = {
   type: "array",
   items: { type: "string", enum: BUCKETS },
 } as const;
+
+const regionArray = {
+  type: "array",
+  items: { type: "string", enum: REGIONS },
+} as const;
+
+// Nullable region enum for per-account labeling (unplaceable -> null/unknown).
+const nullableRegion = { type: ["string", "null"], enum: [...REGIONS, null] } as const;
 
 export const ORG_CLASSIFICATION_SCHEMA = {
   type: "object",
@@ -44,6 +54,9 @@ export const ORG_CLASSIFICATION_SCHEMA = {
       properties: { primary: bucketArray, secondary: bucketArray },
       required: ["primary", "secondary"],
     },
+    // Macro-regions where the product is economically relevant (Unit 41 Phase
+    // C2). Empty when the product has no regional preference.
+    valuedRegions: regionArray,
     confidence: { type: "string", enum: CONFIDENCE },
   },
   required: [
@@ -54,6 +67,7 @@ export const ORG_CLASSIFICATION_SCHEMA = {
     "region",
     "keywords",
     "targetBuckets",
+    "valuedRegions",
     "confidence",
   ],
 } as const;
@@ -177,6 +191,9 @@ export const AUDIENCE_BATCH_SCHEMA = {
           handle: nullableString,
           source: { type: "string", enum: SOURCES },
           bucket: { type: "string", enum: BUCKETS },
+          // Coarse macro-region inferred from location/language/bio (Unit 41
+          // Phase C2). null when not placeable.
+          region: nullableRegion,
           signals: {
             type: "object",
             additionalProperties: false,
@@ -191,7 +208,7 @@ export const AUDIENCE_BATCH_SCHEMA = {
             required: ["botScore", "emptyBio", "farmingSignals"],
           },
         },
-        required: ["accountId", "handle", "source", "bucket", "signals"],
+        required: ["accountId", "handle", "source", "bucket", "region", "signals"],
       },
     },
   },

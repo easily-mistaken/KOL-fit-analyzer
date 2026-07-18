@@ -6,15 +6,16 @@ import { InfoHint } from "@/components/ui/info-hint";
 
 export type MetricMap = Partial<Record<ScoreMetric, ScoreValue>>;
 
-// Fit components (overall_fit is shown as the hero gauge, not here). Display
-// order = importance; the numeric weights are internal (Unit 33).
-const FIT_METRICS: ScoreMetric[] = [
-  "engaged_audience_match",
+// v3 (Unit 41): the fit score IS the engaged-audience match — nothing else moves
+// it. So the breakdown is grouped by ROLE, honestly: the score, context signals
+// (shown but not scored), and the risk gates (can only cap the verdict).
+const SCORE_METRICS: ScoreMetric[] = ["engaged_audience_match"];
+const CONTEXT_METRICS: ScoreMetric[] = [
   "audience_quality",
   "content_fit",
   "campaign_goal_fit",
-  "brand_safety",
   "geo_language_fit",
+  "brand_safety",
 ];
 const RISK_METRICS: ScoreMetric[] = ["paid_promo_risk", "bot_farm_risk"];
 
@@ -56,22 +57,39 @@ function MetricRow({
 }
 
 export function MetricGroups({ metrics }: { metrics: MetricMap }) {
-  const fit = FIT_METRICS.filter((metric) => metrics[metric]);
+  const score = SCORE_METRICS.filter((m) => metrics[m]);
+  const context = CONTEXT_METRICS.filter((m) => metrics[m]);
   const risk = RISK_METRICS.filter((m) => metrics[m]);
 
   return (
     <div className="space-y-6">
-      {fit.length > 0 && (
+      {score.length > 0 && (
         <div>
           <div className="mb-1.5 text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Fit metrics
+            The fit score
           </div>
           <p className="mb-3 text-[12px] text-muted-foreground">
-            Weighted by impact — the metrics nearer the top move the overall
-            score the most.
+            The verdict is this one number: how much of the real, engaged
+            audience is your target customer. Nothing else moves it.
           </p>
           <div>
-            {fit.map((metric) => (
+            {score.map((metric) => (
+              <MetricRow key={metric} metric={metric} score={metrics[metric]!} />
+            ))}
+          </div>
+        </div>
+      )}
+      {context.length > 0 && (
+        <div>
+          <div className="mb-1.5 text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Context
+          </div>
+          <p className="mb-3 text-[12px] text-muted-foreground">
+            Shown to inform your read — these do not change the fit number. (A
+            serious brand-safety problem can still cap the verdict.)
+          </p>
+          <div>
+            {context.map((metric) => (
               <MetricRow key={metric} metric={metric} score={metrics[metric]!} />
             ))}
           </div>
@@ -79,12 +97,16 @@ export function MetricGroups({ metrics }: { metrics: MetricMap }) {
       )}
       {risk.length > 0 && (
         <div>
-          <div className="mb-3 flex items-center gap-2 text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">
-            Risk metrics
+          <div className="mb-1.5 flex items-center gap-2 text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Risk gates
             <span className="normal-case tracking-normal text-warning">
               (higher is worse)
             </span>
           </div>
+          <p className="mb-3 text-[12px] text-muted-foreground">
+            These never lift the score — a high-enough risk only caps the
+            verdict.
+          </p>
           <div>
             {risk.map((metric) => (
               <MetricRow

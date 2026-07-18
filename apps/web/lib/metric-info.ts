@@ -10,13 +10,13 @@ export type MetricInfo = { label: string; what: string; read: string };
 export const METRIC_INFO: Record<ScoreMetric, MetricInfo> = {
   overall_fit: {
     label: "Overall fit",
-    what: "The headline 0–100 judgment of how well this creator fits this brand, blending audience, content, campaign, and safety signals.",
-    read: "The higher the score, the stronger the case for working together. The verdict badge is the plain-English version of this number.",
+    what: "The headline 0–100 fit score: how much of the creator's real, engaged audience is your target customer. This is the whole score — content, campaign, and geo signals are shown for context but do not change it.",
+    read: "Higher means more of your target customer is actually in the room. A fake/farmed audience or a brand-safety problem can cap the verdict. The verdict badge is the plain-English version of this number.",
   },
   engaged_audience_match: {
     label: "Engaged audience match",
     what: "How much of the creator's genuinely engaged audience (the people who actually show up in their replies and conversations, not just follower counts) matches the users this brand wants to reach.",
-    read: "The most important signal. Higher means your real target audience is actually in the room.",
+    read: "This IS the fit score. Higher means your real target audience is actually in the room.",
   },
   audience_quality: {
     label: "Audience quality",
@@ -26,12 +26,12 @@ export const METRIC_INFO: Record<ScoreMetric, MetricInfo> = {
   content_fit: {
     label: "Content fit",
     what: "How naturally this creator's world connects to yours, and whether their usual topics and their audience's interests make a mention of your product feel organic rather than forced.",
-    read: "Higher = the message lands in its natural habitat. Adjacent topics count, not just identical ones.",
+    read: "Context, not part of the score. Higher = the message lands in its natural habitat. What the creator posts is not who listens, so this informs your read rather than driving the number.",
   },
   campaign_goal_fit: {
     label: "Campaign goal fit",
     what: "How well this creator's audience serves your stated campaign goal: awareness, community growth, user acquisition, developer adoption, and so on.",
-    read: "Higher = the right tool for this specific job. The same creator can score differently for different goals.",
+    read: "Context, not part of the score. The goal itself already reshapes who counts as your target in the fit score; this is shown for reference.",
   },
   brand_safety: {
     label: "Brand safety",
@@ -40,8 +40,8 @@ export const METRIC_INFO: Record<ScoreMetric, MetricInfo> = {
   },
   geo_language_fit: {
     label: "Geo / language fit",
-    what: "Whether this creator actually reaches the region and language your campaign targets.",
-    read: "Higher = you're reaching the right geography, not just the right topic.",
+    what: "Whether this creator posts in the region and language your campaign targets.",
+    read: "Context, not part of the score. Where the engaged audience actually is (and whether that fits your market) is shown separately as the audience-geography dial.",
   },
   paid_promo_risk: {
     label: "Paid-promo risk",

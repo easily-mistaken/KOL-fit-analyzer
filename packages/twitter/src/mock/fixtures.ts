@@ -53,6 +53,7 @@ export const ENGAGED_ACCOUNT_POOL: PoolAccount[] = [
       tweetCount: 8800,
       verified: false,
       createdAt: isoAt(1400),
+      location: "Lagos, Nigeria 🇳🇬",
     },
   },
   {
@@ -69,6 +70,7 @@ export const ENGAGED_ACCOUNT_POOL: PoolAccount[] = [
       tweetCount: 4200,
       verified: false,
       createdAt: isoAt(1600),
+      location: "Berlin, Germany",
     },
   },
   {
@@ -85,6 +87,7 @@ export const ENGAGED_ACCOUNT_POOL: PoolAccount[] = [
       tweetCount: 6100,
       verified: true,
       createdAt: isoAt(2000),
+      location: "Bangalore, India",
     },
   },
   {
@@ -116,6 +119,7 @@ export const ENGAGED_ACCOUNT_POOL: PoolAccount[] = [
       tweetCount: 12400,
       verified: false,
       createdAt: isoAt(1200),
+      location: "São Paulo, Brazil",
     },
   },
   {
@@ -132,6 +136,7 @@ export const ENGAGED_ACCOUNT_POOL: PoolAccount[] = [
       tweetCount: 7700,
       verified: false,
       createdAt: isoAt(1100),
+      location: "Nairobi, Kenya",
     },
   },
   {
@@ -148,6 +153,7 @@ export const ENGAGED_ACCOUNT_POOL: PoolAccount[] = [
       tweetCount: 33000,
       verified: false,
       createdAt: isoAt(900),
+      location: "London, UK",
     },
   },
   {
@@ -163,6 +169,7 @@ export const ENGAGED_ACCOUNT_POOL: PoolAccount[] = [
       tweetCount: 21000,
       verified: false,
       createdAt: isoAt(1000),
+      location: "Jakarta, Indonesia",
     },
   },
   {
@@ -284,6 +291,7 @@ export const ENGAGED_ACCOUNT_POOL: PoolAccount[] = [
       tweetCount: 5400,
       verified: true,
       createdAt: isoAt(2200),
+      location: "New York, USA",
     },
   },
 ];
