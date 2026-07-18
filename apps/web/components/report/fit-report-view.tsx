@@ -138,14 +138,18 @@ function DriverStrip({ pos, neg }: { pos: Driver[]; neg: Driver[] }) {
         <TrendingUp className="mt-0.5 h-4 w-4 shrink-0 text-success" />
         <div className="flex flex-wrap items-baseline gap-x-1.5">
           <span className="font-medium text-muted-foreground">Lifted by</span>
-          <span className="text-foreground">{pos.length ? fmt(pos) : "—"}</span>
+          <span className={pos.length ? "text-foreground" : "text-muted-foreground"}>
+            {pos.length ? fmt(pos) : "no standout strengths"}
+          </span>
         </div>
       </div>
       <div className="flex items-start gap-2">
         <TrendingDown className="mt-0.5 h-4 w-4 shrink-0 text-error" />
         <div className="flex flex-wrap items-baseline gap-x-1.5">
           <span className="font-medium text-muted-foreground">Held back by</span>
-          <span className="text-foreground">{neg.length ? fmt(neg) : "—"}</span>
+          <span className={neg.length ? "text-foreground" : "text-muted-foreground"}>
+            {neg.length ? fmt(neg) : "no major concerns"}
+          </span>
         </div>
       </div>
     </div>
