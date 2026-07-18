@@ -330,3 +330,16 @@ Update this file after every meaningful implementation change.
     the end of the report body, and captioned the audience donut so a large grey
     "Other" wedge isn't misread as a finding.
   * Verified in light + dark on a live report; web typecheck clean.
+
+- 2026-07-18: Mobile fix — top nav was overflowing the viewport on phones.
+  At a real 390px width the page scrolled sideways (scrollWidth 447), which
+  made the whole app feel broken on mobile. Root cause was the top nav, not
+  the report: "Analyze" / "History" / "Sign out" all showed text labels, so
+  logo + nav couldn't coexist in the width. Fixed by collapsing the nav to
+  icon-only below `sm` (labels kept for a11y via `sr-only` + `sm:not-sr-only`)
+  and tightening header/main padding to `px-4` on mobile (`top-nav.tsx`,
+  `auth/user-menu.tsx`, `app-shell.tsx`). Verified at 390px by loading each
+  route in an isolated iframe (its own viewport → true breakpoints, since the
+  dev window can't be resized below ~1462px here): report page overflow gone
+  and every section reads cleanly; Home/Analyze already clean; the History
+  table is intentionally swipe-scrollable inside its `overflow-x-auto` wrapper.
