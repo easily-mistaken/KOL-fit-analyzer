@@ -388,3 +388,27 @@ Update this file after every meaningful implementation change.
   was reported as out of sync with `CLAUDE.md`, but it already lists all 7
   context files — that was a truncated-read artifact, and no edit was made.
   Verified: `pnpm -r build` green, `pnpm check` exit 0.
+
+- 2026-07-18: Deploy target decided — **single VPS (RackNerd), single database**.
+  User is deploying tomorrow and chose one Supabase project for production
+  rather than a separate prod project. That decision also defuses a deploy
+  blocker found while auditing: `DEPLOY.md` instructed
+  `prisma migrate deploy`, but this project has **no migration history** at all
+  (`packages/db/prisma/` holds only `schema.prisma`; every schema change to date
+  went through `prisma db push`). On a *fresh* database that command is a no-op,
+  so the documented path would have produced an empty schema and a dead app.
+  Reusing the existing DB sidesteps it, and the checklist now says `db push`
+  explicitly, noting `db:deploy` stays unused until a baseline migration exists.
+  Added a **"Deploying on a VPS (systemd)"** section to `DEPLOY.md`: host setup
+  (Node 20 via NodeSource, global pnpm@9, non-root `overlapx` user), the unit
+  file, reverse proxy + TLS, ufw, and the redeploy loop. The reason it is needed:
+  `scripts/start.mjs` fail-fast (either child dies -> whole process exits) is
+  correct *only* when something restarts it; managed platforms do, a bare VPS
+  does not, so a single worker crash would otherwise take the app down until
+  someone SSHed in. Two details that would silently break the unit are called
+  out inline: systemd's near-empty PATH (start.mjs spawns `pnpm --filter web
+  start`, so pnpm must resolve) and `StartLimitBurst`/`StartLimitIntervalSec`
+  belonging in `[Unit]`, not `[Service]`, since systemd v229. Also documented
+  purging dev/test rows before go-live, and that cached provider data is safe to
+  keep (keys namespaced by provider kind, `tw:v2:<kind>:`). Docs only, no code
+  change.
