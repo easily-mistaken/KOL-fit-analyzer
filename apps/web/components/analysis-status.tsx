@@ -677,7 +677,7 @@ function RunningExperience({ data }: { data: AnalysisStatusResponse }) {
             (notify + History) — no longer an invitation to abandon. */}
         <div className="mt-6 flex flex-col gap-2.5 rounded-xl border border-default bg-elevated/30 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-secondary-foreground">
-            Keep this tab open — it updates live. Step away and we&apos;ll keep
+            Keep this tab open, it updates live. Step away and we&apos;ll keep
             working; it&apos;s saved in your History.
           </p>
           <div className="shrink-0">
@@ -690,7 +690,7 @@ function RunningExperience({ data }: { data: AnalysisStatusResponse }) {
         </div>
 
         <p className="mt-6 text-xs text-muted-foreground">
-          Updates live — no need to refresh. Everything is saved in your{" "}
+          Updates live. No need to refresh. Everything is saved in your{" "}
           <Link href="/analyses" className="text-accent-ink hover:underline">
             History
           </Link>
