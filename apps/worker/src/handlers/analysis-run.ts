@@ -5,6 +5,7 @@ import {
 } from "@kol-fit/analysis";
 import { Prisma, prisma } from "@kol-fit/db";
 import { AnalysisRunPayloadSchema, enqueueAnalysisRun } from "@kol-fit/queue";
+import type { AnalysisProgress } from "@kol-fit/shared";
 
 import { buildProviders, logProviderUsage } from "../providers.js";
 import { classifyAnalysisError, decideRetry } from "../errors.js";
@@ -73,9 +74,37 @@ export async function processAnalysisRun(
         status: "RUNNING",
         startedAt: new Date(),
         attempts: { increment: 1 },
+        progress: Prisma.DbNull, // clear any stale progress from a prior attempt
       },
     });
     job.attempts = running.attempts;
+
+    // Live progress (the waiting screen). The pipeline emits report-safe deltas
+    // as it clears real stage boundaries; we merge them into one snapshot and
+    // persist it. Best-effort throughout: a progress write must NEVER fail the
+    // analysis. Writes are chained so out-of-order updates can't regress the
+    // stage, and each write carries the full merged snapshot.
+    let progressSnapshot: AnalysisProgress | null = null;
+    let progressWrites: Promise<unknown> = Promise.resolve();
+    const persistProgress = (delta: AnalysisProgress): void => {
+      progressSnapshot = {
+        ...delta,
+        org: delta.org ?? progressSnapshot?.org,
+        kol: delta.kol ?? progressSnapshot?.kol,
+        audience: delta.audience ?? progressSnapshot?.audience,
+      };
+      const snap = progressSnapshot;
+      progressWrites = progressWrites
+        .then(() =>
+          prisma.analysisJob.update({
+            where: { id: jobId },
+            data: { progress: snap as unknown as Prisma.InputJsonValue },
+          })
+        )
+        .catch(() => {
+          /* best-effort: never fail the analysis on a progress write */
+        });
+    };
 
     // Run the mock analysis pipeline. Report-building lives entirely in
     // @kol-fit/analysis; the worker only persists the validated result.
@@ -96,7 +125,7 @@ export async function processAnalysisRun(
     const caps = resolveCaps();
     const { report, scores, evidence, llmModel } = await runAnalysis(
       requestData,
-      { twitter, llm, caps }
+      { twitter, llm, caps, onProgress: persistProgress }
     );
 
     const asJson = (v: unknown) => v as unknown as Prisma.InputJsonValue;

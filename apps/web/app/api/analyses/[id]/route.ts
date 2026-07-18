@@ -1,6 +1,7 @@
 import {
   err,
   ok,
+  AnalysisProgressSchema,
   FitReportSchema,
   ScoreBreakdownSchema,
   type ApiResponse,
@@ -73,6 +74,14 @@ export async function GET(
       scores = parsed.success ? parsed.data : null;
     }
 
+    // Live progress JSON was validated on write; re-validate defensively and
+    // degrade to null rather than trust a malformed row.
+    let progress = null;
+    if (job.progress != null) {
+      const parsed = AnalysisProgressSchema.safeParse(job.progress);
+      progress = parsed.success ? parsed.data : null;
+    }
+
     const dto: AnalysisStatusResponse = {
       id: request.id,
       orgHandle: request.orgHandle,
@@ -87,6 +96,7 @@ export async function GET(
         errorCode: job.errorCode,
         errorMessage: job.errorMessage,
       },
+      progress,
       report: report
         ? {
             status: report.status,

@@ -1,5 +1,6 @@
 import type {
   AnalysisCaps,
+  AnalysisProgress,
   AudienceDistribution,
   ConfidenceLevel,
   FitReport,
@@ -48,6 +49,14 @@ export type RunAnalysisOptions = {
   twitterProviderKind?: string;
   /** Evidence label; default process.env.LLM_PROVIDER ?? "mock". */
   llmProviderKind?: string;
+  /**
+   * Called as the pipeline clears real stage boundaries, with a report-safe
+   * progress delta (public profile facts + audience shares only). The worker
+   * merges + persists these so the waiting UI shows real work on the user's own
+   * creator. Fire-and-forget: the pipeline never awaits it and swallows throws,
+   * so a slow/failing sink can never affect the analysis.
+   */
+  onProgress?: (progress: AnalysisProgress) => void;
 };
 
 export type PipelineEvidence = {

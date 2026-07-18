@@ -259,3 +259,17 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .indeterminate { animation: none; width: 100%; }
 }
+
+/* Auto-advance fill under the rotating "while you wait" tip. Left-anchored
+   scaleX so it reads as a countdown; pausable via animation-play-state. */
+@keyframes kf-tip-advance {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+.tip-advance {
+  transform-origin: left;
+  animation: kf-tip-advance linear forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tip-advance { animation: none; transform: scaleX(0); }
+}

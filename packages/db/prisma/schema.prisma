@@ -108,6 +108,12 @@ model AnalysisJob {
   errorCode    String?
   errorMessage String?
 
+  // Live analysis progress for the waiting screen (AnalysisProgress JSON,
+  // @kol-fit/shared): real stage + public profile/audience-share glimpses the
+  // worker writes as the pipeline clears stage boundaries. Nullable; reset when
+  // a job (re)enters RUNNING. Presentation-only — never read by scoring.
+  progress Json?
+
   createdAt   DateTime  @default(now()) @db.Timestamptz
   updatedAt   DateTime  @updatedAt @db.Timestamptz
   startedAt   DateTime? @db.Timestamptz

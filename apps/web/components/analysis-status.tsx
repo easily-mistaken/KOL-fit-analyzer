@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   AlertTriangle,
   ArrowLeft,
+  BadgeCheck,
   BarChart3,
   Check,
   CheckCircle2,
@@ -14,13 +15,22 @@ import {
   Radar,
   Search,
   Scale,
+  Users,
 } from "lucide-react";
-import { APP_NAME, type ApiResponse, type JobStatus } from "@kol-fit/shared";
+import {
+  APP_NAME,
+  type ApiResponse,
+  type AudienceGlimpse,
+  type JobStatus,
+  type ProfileGlimpse,
+} from "@kol-fit/shared";
 
 import { cn } from "@/lib/utils";
 import type { AnalysisStatusResponse } from "@/lib/analysis-status";
 import { AudienceField } from "@/components/audience-field";
 import { WaitingTips } from "@/components/waiting-tips";
+import { NotifyWhenReady } from "@/components/notify-when-ready";
+import { QueueNextAnalysis } from "@/components/queue-next-analysis";
 import { FitReportView } from "@/components/report/fit-report-view";
 import { VerdictBadge } from "@/components/report/verdict-badge";
 import { Badge } from "@/components/ui/badge";
@@ -321,39 +331,49 @@ function StatusBadge({ status }: { status: JobStatus }) {
 }
 
 // Client-facing progress stages (Unit 33: outcome language only — no pipeline
-// mechanics, counts, provider or model details). `until` = cumulative seconds
-// by which a typical run has usually reached the *next* stage; used only to
-// estimate which stage is likely active (the elapsed timer is the truthful
-// anchor — we never claim a precise percentage).
+// mechanics, counts, provider or model details). Which stage is active is now
+// driven by REAL progress the worker emits (data.progress.stageIndex), not a
+// stopwatch guess. `remaining` is a deliberately coarse, always-shrinking phrase
+// (no false precision); `base`/`next` bound the forward-only progress bar.
 const STAGES: {
   icon: React.ReactNode;
   title: string;
   why: string;
-  until: number;
+  remaining: string;
+  base: number;
+  next: number;
 }[] = [
   {
     icon: <Search className="h-4 w-4" />,
     title: "Reading the public presence",
     why: "Getting to know the brand and the creator: what they publish and what they stand for.",
-    until: 35,
+    remaining: "a few minutes",
+    base: 15,
+    next: 40,
   },
   {
     icon: <Radar className="h-4 w-4" />,
     title: "Measuring the real audience",
     why: "Looking past follower counts at the people who actually engage. This deep pass is the slow part, and the whole point.",
-    until: 210,
+    remaining: "a couple of minutes",
+    base: 40,
+    next: 65,
   },
   {
     icon: <Scale className="h-4 w-4" />,
     title: "Evaluating audience quality & fit",
     why: "Weighing who that audience really is, how genuine it is, and how well it matches your target users.",
-    until: 330,
+    remaining: "about a minute",
+    base: 65,
+    next: 88,
   },
   {
     icon: <BarChart3 className="h-4 w-4" />,
     title: "Preparing your report",
     why: "Turning everything into a scorecard, a verdict, and concrete recommendations.",
-    until: Number.POSITIVE_INFINITY,
+    remaining: "almost done",
+    base: 88,
+    next: 97,
   },
 ];
 
@@ -363,11 +383,119 @@ function mmss(total: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+/** 45200 -> "45.2K", 1_200_000 -> "1.2M". Public follower counts only. */
+function formatFollowers(n: number): string {
+  if (n >= 1_000_000)
+    return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(/\.0$/, "")}K`;
+  return String(n);
+}
+
+/** Small avatar with a graceful initial fallback (external image may fail). */
+function Avatar({ url, name }: { url?: string | null; name: string }) {
+  const [ok, setOk] = React.useState(Boolean(url));
+  const initial = (name.trim() || "?").charAt(0).toUpperCase();
+  return (
+    <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted text-xs font-semibold text-muted-foreground">
+      {ok && url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={url}
+          alt=""
+          className="h-full w-full object-cover"
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          onError={() => setOk(false)}
+        />
+      ) : (
+        initial
+      )}
+    </span>
+  );
+}
+
+/** "We found them" — the real, public identity of one account. */
+function GlimpseChip({ g }: { g: ProfileGlimpse }) {
+  return (
+    <div className="flex min-w-0 items-center gap-2.5">
+      <Avatar url={g.avatarUrl} name={g.displayName ?? g.handle} />
+      <div className="min-w-0">
+        <div className="flex items-center gap-1 truncate text-sm font-semibold text-foreground">
+          <span className="truncate">{g.displayName ?? `@${g.handle}`}</span>
+          {g.verified && (
+            <BadgeCheck className="h-3.5 w-3.5 shrink-0 text-info" />
+          )}
+        </div>
+        <div className="truncate text-xs text-muted-foreground">
+          @{g.handle}
+          {g.followersCount != null && (
+            <> · {formatFollowers(g.followersCount)} followers</>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Live preview of the audience "taking shape" — real folded shares, forming
+    while the report is written. Previews the payoff without leaking mechanics. */
+function AudienceTakingShape({
+  segments,
+  kolHandle,
+}: {
+  segments: AudienceGlimpse[];
+  kolHandle: string;
+}) {
+  return (
+    <div className="mt-6 rounded-xl border border-accent-primary/30 bg-elevated/50 p-4">
+      <div className="flex items-center gap-1.5">
+        <Users className="h-3.5 w-3.5 text-accent-ink" />
+        <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+          The audience is taking shape
+        </span>
+      </div>
+      <p className="mt-1 text-[13px] leading-relaxed text-secondary-foreground">
+        A first read of who actually engages with @{kolHandle}. Your full
+        breakdown lands with the report.
+      </p>
+      <ul className="mt-3 space-y-2.5">
+        {segments.map((s) => (
+          <li key={s.label}>
+            <div className="flex items-baseline justify-between text-xs">
+              <span
+                className={cn(
+                  "font-medium",
+                  s.low ? "text-error" : "text-foreground"
+                )}
+              >
+                {s.label}
+              </span>
+              <span className="font-mono text-muted-foreground">
+                {Math.round(s.share * 100)}%
+              </span>
+            </div>
+            <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-inset">
+              <div
+                className={cn(
+                  "h-full rounded-full transition-[width] duration-700 ease-out",
+                  s.low ? "bg-error/70" : "bg-accent-primary"
+                )}
+                style={{ width: `${Math.max(2, Math.round(s.share * 100))}%` }}
+              />
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function RunningExperience({ data }: { data: AnalysisStatusResponse }) {
-  const { job } = data;
+  const { job, progress } = data;
   const queued = job.status === "QUEUED";
 
-  // Live elapsed clock (ticks every second, independent of the 2.5s poll).
+  // Live clock (ticks every second, independent of the 2.5s poll) — drives the
+  // elapsed readout and the smooth within-stage creep of the progress bar.
   const [nowMs, setNowMs] = React.useState(() => Date.now());
   React.useEffect(() => {
     const id = setInterval(() => setNowMs(Date.now()), 1000);
@@ -375,10 +503,29 @@ function RunningExperience({ data }: { data: AnalysisStatusResponse }) {
   }, []);
 
   const startedAt = job.startedAt ? new Date(job.startedAt).getTime() : null;
-  const elapsed = startedAt ? Math.max(0, Math.floor((nowMs - startedAt) / 1000)) : 0;
-  const activeIdx = queued
-    ? -1
-    : Math.min(STAGES.findIndex((s) => elapsed < s.until), STAGES.length - 1);
+  const elapsed = startedAt
+    ? Math.max(0, Math.floor((nowMs - startedAt) / 1000))
+    : 0;
+
+  // Stage is REAL: from progress.stageIndex when the worker has emitted it, else
+  // stage 0 ("reading") while running, else -1 when still queued.
+  const activeIdx = queued ? -1 : progress?.stageIndex ?? 0;
+  const barIdx = Math.max(0, activeIdx);
+  const stage = STAGES[barIdx];
+
+  // Forward-only bar: sits at the stage's base and creeps asymptotically toward
+  // the next threshold using time-in-stage — always visibly moving, never
+  // stalling, and never claiming completion (it tops out below 100 until the
+  // job actually completes and the report view takes over).
+  const stageStartMs = progress?.updatedAt
+    ? new Date(progress.updatedAt).getTime()
+    : startedAt;
+  const sinceStage = stageStartMs
+    ? Math.max(0, (nowMs - stageStartMs) / 1000)
+    : 0;
+  const creep = 1 - 1 / (1 + sinceStage / 45);
+  const pct = queued ? 6 : Math.min(stage.next, stage.base + (stage.next - stage.base) * creep);
+
   const overrun = elapsed > 430; // past the usual window
 
   return (
@@ -409,33 +556,51 @@ function RunningExperience({ data }: { data: AnalysisStatusResponse }) {
           <StatusBadge status={job.status} />
         </div>
 
-        {/* timer + estimate */}
-        <div className="mt-6 flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <div className="text-xs uppercase tracking-wide text-muted-foreground">
-              {queued ? "Waiting to start" : "Elapsed"}
-            </div>
-            <div className="font-mono text-4xl font-semibold text-foreground">
-              {queued ? "—" : mmss(elapsed)}
-            </div>
+        {/* Real identity — the moment the tool proves it's working on THEIR
+            accounts, not spinning. Appears as soon as the profiles are read. */}
+        {(progress?.org || progress?.kol) && (
+          <div className="mt-5 flex flex-col gap-3 rounded-xl border border-default bg-elevated/40 p-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            {progress?.org && <GlimpseChip g={progress.org} />}
+            {progress?.org && progress?.kol && (
+              <span className="hidden shrink-0 text-xs font-medium uppercase tracking-wide text-muted-foreground sm:inline">
+                vs
+              </span>
+            )}
+            {progress?.kol && <GlimpseChip g={progress.kol} />}
           </div>
-          <div className="flex items-center gap-2 text-sm text-secondary-foreground">
-            <Clock className="h-4 w-4 text-accent-ink" />
-            {queued
-              ? "Queued. A worker will pick this up shortly."
-              : overrun
-                ? "Taking a little longer than usual. Hang tight."
-                : "Most analyses finish in about 5–7 minutes."}
-          </div>
-        </div>
+        )}
 
-        <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-inset">
-          <div className="indeterminate h-full w-1/3 rounded-full bg-accent-primary" />
+        {/* Forward-only progress + coarse remaining (no scary "5-7 minutes"). */}
+        <div className="mt-6">
+          <div className="flex items-end justify-between gap-3">
+            <div className="min-w-0 text-sm font-medium text-foreground">
+              {queued ? "Queued — starting any second" : stage.title}
+            </div>
+            {!queued && (
+              <div className="shrink-0 font-mono text-xs text-muted-foreground">
+                {mmss(elapsed)}
+              </div>
+            )}
+          </div>
+          <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-inset">
+            <div
+              className="h-full rounded-full bg-accent-primary transition-[width] duration-1000 ease-out"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+          <div className="mt-2 flex items-center gap-1.5 text-xs text-secondary-foreground">
+            <Clock className="h-3.5 w-3.5 shrink-0 text-accent-ink" />
+            {queued
+              ? "A worker will pick this up any second."
+              : overrun
+                ? "Taking a little longer than usual — still going, hang tight."
+                : `Working on it — ${stage.remaining} left.`}
+          </div>
         </div>
 
         {/* staged walkthrough — what's happening & why it's worth the wait */}
-        <ol className="mt-7 space-y-1.5">
-          {STAGES.map((stage, i) => {
+        <ol className="mt-6 space-y-1.5">
+          {STAGES.map((s, i) => {
             const done = activeIdx > i;
             const active = activeIdx === i;
             return (
@@ -464,7 +629,7 @@ function RunningExperience({ data }: { data: AnalysisStatusResponse }) {
                     ) : active ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      stage.icon
+                      s.icon
                     )}
                   </span>
                   <span
@@ -473,12 +638,12 @@ function RunningExperience({ data }: { data: AnalysisStatusResponse }) {
                       active || done ? "text-foreground" : "text-muted-foreground"
                     )}
                   >
-                    {stage.title}
+                    {s.title}
                   </span>
                 </div>
                 {active && (
                   <p className="mt-2 pl-[38px] text-[13px] leading-relaxed text-secondary-foreground">
-                    {stage.why}
+                    {s.why}
                   </p>
                 )}
               </li>
@@ -486,13 +651,40 @@ function RunningExperience({ data }: { data: AnalysisStatusResponse }) {
           })}
         </ol>
 
-        {/* Fill the ~5-7 min wait with something useful for the captive,
-            on-topic audience (a brand about to spend on a creator). */}
+        {/* Real audience preview — appears once classification produces a first
+            read (the strongest "worth the wait" signal). */}
+        {progress?.audience && progress.audience.length > 0 && (
+          <AudienceTakingShape
+            segments={progress.audience}
+            kolHandle={data.kolHandle}
+          />
+        )}
+
+        {/* Safe to stay OR leave: encourage staying (live), make leaving safe
+            (notify + History) — no longer an invitation to abandon. */}
+        <div className="mt-6 flex flex-col gap-2.5 rounded-xl border border-default bg-elevated/30 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-secondary-foreground">
+            Keep this tab open — it updates live. Step away and we&apos;ll keep
+            working; it&apos;s saved in your History.
+          </p>
+          <div className="shrink-0">
+            <NotifyWhenReady
+              status={job.status}
+              orgHandle={data.orgHandle}
+              kolHandle={data.kolHandle}
+            />
+          </div>
+        </div>
+
+        {/* Give the captive, high-intent user something to DO: queue the next
+            creator (this run keeps going in the background). */}
+        <QueueNextAnalysis defaultOrg={data.orgHandle} />
+
+        {/* Useful, on-topic content for the wait. */}
         <WaitingTips />
 
         <p className="mt-6 text-xs text-muted-foreground">
-          This page updates automatically, so there&apos;s no need to refresh.
-          You can leave and come back from{" "}
+          Updates live — no need to refresh. Everything is saved in your{" "}
           <Link href="/analyses" className="text-accent-ink hover:underline">
             History
           </Link>

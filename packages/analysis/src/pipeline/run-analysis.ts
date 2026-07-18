@@ -1,7 +1,14 @@
 import {
   ANALYSIS_CAPS,
   FitReportSchema,
+  foldAudienceSegments,
+  type AnalysisProgress,
+  type AnalysisStage,
+  type AudienceDistribution,
+  type AudienceGlimpse,
   type EngagedAccountRaw,
+  type ProfileGlimpse,
+  type TwitterUser,
 } from "@kol-fit/shared";
 import { createLlmProvider, type ClassifyOrgInput } from "@kol-fit/llm";
 import { scoreAnalysis } from "@kol-fit/scoring";
@@ -57,6 +64,47 @@ async function mapConcurrent<T, R>(
   return results;
 }
 
+const PROGRESS_STAGE_INDEX: Record<AnalysisStage, number> = {
+  reading: 0,
+  measuring: 1,
+  quality: 2,
+  report: 3,
+};
+
+/** Report-safe public glimpse of a fetched profile (no internal fields). */
+function toGlimpse(handle: string, u: TwitterUser | null): ProfileGlimpse {
+  return u
+    ? {
+        handle: u.handle,
+        displayName: u.displayName ?? null,
+        avatarUrl: u.avatarUrl ?? null,
+        followersCount: u.followersCount ?? null,
+        verified: u.verified ?? null,
+      }
+    : { handle };
+}
+
+/**
+ * Top folded audience segments for the "audience taking shape" teaser. Reuses
+ * the same fold as the report donut (largest-first), capped small — shares are
+ * already client-visible in the finished report, so this leaks nothing.
+ *
+ * The low-quality slice (bots/farmers/giveaway) always sorts LAST in the fold,
+ * so a naive top-N would drop the single highest-signal bucket for a
+ * "who actually listens" product. Keep it whenever present: top (max-1) normal
+ * segments + the low-quality slice last.
+ */
+function topAudienceGlimpse(
+  distribution: AudienceDistribution,
+  max = 4
+): AudienceGlimpse[] {
+  const segments = foldAudienceSegments(distribution);
+  const low = segments.find((s) => s.low);
+  const rest = segments.filter((s) => !s.low);
+  const chosen = low ? [...rest.slice(0, Math.max(1, max - 1)), low] : rest.slice(0, max);
+  return chosen.map((s) => ({ label: s.label, share: s.share, low: s.low }));
+}
+
 /**
  * The analysis pipeline: Twitter fetch -> optional website/docs ingestion ->
  * LLM classifications -> deterministic scoring (packages/scoring) -> fit report.
@@ -83,6 +131,25 @@ export async function runAnalysis(
     options.twitterProviderKind ?? process.env.TWITTER_PROVIDER ?? "mock";
   const llmProviderKind =
     options.llmProviderKind ?? process.env.LLM_PROVIDER ?? "mock";
+
+  // Fire-and-forget progress emit. Never awaited, never throws — a slow or
+  // failing sink can never affect the analysis result.
+  const emitProgress = (
+    stage: AnalysisStage,
+    extra?: Pick<AnalysisProgress, "org" | "kol" | "audience">
+  ): void => {
+    if (!options.onProgress) return;
+    try {
+      options.onProgress({
+        stage,
+        stageIndex: PROGRESS_STAGE_INDEX[stage],
+        updatedAt: now().toISOString(),
+        ...extra,
+      });
+    } catch {
+      /* swallow: progress is best-effort */
+    }
+  };
 
   // 1. Website/docs ingestion (off by default -> both "skipped", no fetch).
   // Started here, awaited only where its result is needed (org classification)
@@ -113,6 +180,13 @@ export async function runAnalysis(
     );
   }
 
+  // Stage 0 "reading" done: profiles are in hand. Advance to "measuring" (the
+  // slow engagement pass) and hand the UI the real, public who-they-are facts.
+  emitProgress("measuring", {
+    org: toGlimpse(request.orgHandle, orgProfile),
+    kol: toGlimpse(request.kolHandle, kolProfile),
+  });
+
   const topPosts = selectTopPosts(kolPosts, caps.topPostsForDeepAnalysis);
   // Per-post engagement with bounded concurrency (Unit 29D). Index-ordered
   // results keep the group order identical to the sequential version, so
@@ -134,6 +208,10 @@ export async function runAnalysis(
     groups,
     caps.maxUniqueEngagedAccounts
   );
+
+  // Stage 1 "measuring" done: the engaged crowd is collected. Advance to
+  // "quality" (classifying who they actually are).
+  emitProgress("quality");
 
   const orgContext = await ingestPromise;
 
@@ -168,6 +246,11 @@ export async function runAnalysis(
       })
       .catch(() => undefined),
   ]);
+
+  // Audience is classified: reveal the first read of who actually engages
+  // (folded shares — already client-visible in the report). Stays on "quality"
+  // while scoring runs.
+  emitProgress("quality", { audience: topAudienceGlimpse(audience.distribution) });
 
   // Repeat-engager share from 29A `appearances` (accounts engaging >=2
   // analyzed posts) — feeds the audience-quality community bonus.
@@ -208,6 +291,9 @@ export async function runAnalysis(
       stage: request.stage,
     },
   });
+
+  // Stage 2 "quality" done (scores computed). Advance to "report" synthesis.
+  emitProgress("report");
 
   // 5. Report synthesis (LLM builds the report; scores/verdict passed through).
   const baseReport = await llm.generateFitReport({

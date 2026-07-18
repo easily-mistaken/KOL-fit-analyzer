@@ -1,4 +1,5 @@
 import type {
+  AnalysisProgress,
   FitReport,
   JobStatus,
   ReportStatus,
@@ -23,6 +24,9 @@ export type AnalysisStatusResponse = {
     errorCode: string | null;
     errorMessage: string | null;
   };
+  // Live in-flight progress (the waiting screen). Null until the worker writes
+  // its first real stage delta, and irrelevant once COMPLETED/FAILED.
+  progress: AnalysisProgress | null;
   report: {
     status: ReportStatus;
     verdict: ReportVerdict | null;

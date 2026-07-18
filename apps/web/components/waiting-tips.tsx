@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ChevronRight, Lightbulb } from "lucide-react";
+import { ChevronLeft, ChevronRight, Lightbulb } from "lucide-react";
 
 import { APP_NAME } from "@kol-fit/shared";
 
@@ -65,6 +65,7 @@ export function WaitingTips() {
 
   const tip = order[index] ?? order[0];
   const next = () => setIndex((v) => (v + 1) % order.length);
+  const prev = () => setIndex((v) => (v - 1 + order.length) % order.length);
 
   return (
     <section
@@ -78,12 +79,20 @@ export function WaitingTips() {
       <div className="flex items-center justify-between">
         <span className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
           <Lightbulb className="h-3.5 w-3.5 text-accent-ink" />
-          While you wait
+          Playbook while you wait
         </span>
-        <div className="flex items-center gap-2">
-          <span className="font-mono text-[11px] text-muted-foreground">
+        <div className="flex items-center gap-1">
+          <span className="mr-1 font-mono text-[11px] text-muted-foreground">
             {index + 1}/{order.length}
           </span>
+          <button
+            type="button"
+            onClick={prev}
+            aria-label="Previous tip"
+            className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-elevated hover:text-foreground"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
           <button
             type="button"
             onClick={next}
@@ -105,6 +114,21 @@ export function WaitingTips() {
         <p className="mt-2 text-sm leading-relaxed text-foreground">
           {tip.text}
         </p>
+      </div>
+
+      {/* Auto-advance countdown — a quiet sign the card is alive and moving.
+          Re-keyed on index so it restarts each tip; pauses with the rotation. */}
+      <div className="mt-3 h-0.5 w-full overflow-hidden rounded-full bg-inset">
+        {order.length > 1 && !reduced && (
+          <div
+            key={index}
+            className="tip-advance h-full rounded-full bg-accent-primary/60"
+            style={{
+              animationDuration: `${ROTATE_MS}ms`,
+              animationPlayState: paused ? "paused" : "running",
+            }}
+          />
+        )}
       </div>
 
       {/* Brand signature. These tip cards get screenshotted, so the mark and
