@@ -10,7 +10,8 @@ render. The existing daily abuse caps (Unit 26) remain in force on top.
 
 ## Design
 
-- Shared (`limits.ts`): `TierLimits { anonLifetime: 3, userLifetime: 12 }`
+- Shared (`limits.ts`): `TierLimits { anonLifetime: 3, userLifetime: 10 }`
+  (was 12; lowered 2026-07-18)
   with env overrides `FREE_TIER_ANON_LIFETIME` / `FREE_TIER_USER_LIFETIME`
   (positive ints; invalid → default), plus a pure `decideTier(count,
   isAuthenticated, limits)` returning `allowed | login_required |

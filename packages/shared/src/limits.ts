@@ -36,7 +36,7 @@ function nonNegNum(v: string | undefined, def: number): number {
 }
 
 // --- Tiered access funnel (Unit 34) ------------------------------------------
-// 3 lifetime analyses per anonymous browser -> Google login -> 12 lifetime per
+// 3 lifetime analyses per anonymous browser -> Google login -> 10 lifetime per
 // account (claimed anonymous history included) -> the detailed-report
 // concierge tier (Unit 35). LIFETIME counts, distinct from the rolling daily
 // abuse caps above, which stay in force on top.
@@ -48,7 +48,7 @@ export interface TierLimits {
 
 export const TIER_LIMITS: TierLimits = {
   anonLifetime: 3,
-  userLifetime: 12,
+  userLifetime: 10,
 };
 
 export const TIER_LIMIT_ENV_VARS: Record<keyof TierLimits, string> = {

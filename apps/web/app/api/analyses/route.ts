@@ -168,7 +168,7 @@ export async function POST(req: Request): Promise<Response> {
       }
     }
 
-    // Tiered access funnel (Unit 34): 3 lifetime anonymous → login → 12
+    // Tiered access funnel (Unit 34): 3 lifetime anonymous → login → 10
     // lifetime per account → concierge tier. Runs BEFORE the daily abuse
     // limit so the funnel message wins.
     const user = await getCurrentUser();

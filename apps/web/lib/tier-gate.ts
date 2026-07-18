@@ -1,8 +1,8 @@
-import { decideTier, resolveTierLimits } from "@kol-fit/shared";
+import { decideTier, resolveTierLimits, type TierLimits } from "@kol-fit/shared";
 import { prisma } from "@kol-fit/db";
 
 // Tiered access funnel (Unit 34): 3 lifetime analyses per anonymous browser →
-// Google login → 12 lifetime per account → the detailed-report concierge tier
+// Google login → 10 lifetime per account → the detailed-report concierge tier
 // (Unit 35). Runs BEFORE the daily abuse rate limit so the funnel message wins.
 // Lifetime = all AnalysisRequest rows for the owner id; the Unit 28 login
 // claim reassigns anonymous rows to the user id, so free-tier usage counts
@@ -16,12 +16,17 @@ export type TierGateDecision =
       message: string;
     };
 
-const MESSAGES = {
-  login_required:
-    "You've used your 3 free analyses. Sign in with Google to unlock more. It takes ten seconds.",
-  upgrade_required:
-    "You've used all 12 included analyses. Request a detailed report and we'll deliver a curated analysis straight to your Telegram within a day.",
-} as const;
+// Derived from the resolved limits, never hardcoded: the allowances are env
+// -configurable, so literal numbers in copy silently lie the moment anyone sets
+// FREE_TIER_*_LIFETIME (they already had, at 12 vs. a since-lowered 10).
+function messageFor(
+  gate: "login_required" | "upgrade_required",
+  limits: TierLimits
+): string {
+  return gate === "login_required"
+    ? `You've used your ${limits.anonLifetime} free analyses. Sign in with Google to unlock more. It takes ten seconds.`
+    : `You've used all ${limits.userLifetime} included analyses. Request a detailed report and we'll deliver a curated analysis straight to your Telegram within a day.`;
+}
 
 /** Lifetime analyses counted against the funnel tiers. Single source of truth
  *  for the gate AND the quota indicator (Unit 39). FAILED runs don't count
@@ -44,6 +49,6 @@ export async function checkTierGate(
   return {
     allowed: false,
     code: decision.gate,
-    message: MESSAGES[decision.gate],
+    message: messageFor(decision.gate, limits),
   };
 }

@@ -15,6 +15,9 @@ export const dynamic = "force-dynamic";
 export type QuotaResponse = {
   used: number;
   limit: number;
+  /** The signed-in allowance, regardless of the caller's current tier — lets the
+   *  anonymous login wall say "unlock N more" without hardcoding the number. */
+  signedInLimit: number;
   isAuthenticated: boolean;
 };
 
@@ -30,7 +33,12 @@ export async function GET(): Promise<NextResponse> {
     const used = ownerId ? await countLifetimeAnalyses(ownerId) : 0;
     const limit = user ? limits.userLifetime : limits.anonLifetime;
     return json(
-      ok<QuotaResponse>({ used, limit, isAuthenticated: Boolean(user) }),
+      ok<QuotaResponse>({
+        used,
+        limit,
+        signedInLimit: limits.userLifetime,
+        isAuthenticated: Boolean(user),
+      }),
       200
     );
   } catch {

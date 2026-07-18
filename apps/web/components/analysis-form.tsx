@@ -7,6 +7,7 @@ import {
   AnalysisRequestInputSchema,
   CAMPAIGN_GOAL_LABELS,
   PRODUCT_STAGE_LABELS,
+  TIER_LIMITS,
   type ApiResponse,
 } from "@kol-fit/shared";
 
@@ -138,7 +139,22 @@ export function AnalysisForm() {
   const [loading, setLoading] = React.useState(false);
   const [showOptional, setShowOptional] = React.useState(false);
   // Quota indicator (Unit 39): remaining analyses in the current tier.
-  const [quota, setQuota] = React.useState<{ used: number; limit: number } | null>(null);
+  // `signedInLimit` is the authenticated allowance whatever the caller's tier —
+  // the anonymous login wall needs it to say how many signing in unlocks.
+  const [quota, setQuota] = React.useState<{
+    used: number;
+    limit: number;
+    signedInLimit: number;
+  } | null>(null);
+
+  // Tier-wall copy reads the SERVER's resolved allowances (the env can override
+  // them); TIER_LIMITS is only the fallback for a quota fetch that hasn't landed.
+  // Each wall only renders for its own tier, so `quota.limit` is already that
+  // tier's allowance — but the two walls need DIFFERENT fallbacks, since an
+  // unresolved quota at the upgrade wall must not claim the anonymous number.
+  const anonLimit = quota?.limit ?? TIER_LIMITS.anonLifetime;
+  const accountLimit = quota?.limit ?? TIER_LIMITS.userLifetime;
+  const signedInLimit = quota?.signedInLimit ?? TIER_LIMITS.userLifetime;
 
   React.useEffect(() => {
     let cancelled = false;
@@ -435,11 +451,12 @@ export function AnalysisForm() {
               className="rounded-xl border border-accent/40 bg-accent/10 px-4 py-3.5 text-sm"
             >
               <p className="font-semibold text-foreground">
-                You&apos;ve used your 3 free analyses
+                You&apos;ve used your {anonLimit} free analyses
               </p>
               <p className="mt-1 text-secondary-foreground">
-                Sign in with Google to unlock 9 more. It takes ten seconds, and
-                your existing reports come with you.
+                Sign in with Google to unlock{" "}
+                {Math.max(0, signedInLimit - anonLimit)} more. It takes ten
+                seconds, and your existing reports come with you.
               </p>
               <Button asChild className="mt-3">
                 <a href="/login">Sign in to continue</a>
@@ -452,7 +469,7 @@ export function AnalysisForm() {
               className="rounded-xl border border-accent/40 bg-accent/10 px-4 py-3.5 text-sm"
             >
               <p className="font-semibold text-foreground">
-                You&apos;ve used all 12 included analyses
+                You&apos;ve used all {accountLimit} included analyses
               </p>
               <p className="mt-1 text-secondary-foreground">
                 For more, request a detailed report: share your Telegram and X
