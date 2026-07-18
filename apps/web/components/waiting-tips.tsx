@@ -3,10 +3,9 @@
 import * as React from "react";
 import { ChevronLeft, ChevronRight, Lightbulb } from "lucide-react";
 
-import { APP_NAME } from "@kol-fit/shared";
-
 import { cn } from "@/lib/utils";
 import { LogoMark } from "@/components/logo-mark";
+import { Wordmark } from "@/components/wordmark";
 import {
   CREATOR_MARKETING_TIPS,
   type CreatorTip,
@@ -137,9 +136,7 @@ export function WaitingTips() {
       <div className="mt-3 flex items-center justify-between border-t border-default pt-2.5">
         <div className="flex items-center gap-1.5">
           <LogoMark className="h-4 w-4" />
-          <span className="text-[11px] font-semibold tracking-tight text-secondary-foreground">
-            {APP_NAME}
-          </span>
+          <Wordmark className="text-[13px] text-secondary-foreground" />
         </div>
         <span className="text-[11px] text-muted-foreground">
           who actually listens

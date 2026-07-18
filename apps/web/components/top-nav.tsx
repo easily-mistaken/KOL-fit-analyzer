@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { FileText, Plus } from "lucide-react";
-import { APP_NAME } from "@kol-fit/shared";
 
 import { cn } from "@/lib/utils";
 import { LogoMark } from "@/components/logo-mark";
+import { Wordmark } from "@/components/wordmark";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 /**
@@ -22,11 +22,9 @@ export function TopNav({ userMenu }: { userMenu?: React.ReactNode }) {
   return (
     <header className="sticky top-0 z-20 border-b border-default bg-surface/80 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-6">
-        <Link href="/" className="flex items-center gap-2.5">
+        <Link href="/" className="flex items-center gap-2">
           <LogoMark className="h-7 w-7" />
-          <span className="text-sm font-semibold tracking-tight text-foreground">
-            {APP_NAME}
-          </span>
+          <Wordmark className="text-[17px] text-foreground" />
         </Link>
 
         <nav className="flex items-center gap-1">

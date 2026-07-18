@@ -1,15 +1,45 @@
 import type { ReactNode } from "react";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
+import { Poppins } from "next/font/google";
 
 import { AppShell } from "@/components/app-shell";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
+// Wordmark typeface — a round-geometric match to the finished "overlapx" logo,
+// exposed as --font-wordmark and used only by <Wordmark>. Self-hosted at build
+// (no runtime request). Swap the family here if the exact logo font differs.
+const wordmark = Poppins({
+  subsets: ["latin"],
+  weight: ["600"],
+  display: "swap",
+  variable: "--font-wordmark",
+});
+
+const DESCRIPTION =
+  "We don't measure who follows. We measure who actually listens. Audience-overlap analysis for AI and Web3 brands.";
+
 export const metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
+  ),
   title: "OverlapX",
-  description:
-    "We don't measure who follows. We measure who actually listens. Audience-overlap analysis for AI and Web3 brands.",
+  description: DESCRIPTION,
+  openGraph: {
+    type: "website",
+    siteName: "OverlapX",
+    title: "OverlapX",
+    description: DESCRIPTION,
+    url: "/",
+    images: ["/overlapx-og.jpg"],
+  },
+  twitter: {
+    card: "summary" as const,
+    title: "OverlapX",
+    description: DESCRIPTION,
+    images: ["/overlapx-og.jpg"],
+  },
 };
 
 // The shell nav renders per-request auth state (Unit 28), which depends on the
@@ -21,7 +51,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html
       lang="en"
-      className={`${GeistSans.variable} ${GeistMono.variable}`}
+      className={`${GeistSans.variable} ${GeistMono.variable} ${wordmark.variable}`}
       suppressHydrationWarning
     >
       <head>
