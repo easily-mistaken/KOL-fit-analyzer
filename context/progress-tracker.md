@@ -130,17 +130,68 @@ Update this file after every meaningful implementation change.
 
 ## Next Up
 
-- Unit 19: Caching and Cost Controls — spec written at `context/specs/19-caching-and-cost-controls.md`; implementation not started. Three parts: (1) **DB-backed caching of TwitterAPI.io data** (profiles/tweets/engagement) via a **new `packages/cache`** — `CacheStore` interface (+ `PrismaCacheStore` / `InMemoryCacheStore`) and a `withTwitterCache(provider, store, ttls)` decorator (versioned keys, TTLs, miss-safe, stores normalized shared-type values not raw payloads). **Key architectural point:** pipeline + providers stay `@kol-fit/db`-free, so caching + usage-logging live worker-side — the worker builds the cached provider and passes it into `runAnalysis({twitter,llm,caps})` (already supported). (2) **Adjustable cost/sampling controls** — `resolveCaps()` layers `ANALYSIS_*` env overrides over `ANALYSIS_CAPS` (caps.ts already defers env overrides here); representative deterministic audience sampling replacing the Unit 17 first-N slice (keeps `OPENAI_AUDIENCE_CLASSIFICATION_LIMIT`). (3) **Provider usage logging** — worker writes `ProviderUsageLog` (table already exists) from `getUsageStats()` (requests/tokens/`byEndpoint`/`byMethod` + optional best-effort `costUsd`). **One justified schema change (confirm first):** add a generic `ProviderCache` KV table (existing `OrgProfile`/`KolProfile` are per-request snapshots, not a cross-request cache; `ProviderUsageLog` already exists). Env: `CACHE_ENABLED`/`CACHE_TTL_SECONDS` + `ANALYSIS_*` overrides. No new npm deps; no API-route/UI change; mock stays default. Verification offline (in-memory store + mock: hit/miss/TTL/miss-safe, resolveCaps, sampling determinism, usage aggregation) + disk-light online (repeated request reuses cache, caps lower sample size, usage logs saved). Open questions (in spec): KV vs typed cache tables, TTL defaults, costUsd estimate vs raw-only, defer per-request UI settings, sampling algorithm.
+1. **Production deploy — single RackNerd VPS, single Supabase DB (planned 2026-07-19).**
+   Follow `DEPLOY.md` → *Deploying on a VPS (systemd)* and the post-deploy
+   checklist. Highest-risk step is the **Supabase Auth redirect allowlist**
+   (Site URL + `<app-url>/auth/callback`): Google sign-in fails silently
+   without it. Also purge dev/test rows before real traffic, and confirm the
+   systemd supervision actually restarts the app (kill the worker child and
+   watch it come back) rather than assuming it.
+2. **Unit 41 (Scoring v3) — 2 remaining items**, both already flagged to the user;
+   phases A–D are shipped and verified:
+   - The fully **editable** infer→confirm override (brand edits target buckets +
+     valued regions inline). Needs a schema change (`db push`) + form + UX steer,
+     so it is its own slice. The transparency half ("matched against" + re-run)
+     already shipped.
+   - A **live paid run** to verify C2's real-provider region / valued-region
+     inference end-to-end. Note this path ships to production **unverified
+     against a live provider** — everything else in v3 was verified live.
+   - Optional polish: feed reach/geo into the LLM narrative prompt.
+
+Unit 19 (Caching and Cost Controls) is **done**, not next — `packages/cache`
+ships `CacheStore` + `PrismaCacheStore`/`InMemoryCacheStore`, the `ProviderCache`
+table exists, and `.env.example` carries the full `CACHE_*` set. Its spec stays
+at `context/specs/19-caching-and-cost-controls.md` as the design record.
 
 ## Open Questions
 
-- **Scoring v2 calibration pairs (user, promised 2026-07-13, blocks Unit 29E tuning only):** the user will supply ground-truth org×KOL pairs (handles + expected verdict + why) to calibrate the Unit 29 scoring overhaul (`context/specs/29-analysis-accuracy-overhaul.md`). Design/build of 29A–29D is not blocked. Also to confirm: latency target (~2–2.5 min p50 proposed), model tiering choice, low-quality-engagement baseline default (10%).
 - **Architecture doc naming reconciliation (still open, non-blocking):** the Unit 03 schema uses `OrgProfile`/`KolProfile`/`Report`/`EngagedAccountSample` and folds `ScoreBreakdown`/`AudienceClassificationSummary` into `Report` JSON columns + `ReportEvidence`, whereas `architecture.md` → *Suggested Database Models* still lists the older `OrgSnapshot`/`KolSnapshot`/`AnalysisReport`/`EngagedAudienceSample` names. This is a naming refinement only (no change to system boundaries or invariants), so `architecture.md` was intentionally left untouched during Unit 03's tight scope. Align that section's names when convenient (or in a docs pass). Mapping is documented in `context/specs/03-prisma-database-schema.md` → *Reconciliation with architecture.md*.
-- **Live-DB verification deferred:** no Supabase `DATABASE_URL`/`DIRECT_URL` is configured in this environment, so the online steps (`prisma migrate dev`, connection smoke test) were not run. Offline verification (`prisma validate` + `prisma generate` + runtime export smoke test + `pnpm build`) all pass. Run the online steps once credentials exist; the initial migration has not yet been generated (`packages/db/prisma/migrations/` does not exist yet).
-- **Unit 19 follow-up (audience sampling + cost):** Unit 17 caps OpenAI audience classification at `OPENAI_AUDIENCE_CLASSIFICATION_LIMIT` (default 300) via a blunt first-N deterministic slice. Unit 19 should replace first-N with representative sampling (e.g. proportional across sources/engagement) and add real cost/rate controls. Both engaged-account counts (total vs LLM-classified) are recorded so confidence can later key off the classified sample.
-- **Post-MVP enhancement roadmap (captured 2026-07-09):** prioritized product enhancements to make this best-in-class are recorded in `context/project-overview.md` → *Post-MVP Enhancement Roadmap* (P0: engagement-quality depth via reply/quote **text** — a known Unit 10 normalization gap; KOL shortlisting/ranking; ROI/cost framing. P1: representative sampling, cross-KOL audience overlap, promo track record. P2: media/visual analysis, export/share, engagement trend). Self-rating: MVP ≈6.5/10 → +P0 ≈8.5 → +P0/P1/P2 ≈9. Not in current scope; tackle after the Unit 18 live path is confirmed.
-- **Model-choice foresight (relevant NOW for the Unit 17/18 `LLM_MODEL` pick):** the LLM's job is schema-constrained JSON + tight instruction-following + nuanced short-crypto-text classification + grounded analyst prose — the heavy reasoning is deterministic (`packages/scoring`), so no reasoning/math beast or huge context is needed. To future-proof the P2 media/visual feature **without buying a new API key later, pick a multimodal frontier family now** (Claude Sonnet 5 / Haiku 4.5, Gemini Pro/Flash, and the GPT‑4o family are all multimodal, incl. cheap tiers). Avoid text-only models. Best-output pick for this workload = Claude Sonnet 5 (Haiku 4.5 for the cheap per-account classification); the only zero-code option **today** is OpenAI (provider is OpenAI-only — a non-OpenAI provider is a small `packages/llm` addition, a future unit). `gpt-4o-mini` is the pragmatic "run Unit 18 now" choice (also multimodal).
-- Prior session's open questions remain resolved (see Architecture Decisions below). None block Unit 04.
+- **No baseline migration (still true, now documented):** `packages/db/prisma/`
+  holds only `schema.prisma` — `migrations/` has never been generated, and every
+  schema change to date was applied with `prisma db push`. Consequence:
+  `prisma migrate deploy` is a no-op, so it must not be used to materialize a
+  fresh database (`DEPLOY.md` step 3 now says `db push` explicitly, and the
+  `db:deploy` script in `packages/db/package.json` is unused until a baseline
+  exists). Generating an `init` migration is worth doing if incremental prod
+  schema changes ever need to be safe/reviewable; `db push` is adequate while
+  there is a single operator and a single database.
+- **Post-MVP enhancement roadmap (captured 2026-07-09, partly delivered):** the
+  prioritized list lives in `context/project-overview.md` → *Post-MVP
+  Enhancement Roadmap*. Since captured, several items shipped: reply/quote
+  **text** enrichment (the Unit 10 normalization gap, closed by Unit 29a),
+  representative audience sampling (P1, see below), media/visual analysis
+  (Unit 31), and export/share (Unit 38 shareable reports). **Still open** from
+  that list: KOL shortlisting/ranking, ROI/cost framing, cross-KOL audience
+  overlap, promo track record, engagement trend.
+
+### Recently resolved (kept briefly for traceability)
+
+- ~~Scoring v2 calibration pairs~~ — moot: Unit 29E (the calibration harness the
+  pairs were for) was removed in `73d379d`; scoring is covered by the v3
+  regression suites. Model tiering shipped (`LLM_MODEL_FAST`), and latency has a
+  dedicated `pipeline-latency` regression check.
+- ~~Live-DB verification deferred~~ — resolved: Supabase went live 2026-07-14 and
+  was verified end-to-end. The migration half of that note is still true and has
+  been split out into its own entry above.
+- ~~Unit 19 follow-up (audience sampling)~~ — resolved: the blunt first-N slice is
+  gone. `OpenAiProvider.classifyAudienceAccounts` now calls
+  `sampleAudienceAccounts` (`packages/llm/src/openai/provider.ts:287`), a
+  representative deterministic sample proportional by engagement source and
+  evenly spread within each.
+- ~~Model-choice foresight for the `LLM_MODEL` pick~~ — resolved: the model is
+  chosen and read from env, with a cheap tier wired via `LLM_MODEL_FAST`. The
+  provider remains OpenAI-only; adding another is still a small `packages/llm`
+  addition if ever wanted.
 
 ## Architecture Decisions
 
@@ -412,3 +463,24 @@ Update this file after every meaningful implementation change.
   purging dev/test rows before go-live, and that cached provider data is safe to
   keep (keys namespaced by provider kind, `tw:v2:<kind>:`). Docs only, no code
   change.
+
+- 2026-07-18: Reconciled this file's own `## Next Up` and `## Open Questions`.
+  Both had drifted into pointing at finished work, which matters because
+  CLAUDE.md sends every session here for "current phase, open questions, and
+  next steps". `Next Up` still described Unit 19 (caching) as "implementation
+  not started" though `packages/cache` ships and the `ProviderCache` table
+  exists; it now lists the VPS deploy and Unit 41's 2 remaining items. Four open
+  questions were verified resolved and moved to a "Recently resolved" subsection
+  rather than deleted: calibration pairs (moot, 29E removed), live-DB
+  verification (Supabase live since 2026-07-14), Unit 19 audience sampling (the
+  first-N slice is gone — `provider.ts:287` now calls `sampleAudienceAccounts`,
+  proportional by engagement source), and the `LLM_MODEL` model-choice question
+  (model chosen, cheap tier via `LLM_MODEL_FAST`). Two were checked and **kept
+  because they are still true**: the `architecture.md` naming drift
+  (`OrgSnapshot`/`AnalysisReport` etc. at lines 186-191 vs the real
+  `OrgProfile`/`Report`) and the missing baseline migration. The post-MVP
+  roadmap entry was updated to mark the delivered items. Also confirmed
+  `Current Phase`'s "mock remains the default provider" claim is still accurate
+  (both `.env.example` and the two factories default to `mock`) — which is a
+  deploy footgun worth remembering: unset `TWITTER_PROVIDER`/`LLM_PROVIDER` in
+  production means live traffic silently runs on mock data. Docs only.
