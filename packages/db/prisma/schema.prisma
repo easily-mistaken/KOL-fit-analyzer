@@ -191,6 +191,11 @@ model Report {
   sampleSize      Json?
 
   reportSchemaVersion Int?
+  // Scoring ALGORITHM version (@kol-fit/shared SCORING_VERSION), distinct from
+  // reportSchemaVersion above. Instant reuse only matches the current value, so
+  // a scoring change cannot serve a previous algorithm's report. Null = written
+  // before the column existed (pre-2026-07-20) and therefore never reusable.
+  scoringVersion      Int?
   llmModel            String?
   promptVersion       String?
 

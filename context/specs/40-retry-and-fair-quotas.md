@@ -13,7 +13,7 @@ indicator, by design from Unit 39) now excludes analyses whose job is
 FAILED: `job: { status: { not: "FAILED" } }`. **Deliberate distinction:**
 the DAILY abuse caps (Unit 26) keep counting everything — they are spend
 protection and a failing request still burns provider calls; only the
-product allowance (3/12 lifetime) is refunded on failure.
+product allowance (3/10 lifetime) is refunded on failure.
 
 ## Retry
 

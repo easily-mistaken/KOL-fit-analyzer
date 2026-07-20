@@ -1,8 +1,9 @@
-# Unit 34: Tiered Access Funnel (3 anonymous → login → 12 lifetime)
+# Unit 34: Tiered Access Funnel (3 anonymous → login → 10 lifetime)
 
 User direction (2026-07-16, decisions confirmed): a three-tier funnel —
 **3 reports per anonymous browser (lifetime)** → Google-OAuth login wall →
-**12 reports per account (lifetime, claimed anonymous history included)** →
+**10 reports per account** (originally 12; lowered 2026-07-18)
+**(lifetime, claimed anonymous history included)** →
 the detailed-report concierge tier (Unit 35: Telegram + X handle lead,
 curated manually, delivered within a day). Today's report content stays as-is
 for all tiers; "detailed" adds the analyst's curated layer, not a different

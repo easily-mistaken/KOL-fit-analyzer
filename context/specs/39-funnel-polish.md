@@ -7,7 +7,7 @@ User-approved improvement #3 — three small conversion/trust fixes:
    tier gate uses — refactored into a shared helper so Unit 40's
    failed-runs-don't-count fix applies to both automatically) → the analysis
    form shows a quiet line near the submit button: "2 of 3 free analyses
-   left" (anonymous) / "7 of 12 analyses left" (signed in). Uses `getOwnerId`
+   left" (anonymous) / "7 of 10 analyses left" (signed in). Uses `getOwnerId`
    (never sets a cookie on read); hides silently on any error.
 2. **Report-ready tab notification.** Analyses take ~2 minutes; people tab
    away. When polling flips to COMPLETED (or FAILED) while the tab is

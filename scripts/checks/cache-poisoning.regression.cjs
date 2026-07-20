@@ -3,7 +3,7 @@
 // DB cache under the exact keys a live run reads (the mock also echoes
 // LLM_MODEL, defeating the model component of LLM keys). The first live
 // calibration run was served 100% mock data. Keys are now namespaced by
-// provider kind (tw:v2:<kind>:…, cls:v2:<kind>:…), defaulting to the same env
+// provider kind (tw:v2:<kind>:…, cls:v3:<kind>:…), defaulting to the same env
 // the provider factories resolve.
 //
 // Run after `pnpm build`:  node scripts/checks/cache-poisoning.regression.cjs

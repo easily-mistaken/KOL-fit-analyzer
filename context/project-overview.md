@@ -182,7 +182,7 @@ The final report should include:
 ## Access Model & Concierge Tier (added 2026-07-16, Units 34-35)
 
 - Tiered access funnel: 3 lifetime analyses per anonymous browser, then Google
-  sign-in; 12 lifetime analyses per account; beyond that (or at ANY time, as an
+  sign-in; 10 lifetime analyses per account; beyond that (or at ANY time, as an
   alternative path) users raise a detailed-report request.
 - Detailed-report requests: the user shares their Telegram username and X
   handle/link; the operator manually curates a deep-dive analysis and delivers

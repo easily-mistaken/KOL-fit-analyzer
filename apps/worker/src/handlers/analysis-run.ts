@@ -5,7 +5,7 @@ import {
 } from "@kol-fit/analysis";
 import { Prisma, prisma } from "@kol-fit/db";
 import { AnalysisRunPayloadSchema, enqueueAnalysisRun } from "@kol-fit/queue";
-import type { AnalysisProgress } from "@kol-fit/shared";
+import { SCORING_VERSION, type AnalysisProgress } from "@kol-fit/shared";
 
 import { buildProviders, logProviderUsage } from "../providers.js";
 import { classifyAnalysisError, decideRetry } from "../errors.js";
@@ -146,6 +146,9 @@ export async function processAnalysisRun(
         docsStatus: evidence.docsStatus,
       }),
       reportSchemaVersion: report.schemaVersion,
+      // Which scoring algorithm produced these numbers — what instant reuse
+      // filters on, so a later algorithm never serves this row.
+      scoringVersion: SCORING_VERSION,
       llmModel,
       promptVersion: null,
       generatedAt: new Date(),

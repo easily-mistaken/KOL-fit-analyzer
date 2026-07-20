@@ -1,5 +1,6 @@
 import {
   AnalysisRequestInputSchema,
+  SCORING_VERSION,
   err,
   ok,
   resolveReuseWindowSeconds,
@@ -75,6 +76,13 @@ function json(body: ApiResponse<AnalysisCreated>, status: number): Response {
  * when there is no reusable match. Scoped to `ownerId` so one user never sees
  * another's report (anonymous history is reassigned to the user on login, so
  * this match survives the login boundary).
+ *
+ * Also matched on `scoringVersion`: inputs alone are NOT identity, because the
+ * same inputs score differently after an algorithm change. Without this, a
+ * scoring ship silently keeps serving the previous algorithm's report to anyone
+ * who already ran that pair — the 2026-07-18 v3 incident, which had to be worked
+ * around by disabling reuse entirely. Reports written before the column existed
+ * are null and therefore never match, which is the intended behaviour.
  */
 async function findReusableAnalysis(
   ownerId: string,
@@ -95,7 +103,7 @@ async function findReusableAnalysis(
       campaignGoal: input.campaignGoal ?? null,
       stage: input.stage ?? null,
       region: input.region ?? null,
-      report: { is: { status: "COMPLETED" } },
+      report: { is: { status: "COMPLETED", scoringVersion: SCORING_VERSION } },
     },
     orderBy: { createdAt: "desc" },
     select: {
