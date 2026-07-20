@@ -18,19 +18,33 @@ function audienceOf(bucketCounts) {
   let i = 0;
   for (const [bucket, count] of Object.entries(bucketCounts)) {
     for (let k = 0; k < count; k++) {
-      accounts.push({ accountId: `a${i}`, handle: `h${i++}`, source: "REPLY", bucket, signals: { botScore: 0.1, emptyBio: false, farmingSignals: [] } });
+      const [role, domain, quality = "real"] = bucket.split("/");
+      accounts.push({ accountId: `a${i}`, handle: `h${i++}`, source: "REPLY", role, domain, quality, signals: { botScore: 0.1, emptyBio: false, farmingSignals: [] } });
     }
   }
-  const buckets = {};
-  for (const [bucket, count] of Object.entries(bucketCounts)) buckets[bucket] = { count, share: count / accounts.length };
-  return { accounts, distribution: { sampleSize: accounts.length, buckets } };
+  const tally = (pick) => {
+    const counts = {};
+    for (const a of accounts) counts[pick(a)] = (counts[pick(a)] ?? 0) + 1;
+    const out = {};
+    for (const [k, c] of Object.entries(counts)) out[k] = { count: c, share: c / accounts.length };
+    return out;
+  };
+  return {
+    accounts,
+    distribution: {
+      sampleSize: accounts.length,
+      roles: tally((a) => a.role),
+      domains: tally((a) => a.domain),
+      quality: tally((a) => a.quality),
+    },
+  };
 }
 
-const AUD = audienceOf({ defi_users: 50, non_crypto: 50 });
+const AUD = audienceOf({ "enthusiast/crypto_defi": 50, "enthusiast/culture": 50 });
 const postLabels = (n, promo) => Array.from({ length: n }, (_, i) => (i < promo ? { postId: `p${i}`, isPromo: true, promoRelated: true, promoQuality: "ok" } : { postId: `p${i}`, isPromo: false }));
 
 const input = (content = {}) => ({
-  org: { productCategory: "DeFi", targetUser: "traders", keywords: [], confidence: "high", targetBuckets: { primary: ["defi_users"], secondary: [] } },
+  org: { productCategory: "DeFi", targetUser: "traders", keywords: [], confidence: "high", targetRoles: { primary: ["enthusiast"], secondary: [] }, targetDomains: { primary: ["crypto_defi"], secondary: [] } },
   content: {
     themes: ["defi"], verticals: ["defi"], promoPatterns: [], repeatedTickers: [],
     postLabels: postLabels(20, 2), brandSafetyFlags: [], mediaLabels: [],

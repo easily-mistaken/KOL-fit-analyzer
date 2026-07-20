@@ -1,14 +1,16 @@
 import * as React from "react";
 import type {
-  AudienceBucket,
+  AudienceDomain,
   AudienceRegion,
+  AudienceRole,
   ExpectedReach,
   FitReport,
   RegionDistribution,
 } from "@kol-fit/shared";
 import {
-  AUDIENCE_BUCKET_LABELS,
+  AUDIENCE_DOMAIN_LABELS,
   AUDIENCE_REGION_LABELS,
+  AUDIENCE_ROLE_LABELS,
 } from "@kol-fit/shared";
 
 // Unit 41 v3 dials — shown BESIDE the fit score, never blended into it. Expected
@@ -22,20 +24,40 @@ export function MatchedAgainst({
 }: {
   targeting: NonNullable<FitReport["targeting"]>;
 }) {
-  const buckets = [...targeting.primaryBuckets, ...targeting.secondaryBuckets];
-  if (buckets.length === 0 && targeting.valuedRegions.length === 0) return null;
+  // Unit 43: the score matches on two axes, so showing one merged list would
+  // misrepresent what it actually rests on — "developers" and "AI" are separate
+  // conditions, not one blob.
+  const roles = [...targeting.primaryRoles, ...targeting.secondaryRoles];
+  const domains = [...targeting.primaryDomains, ...targeting.secondaryDomains];
+  if (
+    roles.length === 0 &&
+    domains.length === 0 &&
+    targeting.valuedRegions.length === 0
+  ) {
+    return null;
+  }
   return (
     <div className="mb-4 rounded-xl border border-default bg-elevated p-3.5 text-[12.5px]">
       <span className="font-medium text-muted-foreground">
         Matched against your target:{" "}
       </span>
-      {buckets.length > 0 ? (
+      {roles.length > 0 ? (
         <span className="text-secondary-foreground">
-          {buckets.map((b: AudienceBucket) => AUDIENCE_BUCKET_LABELS[b]).join(", ")}
+          {roles.map((r: AudienceRole) => AUDIENCE_ROLE_LABELS[r]).join(", ")}
         </span>
       ) : (
-        <span className="text-muted-foreground">a general crypto/AI audience</span>
+        <span className="text-muted-foreground">a general audience</span>
       )}
+      <span className="text-secondary-foreground">
+        {" · in "}
+        {domains.length > 0 ? (
+          domains.map((d: AudienceDomain) => AUDIENCE_DOMAIN_LABELS[d]).join(", ")
+        ) : (
+          /* An empty domain target is a real answer, not a gap — say so, or a
+             reader sees a blank and assumes the inference failed. */
+          <span className="text-muted-foreground">any space (no preference)</span>
+        )}
+      </span>
       {targeting.valuedRegions.length > 0 && (
         <span className="text-secondary-foreground">
           {" · "}valued regions:{" "}

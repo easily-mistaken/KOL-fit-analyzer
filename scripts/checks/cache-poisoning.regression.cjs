@@ -3,7 +3,7 @@
 // DB cache under the exact keys a live run reads (the mock also echoes
 // LLM_MODEL, defeating the model component of LLM keys). The first live
 // calibration run was served 100% mock data. Keys are now namespaced by
-// provider kind (tw:v2:<kind>:…, cls:v4:<kind>:…), defaulting to the same env
+// provider kind (tw:v2:<kind>:…, cls:v5:<kind>:…), defaulting to the same env
 // the provider factories resolve.
 //
 // Run after `pnpm build`:  node scripts/checks/cache-poisoning.regression.cjs
@@ -80,7 +80,7 @@ const llmConfig = { enabled: true, ttls: { orgSeconds: 60, contentSeconds: 60, a
     const input = { handle: "uniswap", profile: null };
     const a = await mocked.classifyOrgProfile(input); // poison attempt
     const b = await live.classifyOrgProfile(input);
-    ck("llm keys carry the kind", shared.keys.some((k) => k.startsWith("cls:v4:mock:")) && shared.keys.some((k) => k.startsWith("cls:v4:openai:")));
+    ck("llm keys carry the kind", shared.keys.some((k) => k.startsWith("cls:v5:mock:")) && shared.keys.some((k) => k.startsWith("cls:v5:openai:")));
     ck("same model+input, different kind -> live NOT served mock payload", liveCalls.n === 1 && a.keywords[0] === "mock" && b.keywords[0] === "live");
   }
 

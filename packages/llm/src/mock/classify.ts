@@ -1,9 +1,10 @@
 import type {
   AudienceAccount,
-  AudienceBucket,
   AudienceDistribution,
   AudienceDomain,
+  AudienceQuality,
   AudienceRegion,
+  AudienceRole,
   BrandSafetyFlag,
   ContentFitAssessment,
   EngagedAccountRaw,
@@ -11,7 +12,8 @@ import type {
   MediaLabel,
   OrgClassification,
   PostLabel,
-  TargetBuckets,
+  TargetDomains,
+  TargetRoles,
   Tweet,
   TwitterUser,
 } from "@kol-fit/shared";
@@ -22,36 +24,82 @@ import type { ClassifyOrgInput } from "../provider.js";
 // the real LLM does via prompts. They are classification (not scoring), pure,
 // and depend only on the inputs — identical inputs give deep-equal outputs.
 
-/** First-match keyword rules over a bio/handle -> audience bucket. */
-export function classifyBucket(user: TwitterUser): AudienceBucket {
+/*
+ * Unit 43: the mock classifies on the same three orthogonal axes as the real
+ * provider. Each axis is answered on its own — that independence is the whole
+ * point of the split, and a mock that quietly re-fused them would hide exactly
+ * the bugs these tests exist to catch (a farming developer must keep BOTH
+ * facts, not collapse into one).
+ */
+
+/** Is this real engagement? Answered independently of role and domain. */
+export function classifyQuality(user: TwitterUser): AudienceQuality {
   const bio = (user.bio ?? "").toLowerCase();
   const handle = user.handle.toLowerCase();
-  const emptyBio = bio.trim().length === 0;
-  const text = `${handle} ${bio}`;
-
-  const has = (re: RegExp) => re.test(text);
-
   if (
-    emptyBio ||
-    /^(user|cryptonews|crypto_news|news)\d+/.test(handle) ||
-    /giveaway|dm me to claim|send .* get|claim 🎁/.test(bio)
+    bio.trim().length === 0 ||
+    /^(user|cryptonews|crypto_news|news)\d+/.test(handle)
   ) {
-    return "bots_spam";
+    return "bot";
   }
-  if (has(/\bfounder\b|cofounder|co-founder/)) return "founders";
-  if (has(/solidity|protocol engineer|\bdev\b|building on|zk|rust|smart contract/)) {
-    return "developers";
+  if (/giveaway|dm me to claim|send .* get|claim 🎁/.test(bio)) {
+    return "giveaway_hunter";
   }
-  if (has(/investor|\bangel\b|\bfund\b|investing in|\bvc\b/)) return "investors_vcs";
-  if (has(/airdrop|points\.|quests|galxe|layer3|farming/)) return "airdrop_farmers";
-  if (has(/wen moon|memecoin|meme coin|supercycle|wagmi|maxi|\$[a-z]{2,}/)) {
-    return "meme_degens";
+  if (/airdrop|points\.|quests|galxe|layer3|farming/.test(bio)) return "farmer";
+  return "real";
+}
+
+/** What this account DOES — independent of the space they do it in. */
+export function classifyRole(user: TwitterUser): AudienceRole {
+  const text = `${user.handle.toLowerCase()} ${(user.bio ?? "").toLowerCase()}`;
+  const has = (re: RegExp) => re.test(text);
+  if (has(/\bfounder\b|cofounder|co-founder|\bceo\b/)) return "founder";
+  if (has(/solidity|protocol engineer|\bdev\b|developer|engineer|building on|zk|rust|smart contract|programmer/)) {
+    return "developer";
   }
-  if (has(/\blp\b|liquidity provider|yield|delta-neutral|stablecoin|lending|vault|curve/)) {
-    return "defi_users";
+  if (has(/investor|\bangel\b|\bfund\b|investing in|\bvc\b/)) return "investor";
+  if (has(/perps|trader|trading|funding-rate|funding rate|leverage|swing/)) return "trader";
+  if (has(/research|analyst|phd|professor|scientist|academic/)) return "researcher";
+  if (has(/writer|creator|host|podcast|journalist|streamer|influencer|content/)) return "creator";
+  if (has(/community|moderator|\bmod\b|marketing|growth|\bbd\b|ops\b/)) return "operator";
+  // A readable bio with no professional signal is an ENTHUSIAST, not an
+  // unknown: "arsenal fan | gym" tells us plenty. `unknown` is reserved for
+  // genuinely nothing to go on, mirroring how classifyDomain separates
+  // "general" from "unknown".
+  return (user.bio ?? "").trim().length === 0 ? "unknown" : "enthusiast";
+}
+
+/** What SPACE this account is in. "Not crypto" is not an answer here — it is
+ *  simply any of the non-crypto domains. */
+export function classifyDomain(user: TwitterUser): AudienceDomain {
+  const text = `${user.handle.toLowerCase()} ${(user.bio ?? "").toLowerCase()}`;
+  const has = (re: RegExp) => re.test(text);
+  if (has(/\blp\b|liquidity provider|yield|delta-neutral|stablecoin|lending|vault|curve|defi|perps|funding rate/)) {
+    return "crypto_defi";
   }
-  if (has(/perps|trader|funding-rate|funding rate|leverage|swing/)) return "traders";
-  return "non_crypto";
+  if (has(/\bnft\b|metaverse|pfp|opensea/)) return "crypto_nft_gaming";
+  if (has(/wen moon|memecoin|meme coin|supercycle|wagmi|maxi|degen|\$[a-z]{2,}/)) {
+    return "crypto_memecoins";
+  }
+  if (has(/solidity|protocol engineer|building on|zk|smart contract|rollup|validator|onchain|on-chain|airdrop|quests|galxe|layer3/)) {
+    return "crypto_infra";
+  }
+  if (has(/\bai\b|\bml\b|machine learning|\bllm\b|neural|deep learning|data scien/)) return "ai";
+  if (has(/software|saas|devops|frontend|backend|product manager|\bpm\b|typescript|python/)) {
+    return "software";
+  }
+  if (has(/finance|fintech|banking|equities|economist|accountant|consultant|sales|marketing/)) {
+    return "finance";
+  }
+  if (has(/designer|artist|writer|photograph|filmmaker|music|producer|illustrat/)) return "creative";
+  if (has(/gamer|gaming|esports|twitch|streamer|speedrun/)) return "gaming";
+  if (has(/phd|professor|researcher|scientist|university|lecturer|academic/)) return "science";
+  if (has(/journalist|reporter|politic|news|correspondent|columnist/)) return "news_politics";
+  if (has(/football|soccer|\bnba\b|fitness|gym|travel|food|chef|fashion|movie|anime/)) {
+    return "culture";
+  }
+  if ((user.bio ?? "").trim().length === 0) return "unknown";
+  return "general";
 }
 
 /** Coarse macro-region from the free-text profile location (mock stand-in for
@@ -100,7 +148,7 @@ export function inferValuedRegions(input: {
 
 function accountSignals(
   user: TwitterUser,
-  bucket: AudienceBucket
+  quality: AudienceQuality
 ): AudienceAccount["signals"] {
   const bio = user.bio ?? "";
   const emptyBio = bio.trim().length === 0;
@@ -108,67 +156,50 @@ function accountSignals(
   if (/airdrop/i.test(bio)) farmingSignals.push("airdrop");
   if (/points|quests|galxe|layer3/i.test(bio)) farmingSignals.push("points");
   const botScore =
-    bucket === "bots_spam" ? 0.9 : (user.followersCount ?? 0) < 50 ? 0.5 : 0.1;
+    quality === "bot" ? 0.9 : (user.followersCount ?? 0) < 50 ? 0.5 : 0.1;
   return { botScore, emptyBio, farmingSignals };
-}
-
-/** What an OUTSIDE-CRYPTO account is about (mock stand-in for the LLM's domain
- *  inference, Unit 42). Only called for `non_crypto`; every other bucket
- *  already names what the account is. Unreadable bio -> "general_consumer",
- *  which is itself a signal; "unknown" is reserved for nothing to go on. */
-export function classifyDomain(user: TwitterUser): AudienceDomain {
-  const bio = (user.bio ?? "").toLowerCase();
-  if (bio.trim().length === 0) return "unknown";
-  const has = (re: RegExp) => re.test(bio);
-  if (has(/\bai\b|\bml\b|machine learning|llm|neural|deep learning|data scien/)) return "ai_ml";
-  if (has(/engineer|developer|software|saas|devops|frontend|backend|product manager|\bpm\b/)) {
-    return "software_tech";
-  }
-  if (has(/finance|fintech|banking|equities|economist|accountant|consultant|\bceo\b|sales|marketing/)) {
-    return "finance_business";
-  }
-  if (has(/designer|artist|writer|photograph|filmmaker|music|producer|illustrat/)) return "creative_media";
-  if (has(/gamer|gaming|esports|twitch|streamer|speedrun/)) return "gaming_esports";
-  if (has(/phd|professor|researcher|scientist|university|lecturer|academic/)) return "science_academia";
-  if (has(/journalist|reporter|politic|news|correspondent|columnist/)) return "news_politics";
-  if (has(/football|soccer|\bnba\b|fitness|gym|travel|food|chef|fashion|movie|anime/)) {
-    return "culture_lifestyle";
-  }
-  return "general_consumer";
 }
 
 /** One engaged account -> a classified AudienceAccount. */
 export function toAudienceAccount(engager: EngagedAccountRaw): AudienceAccount {
-  const bucket = classifyBucket(engager.user);
+  const quality = classifyQuality(engager.user);
   const region = classifyRegion(engager.user);
-  const domain = bucket === "non_crypto" ? classifyDomain(engager.user) : undefined;
   return {
     handle: engager.user.handle,
     accountId: engager.user.id,
     source: engager.source,
-    bucket,
+    role: classifyRole(engager.user),
+    domain: classifyDomain(engager.user),
+    quality,
     ...(region ? { region } : {}),
-    ...(domain ? { domain } : {}),
-    signals: accountSignals(engager.user, bucket),
+    signals: accountSignals(engager.user, quality),
   };
 }
 
-/** Per-bucket distribution (counts + shares) over classified accounts. */
+/** Distribution over classified accounts, on all three axes (Unit 43). Shares
+ *  are over the same denominator on every axis — see the shared schema. */
 export function buildDistribution(
   accounts: AudienceAccount[]
 ): AudienceDistribution {
   const sampleSize = accounts.length;
-  const counts = new Map<AudienceBucket, number>();
-  for (const a of accounts) counts.set(a.bucket, (counts.get(a.bucket) ?? 0) + 1);
-
-  const buckets: AudienceDistribution["buckets"] = {};
-  for (const [bucket, count] of counts) {
-    buckets[bucket] = {
-      count,
-      share: sampleSize === 0 ? 0 : count / sampleSize,
-    };
-  }
-  return { sampleSize, buckets };
+  const tally = <K extends string>(pick: (a: AudienceAccount) => K) => {
+    const counts = new Map<K, number>();
+    for (const a of accounts) {
+      const k = pick(a);
+      counts.set(k, (counts.get(k) ?? 0) + 1);
+    }
+    const out: Partial<Record<K, { count: number; share: number }>> = {};
+    for (const [k, count] of counts) {
+      out[k] = { count, share: sampleSize === 0 ? 0 : count / sampleSize };
+    }
+    return out;
+  };
+  return {
+    sampleSize,
+    roles: tally((a) => a.role),
+    domains: tally((a) => a.domain),
+    quality: tally((a) => a.quality),
+  };
 }
 
 // --- KOL content extraction (deterministic keyword/ticker scan over posts) ---
@@ -308,38 +339,68 @@ export function assessContentFitMock(
   };
 }
 
-// --- Org target buckets (mock stand-in for the 29B LLM inference) -----------
+// --- Org targets (mock stand-in for the 29B LLM inference), two axes --------
 
-const TARGET_RULES: { re: RegExp; buckets: AudienceBucket[] }[] = [
-  { re: /perp|derivativ|trading|trader/i, buckets: ["traders"] },
-  { re: /defi|yield|lend|stablecoin|liquidity|amm|dex/i, buckets: ["defi_users"] },
-  { re: /\bdev\b|sdk|api|infra|protocol|\bl2\b|rollup|settlement/i, buckets: ["developers", "infra_research"] },
-  { re: /nft|gaming/i, buckets: ["nft_gaming"] },
-  { re: /\bai\b|agent/i, buckets: ["ai_crypto"] },
+const TARGET_ROLE_RULES: { re: RegExp; roles: AudienceRole[] }[] = [
+  { re: /perp|derivativ|trading|trader/i, roles: ["trader"] },
+  { re: /\bdev\b|sdk|api|infra|protocol|\bl2\b|rollup|settlement|tooling/i, roles: ["developer"] },
+  { re: /founder|startup/i, roles: ["founder"] },
+  { re: /investor|\bvc\b|fund/i, roles: ["investor"] },
+  { re: /community|creator|influencer/i, roles: ["operator", "creator"] },
+  { re: /consumer|retail|\bapp\b|wallet/i, roles: ["enthusiast"] },
 ];
 
-export function inferTargetBuckets(org: {
+const TARGET_DOMAIN_RULES: { re: RegExp; domains: AudienceDomain[] }[] = [
+  { re: /defi|yield|lend|stablecoin|liquidity|amm|dex|perp/i, domains: ["crypto_defi"] },
+  { re: /nft|metaverse/i, domains: ["crypto_nft_gaming"] },
+  { re: /meme|degen/i, domains: ["crypto_memecoins"] },
+  { re: /\bl2\b|rollup|protocol|infra|chain|\bzk\b|settlement/i, domains: ["crypto_infra"] },
+  { re: /\bai\b|agent|machine learning|\bllm\b/i, domains: ["ai"] },
+  { re: /\bsaas\b|software|devtool|developer tool|platform/i, domains: ["software"] },
+  { re: /fintech|bank|payment|brokerage/i, domains: ["finance"] },
+  { re: /gaming|game|esports/i, domains: ["gaming"] },
+];
+
+export function inferTargetRoles(org: {
   productCategory?: string;
   targetUser?: string;
   keywords?: string[];
-}): TargetBuckets {
+}): TargetRoles {
   const text = [org.productCategory, org.targetUser, ...(org.keywords ?? [])]
     .filter(Boolean)
     .join(" ");
-  const primary: AudienceBucket[] = [];
-  for (const rule of TARGET_RULES) {
+  const primary: AudienceRole[] = [];
+  for (const rule of TARGET_ROLE_RULES) {
     if (rule.re.test(text)) {
-      for (const b of rule.buckets) if (!primary.includes(b)) primary.push(b);
+      for (const r of rule.roles) if (!primary.includes(r)) primary.push(r);
     }
   }
-  if (primary.length === 0) primary.push("defi_users", "traders");
-  const secondary: AudienceBucket[] = ["founders", "investors_vcs"].filter(
-    (b) => !primary.includes(b as AudienceBucket)
-  ) as AudienceBucket[];
+  if (primary.length === 0) primary.push("developer", "enthusiast");
+  const secondary: AudienceRole[] = (["founder", "investor"] as AudienceRole[]).filter(
+    (r) => !primary.includes(r)
+  );
   return { primary, secondary };
 }
 
-// --- Org classification (respects manual brief; infers the rest) ---
+/** Domains have NO catch-all default: a brand we cannot read a space off of
+ *  genuinely has no domain preference, and inventing one would fabricate the
+ *  specificity the generic-target cap exists to admit is missing. */
+export function inferTargetDomains(org: {
+  productCategory?: string;
+  targetUser?: string;
+  keywords?: string[];
+}): TargetDomains {
+  const text = [org.productCategory, org.targetUser, ...(org.keywords ?? [])]
+    .filter(Boolean)
+    .join(" ");
+  const primary: AudienceDomain[] = [];
+  for (const rule of TARGET_DOMAIN_RULES) {
+    if (rule.re.test(text)) {
+      for (const d of rule.domains) if (!primary.includes(d)) primary.push(d);
+    }
+  }
+  return { primary, secondary: [] };
+}
 
 function inferCategory(bio: string): string {
   const b = bio.toLowerCase();
@@ -364,22 +425,6 @@ function extractKeywords(bio: string): string[] {
     .slice(0, 6);
 }
 
-/** Is the BRAND's own product crypto-native (Unit 42)? Mock stand-in for the
- *  LLM's judgement. Presentation only — never feeds a score. Defaults to true,
- *  matching both the historical behaviour and this tool's primary market. */
-export function inferCryptoNative(text: string): boolean {
-  const t = text.toLowerCase();
-  const crypto =
-    /crypto|web3|blockchain|onchain|on-chain|defi|\bnft\b|token|wallet|\bdao\b|staking|rollup|\bl2\b|protocol|exchange/;
-  if (crypto.test(t)) return true;
-  // Only claim "not crypto" on a positive signal of some OTHER domain; an
-  // uninformative bio should fall back to the default rather than flip the
-  // whole report's layout on an absence of evidence.
-  const other =
-    /\bai\b|artificial intelligence|machine learning|\bllm\b|\bsaas\b|developer tool|analytics|fintech|e-?commerce|marketplace|consumer app|productivity/;
-  return !other.test(t);
-}
-
 export function inferOrgClassification(
   input: ClassifyOrgInput
 ): OrgClassification {
@@ -397,9 +442,9 @@ export function inferOrgClassification(
     campaignGoal: brief.campaignGoal ?? "awareness",
     region: brief.region ?? "Global / English",
     keywords,
-    targetBuckets: inferTargetBuckets({ productCategory, targetUser, keywords }),
+    targetRoles: inferTargetRoles({ productCategory, targetUser, keywords }),
+    targetDomains: inferTargetDomains({ productCategory, targetUser, keywords }),
     valuedRegions: inferValuedRegions({ productCategory, targetUser, keywords }),
-    cryptoNative: inferCryptoNative(`${productCategory} ${targetUser} ${bio}`),
     confidence: input.profile ? "medium" : "low",
   };
 }

@@ -2,25 +2,31 @@ import { z } from "zod";
 
 import { EngagementSourceSchema } from "./enums.js";
 import {
-  AudienceBucketSchema,
   AudienceDomainSchema,
+  AudienceQualitySchema,
   AudienceRegionSchema,
+  AudienceRoleSchema,
 } from "./vocab.js";
 
-// A single engaged account after classification. Aligns with the
-// EngagedAccountSample DB model.
+// A single engaged account after classification (Unit 43). Classified on three
+// orthogonal axes — see vocab.ts for why they are separate. All three are
+// REQUIRED: each has an explicit "unknown"/"real" value for the uncertain case,
+// so an absent field would be indistinguishable from an unclassifiable account.
 export const AudienceAccountSchema = z.object({
   handle: z.string().optional(),
   accountId: z.string().optional(),
   source: EngagementSourceSchema,
-  bucket: AudienceBucketSchema,
+  /** What they do — independent of the space they do it in. */
+  role: AudienceRoleSchema,
+  /** What space they are in. "Not crypto" is no longer a category here; it is
+   *  simply any domain that isn't one of the crypto ones. */
+  domain: AudienceDomainSchema,
+  /** Whether this is real engagement. Orthogonal on purpose: a farming account
+   *  keeps its role and domain instead of collapsing into "airdrop_farmers". */
+  quality: AudienceQualitySchema,
   /** Coarse macro-region inferred from the profile location (Unit 41 Phase C).
    *  Absent/`unknown` when not placeable — never penalized, just uncounted. */
   region: AudienceRegionSchema.optional(),
-  /** What this account is actually about. Only carried for `non_crypto`
-   *  accounts — the other buckets already say what someone is, so a domain
-   *  there would be redundant. Absent on pre-v4 classifications. */
-  domain: AudienceDomainSchema.optional(),
   signals: z
     .object({
       botScore: z.number().min(0).max(1).optional(),
@@ -50,35 +56,20 @@ export const RegionDistributionSchema = z.object({
 });
 export type RegionDistribution = z.infer<typeof RegionDistributionSchema>;
 
-// Breakdown of the `non_crypto` slice by what those accounts are ABOUT. Shares
-// are over the OUTSIDE-CRYPTO accounts only (not the whole sample), so this
-// reads as "of the 42% outside crypto, 38% are AI/ML" — the denominator a
-// reader assumes when drilling into a slice. `share` of the total sample stays
-// available from the bucket distribution.
-export const DomainDistributionSchema = z.object({
-  /** Classified accounts in the `non_crypto` bucket. */
-  total: z.number().int().min(0),
-  domains: z.partialRecord(
-    AudienceDomainSchema,
-    z.object({
-      count: z.number().int().min(0),
-      share: z.number().min(0).max(1),
-    })
-  ),
+const bin = z.object({
+  count: z.number().int().min(0),
+  share: z.number().min(0).max(1),
 });
-export type DomainDistribution = z.infer<typeof DomainDistributionSchema>;
 
-// Per-bucket distribution of the sampled engaged audience. Matches the
-// Report.audienceSummary JSON column. Buckets is a partial record — only the
-// buckets actually observed are present.
+// Distribution of the sampled engaged audience across all three axes (Unit 43).
+// Matches the Report.audienceSummary JSON column. Each record is partial — only
+// the values actually observed are present — and each axis's shares are over
+// the SAME denominator (`sampleSize`), so the three views are directly
+// comparable and none of them hides accounts in a filtered sub-total.
 export const AudienceDistributionSchema = z.object({
   sampleSize: z.number().int().min(0),
-  buckets: z.partialRecord(
-    AudienceBucketSchema,
-    z.object({
-      count: z.number().int().min(0),
-      share: z.number().min(0).max(1),
-    })
-  ),
+  roles: z.partialRecord(AudienceRoleSchema, bin),
+  domains: z.partialRecord(AudienceDomainSchema, bin),
+  quality: z.partialRecord(AudienceQualitySchema, bin),
 });
 export type AudienceDistribution = z.infer<typeof AudienceDistributionSchema>;

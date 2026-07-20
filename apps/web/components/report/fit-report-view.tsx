@@ -345,17 +345,15 @@ export function FitReportView({
           )}
           {fitReport.audienceBreakdown && (
             <>
-              <AudienceDonut
-                distribution={fitReport.audienceBreakdown}
-                domains={fitReport.audienceDomains}
-                cryptoNative={fitReport.brandCryptoNative ?? true}
-              />
-              {/* "Other" folds the smaller/outside-space buckets and sorts last
-                  by design, so it can be the largest wedge without being a
-                  finding — say so, so a big grey slice doesn't read as one. */}
+              <AudienceDonut distribution={fitReport.audienceBreakdown} />
+              {/* The two rings answer different questions over the same people,
+                  so shares are NOT meant to line up across them — say so, or a
+                  reader tries to reconcile "40% developers" with "30% AI" and
+                  concludes one of them is wrong. */}
               <p className="mt-3 text-[11.5px] text-muted-foreground">
-                &ldquo;Other&rdquo; groups smaller and outside-space segments;
-                hover any slice for its full breakdown.
+                Both rings cover the same accounts, read two different ways —
+                what they&rsquo;re into, and what they do. &ldquo;Other&rdquo;
+                groups the smaller segments; hover any slice for its breakdown.
               </p>
             </>
           )}

@@ -1,7 +1,6 @@
 import {
   REPORT_SCHEMA_VERSION,
   type AudienceAccount,
-  type AudienceBucket,
   type AudienceDistribution,
   type ScoreMetric,
   type ScoreValue,
@@ -23,18 +22,34 @@ export function deepNullToUndefined(value: unknown): unknown {
   return value;
 }
 
-/** Deterministic per-bucket distribution over classified accounts. */
+/**
+ * Deterministic distribution over classified accounts, on all three axes
+ * (Unit 43). Every axis shares the SAME denominator — the full classified
+ * sample — so the three views are directly comparable and none of them quietly
+ * counts a different set of people.
+ */
 export function buildAudienceDistribution(
   accounts: AudienceAccount[]
 ): AudienceDistribution {
   const sampleSize = accounts.length;
-  const counts = new Map<AudienceBucket, number>();
-  for (const a of accounts) counts.set(a.bucket, (counts.get(a.bucket) ?? 0) + 1);
-  const buckets: AudienceDistribution["buckets"] = {};
-  for (const [bucket, count] of counts) {
-    buckets[bucket] = { count, share: sampleSize === 0 ? 0 : count / sampleSize };
-  }
-  return { sampleSize, buckets };
+  const tally = <K extends string>(pick: (a: AudienceAccount) => K) => {
+    const counts = new Map<K, number>();
+    for (const a of accounts) {
+      const k = pick(a);
+      counts.set(k, (counts.get(k) ?? 0) + 1);
+    }
+    const out: Partial<Record<K, { count: number; share: number }>> = {};
+    for (const [k, count] of counts) {
+      out[k] = { count, share: sampleSize === 0 ? 0 : count / sampleSize };
+    }
+    return out;
+  };
+  return {
+    sampleSize,
+    roles: tally((a) => a.role),
+    domains: tally((a) => a.domain),
+    quality: tally((a) => a.quality),
+  };
 }
 
 /**

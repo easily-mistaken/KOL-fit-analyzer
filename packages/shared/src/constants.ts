@@ -23,4 +23,8 @@ export const REPORT_SCHEMA_VERSION = 1;
 // SCHEMA or PROMPT changes (adding an optional field counts: an old payload
 // still passes safeParse and is served as a silent hit — the cls:v2 -> v3
 // incident, 2026-07-18).
-export const SCORING_VERSION = 3;
+// v4 (Unit 43): the audience taxonomy split into role / domain / quality, and
+// matching became two-dimensional (role AND domain, see weightedMatch). Same
+// inputs now produce different scores, so every pre-v4 report must re-run
+// rather than be served as an instant-reuse hit.
+export const SCORING_VERSION = 4;

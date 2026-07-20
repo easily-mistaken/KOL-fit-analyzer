@@ -51,7 +51,7 @@ The first user is the internal operator/founder/team member evaluating KOLs for 
 8. The worker fetches organization profile/post data.
 9. The worker fetches KOL profile/post/reply/engagement data.
 10. The worker samples engaged accounts from replies, quote tweets, and retweeters.
-11. The system classifies organization positioning, KOL content, engaged audience buckets, engagement quality, and risk signals.
+11. The system classifies organization positioning, KOL content, engaged audience (role / domain / quality), engagement quality, and risk signals.
 12. The scoring module produces deterministic scores.
 13. The LLM module produces the final explanation, verdict, and recommendation using structured evidence.
 14. The final report is saved to the database.
@@ -88,28 +88,20 @@ The first user is the internal operator/founder/team member evaluating KOLs for 
 
 - Deep-analyze replies, quotes, and retweeters for selected top KOL posts.
 - Sample engaged accounts.
-- Classify engaged accounts into audience buckets:
-  - founders
-  - developers
-  - DeFi users
-  - traders
-  - investors/VCs
-  - airdrop farmers
-  - meme coin degens
-  - NFT/gaming users
-  - AI x crypto people
-  - infra/research people
-  - community managers
-  - KOLs/creators
-  - bots/spam
-  - giveaway hunters
-  - outside crypto (formerly "non-crypto audience")
-- Break the **outside-crypto** bucket down by what those accounts are ABOUT
-  (AI/ML, software & tech, finance & business, creative & media, gaming, science
-  & academia, culture & lifestyle, news & politics, general consumer, unclear).
-  Every other bucket already names what an account is; that one was defined by
-  negation, which is a dead end for the reader — and an inverted one for a brand
-  that is not itself crypto, since the residual is then their whole market.
+- Classify engaged accounts on THREE orthogonal axes (Unit 43). The axes are
+  independent questions, so an account keeps every fact about itself — a farming
+  account that is genuinely a developer stays a developer:
+  - **role** — what they do: founder, developer, investor, trader, researcher,
+    creator, operator (community/ops), enthusiast, unknown
+  - **domain** — what space they are in: crypto_defi, crypto_nft_gaming,
+    crypto_memecoins, crypto_infra, ai, software, finance, creative, gaming,
+    science, culture, news_politics, general, unknown
+  - **quality** — is it real engagement: real, bot, farmer, giveaway_hunter
+- There is deliberately no "non-crypto" category. It was the one value defined by
+  NEGATION — it said what an account was not, which is a dead end for any reader
+  and an inverted one for a brand that is not itself crypto, since the residual
+  is then their whole market. On two axes it simply becomes a domain that is not
+  one of the crypto ones.
 - Compare the audience distribution against the organization's target user.
 
 ### Engagement Quality Analysis
@@ -133,15 +125,20 @@ Reworked 2026-07-18. The fit score IS the engaged-audience match — nothing els
 moves it. See `context/specs/41-scoring-v3-audience-honest.md`.
 
 **The fit score (`overall_fit == engaged_audience_match`, 0–100):** of the
-creator's REAL engaged audience (bots/farmers/giveaway-hunters dropped;
-reply/quote 1.0, retweet 0.5, follow 0.25), what share are the brand's target
-customers (target = LLM-inferred + brand-confirmed; the campaign goal reshapes
-which buckets count), curved so ~30% target share is a strong signal and ~45%+
-exceptional. **No identity/relationship modifiers of any kind** — a founder,
-celebrity, or media brand is scored purely on who actually listens.
+creator's REAL engaged audience (bots/giveaway-hunters dropped, farmers
+half-weighted; reply/quote 1.0, retweet 0.5, follow 0.25), what share are the
+brand's target customers. **Matching is two-dimensional** (Unit 43): an account
+must be the right ROLE (which gates — the wrong role is not your customer
+whatever space they are in) and then the right DOMAIN, which modulates rather
+than gates. A right-role/wrong-domain account is worth `DOMAIN_FLOOR` (0.25); a
+brand with no domain preference scores every domain fully, which reduces exactly
+to role-only matching. **No identity/relationship modifiers of any kind** — a
+founder, celebrity, or media brand is scored purely on who actually listens.
 
-**Bands:** ≥85 STRONG (~45%+ target) · ≥70 GOOD (~30%) · ≥50 OKAY (~15%) · ≥30
-WEAK (~5%) · <30 AVOID.
+**Bands:** ≥85 STRONG · ≥70 GOOD · ≥50 OKAY · ≥30 WEAK · <30 AVOID. The curve's
+x-values were recalibrated in Unit 43 (partial credit raises the raw share by
+~1.23x, so the anchors shifted right to keep the bands meaning what they say —
+the saved Uniswap benchmark scores 90 before and after).
 
 **Gates (pull the verdict DOWN only, never up):** a mostly fake/farmed audience
 (`bot_farm_risk`), a brand-safety problem, or high unrelated-promo shilling cap

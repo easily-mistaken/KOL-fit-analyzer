@@ -182,9 +182,10 @@ a FIXED enum: making it brand-specific (letting the model invent buckets per
 brand) would void this cache, re-run the most expensive LLM step for every
 brand, and make scores incomparable across analyses. Anything brand-relative
 belongs on the **org** classification instead — that call is cheap, per-brand,
-and already cached separately. `OrgClassification.cryptoNative` (Unit 42) is the
-worked example: it changes only how the audience is *presented*, never how it is
-classified or scored. Caching lives
+and already cached separately. `targetRoles` / `targetDomains` (Unit 43) are the
+worked example: the audience is labelled brand-independently and cached once,
+and the brand-specific judgement happens at SCORING time by matching those
+labels against the org's targets. Caching lives
 worker-side (`packages/cache` + `buildProviders`); the pipeline and providers
 stay `@kol-fit/db`-free.
 

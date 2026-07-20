@@ -42,7 +42,10 @@ function spy() {
     },
     async classifyAudienceAccounts() {
       calls.audience++;
-      return { accounts: [], distribution: { sampleSize: 0, buckets: {} } };
+      return {
+        accounts: [],
+        distribution: { sampleSize: 0, roles: {}, domains: {}, quality: {} },
+      };
     },
     async generateFitReport() {
       calls.report++;

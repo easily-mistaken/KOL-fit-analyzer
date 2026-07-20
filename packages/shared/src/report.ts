@@ -3,10 +3,13 @@ import { z } from "zod";
 import { REPORT_SCHEMA_VERSION } from "./constants.js";
 import {
   AudienceDistributionSchema,
-  DomainDistributionSchema,
   RegionDistributionSchema,
 } from "./audience.js";
-import { AudienceBucketSchema, AudienceRegionSchema } from "./vocab.js";
+import {
+  AudienceDomainSchema,
+  AudienceRegionSchema,
+  AudienceRoleSchema,
+} from "./vocab.js";
 import { ReportVerdictSchema } from "./enums.js";
 import { KolContentClassificationSchema } from "./llm.js";
 import {
@@ -71,24 +74,15 @@ export const FitReportSchema = z.object({
   // breakdown of the engaged audience, injected by the pipeline. Optional.
   audienceRegions: RegionDistributionSchema.optional(),
 
-  // What the OUTSIDE-CRYPTO slice is actually made of — deterministic, injected
-  // by the pipeline. Exists because "42% non-crypto" is a black hole for any
-  // brand that isn't itself crypto. Optional: absent on pre-v4 reports and on
-  // audiences with no outside-crypto accounts.
-  audienceDomains: DomainDistributionSchema.optional(),
-
-  // Whether the brand's own product is crypto-native, carried onto the report
-  // so the client can pick the audience layout without re-deriving it from the
-  // org classification. Absent = treat as crypto-native (historical default).
-  brandCryptoNative: z.boolean().optional(),
-
   // What the fit score was matched against (Unit 41 v3, Phase D) — the inferred
   // target audience + economically-valued regions, surfaced so the brand can
   // SEE (and sanity-check) what the score rests on. Injected by the pipeline.
   targeting: z
     .object({
-      primaryBuckets: z.array(AudienceBucketSchema).default([]),
-      secondaryBuckets: z.array(AudienceBucketSchema).default([]),
+      primaryRoles: z.array(AudienceRoleSchema).default([]),
+      secondaryRoles: z.array(AudienceRoleSchema).default([]),
+      primaryDomains: z.array(AudienceDomainSchema).default([]),
+      secondaryDomains: z.array(AudienceDomainSchema).default([]),
       valuedRegions: z.array(AudienceRegionSchema).default([]),
     })
     .optional(),

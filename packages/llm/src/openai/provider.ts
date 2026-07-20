@@ -349,21 +349,20 @@ export class OpenAiLlmProvider implements LlmProvider {
             typeof m.region === "string" && m.region !== "unknown"
               ? m.region
               : undefined;
-          // Domain (Unit 42) is only meaningful for `non_crypto` — every other
-          // bucket already names what the account is. Enforced here rather than
-          // trusted from the model, so a stray domain on `traders` can't leak
-          // into the outside-crypto breakdown and inflate its denominator.
-          const domain =
-            m.bucket === "non_crypto" && typeof m.domain === "string"
-              ? m.domain
-              : undefined;
+          // The three axes (Unit 43) come from the model; the Zod parse below is
+          // the trust boundary. Each has an explicit fallback rather than being
+          // dropped: a missing axis must land on its own "we don't know" value
+          // ("unknown", or "real" for quality — never silently accusing an
+          // account the model declined to label) so the distributions always
+          // sum to the sample and no account vanishes from a denominator.
           candidates.push({
             handle: batch[i].user.handle,
             accountId: batch[i].user.id,
             source: batch[i].source,
-            bucket: m.bucket,
+            role: typeof m.role === "string" ? m.role : "unknown",
+            domain: typeof m.domain === "string" ? m.domain : "unknown",
+            quality: typeof m.quality === "string" ? m.quality : "real",
             ...(region ? { region } : {}),
-            ...(domain ? { domain } : {}),
             signals,
           });
         }

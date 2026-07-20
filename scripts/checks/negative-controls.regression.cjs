@@ -14,29 +14,43 @@ const s = require("../../packages/scoring/dist/index.js");
 let pass = 0, fail = 0;
 const ck = (n, c) => { console.log((c ? "OK   " : "FAIL ") + n); c ? pass++ : fail++; };
 
-function audienceOf(bucketCounts, source = "REPLY") {
+/** accounts + distribution from {"role/domain[/quality]": count} (Unit 43). */
+function audienceOf(spec, source = "REPLY") {
   const accounts = [];
   let i = 0;
-  for (const [bucket, count] of Object.entries(bucketCounts)) {
+  for (const [key, count] of Object.entries(spec)) {
+    const [role, domain, quality = "real"] = key.split("/");
     for (let k = 0; k < count; k++) {
       accounts.push({
-        accountId: `a${i}`, handle: `h${i++}`, source, bucket,
-        signals: { botScore: bucket === "bots_spam" ? 0.9 : 0.1, emptyBio: false, farmingSignals: [] },
+        accountId: `a${i}`, handle: `h${i++}`, source, role, domain, quality,
+        signals: { botScore: quality === "bot" ? 0.9 : 0.1, emptyBio: false, farmingSignals: [] },
       });
     }
   }
-  const buckets = {};
-  for (const [bucket, count] of Object.entries(bucketCounts)) {
-    buckets[bucket] = { count, share: count / accounts.length };
-  }
-  return { accounts, distribution: { sampleSize: accounts.length, buckets } };
+  const tally = (pick) => {
+    const counts = {};
+    for (const a of accounts) counts[pick(a)] = (counts[pick(a)] ?? 0) + 1;
+    const out = {};
+    for (const [k, c] of Object.entries(counts)) out[k] = { count: c, share: c / accounts.length };
+    return out;
+  };
+  return {
+    accounts,
+    distribution: {
+      sampleSize: accounts.length,
+      roles: tally((a) => a.role),
+      domains: tally((a) => a.domain),
+      quality: tally((a) => a.quality),
+    },
+  };
 }
 
 const input = (audience, overrides = {}) => ({
   org: {
     productCategory: overrides.orgCategory ?? "DeFi protocol",
     targetUser: "protocol users", keywords: [], confidence: "high",
-    targetBuckets: overrides.targetBuckets ?? { primary: ["defi_users"], secondary: [] },
+    targetRoles: overrides.targetRoles ?? { primary: ["enthusiast"], secondary: [] },
+    targetDomains: overrides.targetDomains ?? { primary: ["crypto_defi"], secondary: [] },
   },
   content: {
     themes: overrides.themes ?? ["crypto"], verticals: ["crypto"], style: "hype", depth: "low",
@@ -71,11 +85,11 @@ const promoLabels = (n, promo, related, quality) =>
 // --- AVOID controls --------------------------------------------------------------
 {
   // 22. Aave × AirdropFarmHub: farm/giveaway-dominated audience.
-  const farm = s.scoreAnalysis(input(audienceOf({ giveaway_hunters: 55, airdrop_farmers: 30, bots_spam: 12, defi_users: 3 })));
+  const farm = s.scoreAnalysis(input(audienceOf({ "enthusiast/general/giveaway_hunter": 55, "enthusiast/crypto_infra/farmer": 30, "unknown/unknown/bot": 12, "enthusiast/crypto_defi": 3 })));
   ck(`AirdropFarmHub -> AVOID (got ${farm.verdict}, bot risk ${farm.scores.components.bot_farm_risk.value})`, farm.verdict === "AVOID");
 
   // 23. Ledger × CasinoBonusFeed: gambling + deception flags, decent reach.
-  const casino = s.scoreAnalysis(input(audienceOf({ non_crypto: 70, traders: 20, bots_spam: 10 }), {
+  const casino = s.scoreAnalysis(input(audienceOf({ "enthusiast/culture": 70, "trader/crypto_defi": 20, "unknown/unknown/bot": 10 }), {
     flags: [
       { flag: "gambling_promotion", severity: "high", evidence: "feed dominated by offshore casino bonus codes" },
       { flag: "misleading_claims", severity: "high", evidence: "guaranteed-win wagering claims" },
@@ -85,11 +99,11 @@ const promoLabels = (n, promo, related, quality) =>
   ck(`CasinoBonusFeed -> AVOID via brand-safety gate (got ${casino.verdict}, bs ${casino.scores.components.brand_safety.value})`, casino.verdict === "AVOID" && casino.scores.components.brand_safety.value < 20);
 
   // 24. EigenLayer × EngagementRaidBot: coordinated fake engagement.
-  const raid = s.scoreAnalysis(input(audienceOf({ bots_spam: 75, non_crypto: 15, meme_degens: 10 }), { targetBuckets: { primary: ["developers", "infra_research"], secondary: [] } }));
+  const raid = s.scoreAnalysis(input(audienceOf({ "unknown/unknown/bot": 75, "enthusiast/general": 15, "enthusiast/crypto_memecoins": 10 }), { targetRoles: { primary: ["developer", "researcher"], secondary: [] }, targetDomains: { primary: ["crypto_infra"], secondary: [] } }));
   ck(`EngagementRaidBot -> AVOID (got ${raid.verdict}, bot risk ${raid.scores.components.bot_farm_risk.value})`, raid.verdict === "AVOID");
 
   // 25. Phantom × MemeGiveawayHost: wallet-drain giveaways = severe safety.
-  const giveaway = s.scoreAnalysis(input(audienceOf({ giveaway_hunters: 45, meme_degens: 25, bots_spam: 20, non_crypto: 10 }), {
+  const giveaway = s.scoreAnalysis(input(audienceOf({ "enthusiast/general/giveaway_hunter": 45, "enthusiast/crypto_memecoins": 25, "unknown/unknown/bot": 20, "enthusiast/general": 10 }), {
     flags: [
       { flag: "scam_or_rug_association", severity: "high", evidence: "wallet-drain-prone giveaway links" },
       { flag: "impersonation_or_deception", severity: "high", evidence: "fake brand giveaways" },
@@ -100,7 +114,7 @@ const promoLabels = (n, promo, related, quality) =>
 
   // 26. Polymarket × UnverifiedSportsTips: real category overlap must NOT
   // defeat the cap (rule 14).
-  const tips = s.scoreAnalysis(input(audienceOf({ non_crypto: 60, traders: 30, bots_spam: 10 }), {
+  const tips = s.scoreAnalysis(input(audienceOf({ "enthusiast/culture": 60, "trader/crypto_defi": 30, "unknown/unknown/bot": 10 }), {
     fit: { topicalAdjacency: 4, audienceOverlapPotential: 4, naturalMentionFit: 4, sharedTopics: ["prediction markets", "sports"], rationale: "category overlap", relationship: "none", relationshipEvidence: "tips account" },
     flags: [
       { flag: "misleading_claims", severity: "high", evidence: "unverifiable win-rate claims; losing predictions deleted" },
@@ -113,7 +127,7 @@ const promoLabels = (n, promo, related, quality) =>
   // v3 has NO founder floor at all — a founder pair with a farm/giveaway
   // audience is just an off-target + gated audience -> AVOID. The relationship
   // field is ignored by scoring; there is nothing to "lose to".
-  const founderButSevere = s.scoreAnalysis(input(audienceOf({ giveaway_hunters: 55, airdrop_farmers: 30, bots_spam: 12, defi_users: 3 }), {
+  const founderButSevere = s.scoreAnalysis(input(audienceOf({ "enthusiast/general/giveaway_hunter": 55, "enthusiast/crypto_infra/farmer": 30, "unknown/unknown/bot": 12, "enthusiast/crypto_defi": 3 }), {
     fit: { topicalAdjacency: 5, audienceOverlapPotential: 5, naturalMentionFit: 5, sharedTopics: [], rationale: "founder", relationship: "founder_or_core_team", relationshipEvidence: "bio" },
   }));
   ck(`identity ignored: farm audience -> AVOID even for a "founder" (got ${founderButSevere.verdict})`, founderButSevere.verdict === "AVOID");
@@ -127,9 +141,10 @@ const promoLabels = (n, promo, related, quality) =>
   // ~0% developer/infra audience -> below the target floor -> AVOID (v3). The
   // promo gate itself never forces AVOID; the audience does.
   const sponsor = s.scoreAnalysis(input(
-    audienceOf({ non_crypto: 45, traders: 25, meme_degens: 15, bots_spam: 10, investors_vcs: 5 }),
+    audienceOf({ "enthusiast/culture": 45, "trader/crypto_defi": 25, "enthusiast/crypto_memecoins": 15, "unknown/unknown/bot": 10, "investor/crypto_infra": 5 }),
     {
-      targetBuckets: { primary: ["developers", "infra_research"], secondary: ["investors_vcs"] },
+      targetRoles: { primary: ["developer", "researcher"], secondary: ["investor"] },
+      targetDomains: { primary: ["crypto_infra"], secondary: [] },
       postLabels: promoLabels(40, 24, false, "ok"),
       fit: { topicalAdjacency: 2, audienceOverlapPotential: 2, naturalMentionFit: 2, sharedTopics: [], rationale: "macro/BTC commentary, not oracle infrastructure", relationship: "none", relationshipEvidence: "large macro account" },
     }
@@ -140,9 +155,10 @@ const promoLabels = (n, promo, related, quality) =>
   // 21. base × AltcoinDealsDesk: deal-seeking retail audience vs builder
   // targets -> negligible target share -> AVOID (v3).
   const deals = s.scoreAnalysis(input(
-    audienceOf({ non_crypto: 30, meme_degens: 25, traders: 20, giveaway_hunters: 11, bots_spam: 11, developers: 3 }),
+    audienceOf({ "enthusiast/culture": 30, "enthusiast/crypto_memecoins": 25, "trader/crypto_defi": 20, "enthusiast/general/giveaway_hunter": 11, "unknown/unknown/bot": 11, "developer/crypto_infra": 3 }),
     {
-      targetBuckets: { primary: ["developers", "founders"], secondary: [] },
+      targetRoles: { primary: ["developer", "founder"], secondary: [] },
+      targetDomains: { primary: ["crypto_infra"], secondary: [] },
       postLabels: promoLabels(40, 20, false, "low"),
       fit: { topicalAdjacency: 2, audienceOverlapPotential: 2, naturalMentionFit: 2, sharedTopics: [], rationale: "deals/listings content, not building on Base", relationship: "none", relationshipEvidence: "retail deals account" },
     }

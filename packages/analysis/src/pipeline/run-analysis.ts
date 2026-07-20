@@ -1,7 +1,7 @@
 import {
   ANALYSIS_CAPS,
   FitReportSchema,
-  foldAudienceSegments,
+  foldDomainSegments,
   type AnalysisProgress,
   type AnalysisStage,
   type AudienceDistribution,
@@ -89,20 +89,26 @@ function toGlimpse(handle: string, u: TwitterUser | null): ProfileGlimpse {
  * the same fold as the report donut (largest-first), capped small — shares are
  * already client-visible in the finished report, so this leaks nothing.
  *
- * The low-quality slice (bots/farmers/giveaway) always sorts LAST in the fold,
- * so a naive top-N would drop the single highest-signal bucket for a
- * "who actually listens" product. Keep it whenever present: top (max-1) normal
- * segments + the low-quality slice last.
+ * Shows the DOMAIN axis: "what is this audience about" is the question a
+ * watching user is actually asking, and it is the one axis that reads without
+ * any context about the brand. Junk engagement no longer has a slice to sort
+ * last (quality is its own axis now), so it is appended explicitly — dropping
+ * it would hide the highest-signal number in a "who actually listens" product.
  */
 function topAudienceGlimpse(
   distribution: AudienceDistribution,
   max = 4
 ): AudienceGlimpse[] {
-  const segments = foldAudienceSegments(distribution);
-  const low = segments.find((s) => s.low);
-  const rest = segments.filter((s) => !s.low);
-  const chosen = low ? [...rest.slice(0, Math.max(1, max - 1)), low] : rest.slice(0, max);
-  return chosen.map((s) => ({ label: s.label, share: s.share, low: s.low }));
+  const junk = (["bot", "farmer", "giveaway_hunter"] as const).reduce(
+    (sum, q) => sum + (distribution.quality[q]?.share ?? 0),
+    0
+  );
+  const room = junk > 0 ? Math.max(1, max - 1) : max;
+  const out: AudienceGlimpse[] = foldDomainSegments(distribution, room).map(
+    (s) => ({ label: s.label, share: s.share, low: false })
+  );
+  if (junk > 0) out.push({ label: "Low-quality", share: junk, low: true });
+  return out;
 }
 
 /**
@@ -287,7 +293,7 @@ export async function runAnalysis(
 
   // 4. Deterministic scoring (packages/scoring). Numbers are computed here /
   // there — never by the LLM.
-  const { scores, verdict, expectedReach, audienceRegions, audienceDomains } = scoreAnalysis({
+  const { scores, verdict, expectedReach, audienceRegions } = scoreAnalysis({
     org: orgClassification,
     content: kolContent,
     audience,
@@ -359,14 +365,11 @@ export async function runAnalysis(
     profiles: { org: snapshot(orgProfile), kol: snapshot(kolProfile) },
     expectedReach,
     audienceRegions,
-    audienceDomains,
-    // Carried onto the report so the client picks the audience layout without
-    // re-deriving it. Absent on a pre-v4 org classification -> defaults to
-    // crypto-native, which is the historical presentation.
-    brandCryptoNative: orgClassification.cryptoNative ?? true,
     targeting: {
-      primaryBuckets: orgClassification.targetBuckets?.primary ?? [],
-      secondaryBuckets: orgClassification.targetBuckets?.secondary ?? [],
+      primaryRoles: orgClassification.targetRoles?.primary ?? [],
+      secondaryRoles: orgClassification.targetRoles?.secondary ?? [],
+      primaryDomains: orgClassification.targetDomains?.primary ?? [],
+      secondaryDomains: orgClassification.targetDomains?.secondary ?? [],
       valuedRegions: orgClassification.valuedRegions ?? [],
     },
     evidence: {

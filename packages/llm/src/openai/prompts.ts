@@ -1,7 +1,8 @@
 import {
-  AUDIENCE_BUCKET_LABELS,
   AUDIENCE_DOMAIN_LABELS,
+  AUDIENCE_QUALITY_LABELS,
   AUDIENCE_REGION_LABELS,
+  AUDIENCE_ROLE_LABELS,
   type EngagedAccountRaw,
   type Tweet,
 } from "@kol-fit/shared";
@@ -33,7 +34,11 @@ function truncate(text: string, max: number): string {
   return stripLoneSurrogates(sliced);
 }
 
-const BUCKET_LIST = Object.entries(AUDIENCE_BUCKET_LABELS)
+const ROLE_LIST = Object.entries(AUDIENCE_ROLE_LABELS)
+  .map(([k, label]) => `${k} (${label})`)
+  .join(", ");
+
+const QUALITY_LIST = Object.entries(AUDIENCE_QUALITY_LABELS)
   .map(([k, label]) => `${k} (${label})`)
   .join(", ");
 
@@ -65,20 +70,21 @@ export function buildOrgPrompt(input: ClassifyOrgInput): string {
     "Manual brief fields (these OVERRIDE anything you infer; echo them verbatim when present):",
     `  productCategory=${brief.productCategory ?? "(none)"}, targetUser=${brief.targetUser ?? "(none)"}, stage=${brief.stage ?? "(none)"}, campaignGoal=${brief.campaignGoal ?? "(none)"}, region=${brief.region ?? "(none)"}.`,
     "Fill each field (use null for unknown optionals), a short keywords list, and a confidence of low|medium|high.",
-    "Also fill targetBuckets — the audience buckets this org actually WANTS to reach:",
-    `  primary = the core target users (usually 1-3 buckets), secondary = adjacent-but-valuable (0-3 buckets).`,
-    `  Allowed buckets: ${BUCKET_LIST}.`,
-    "  Base it on the product category and target user (manual brief wins). Never include bots_spam or giveaway_hunters.",
+    "Fill targetRoles and targetDomains — who this org WANTS to reach, on two INDEPENDENT axes.",
+    `  targetRoles = what those people DO. primary = the core target users (usually 1-3), secondary = adjacent-but-valuable (0-3). Allowed: ${ROLE_LIST}.`,
+    `  targetDomains = what SPACE they are in. primary = the core space(s), secondary = adjacent (0-3). Allowed: ${DOMAIN_LIST}.`,
+    "  The axes are separate questions: a crypto DeFi protocol targeting developers is roles=[developer] domains=[crypto_defi]; " +
+      "an AI devtools company targeting the same people is roles=[developer] domains=[ai, software].",
+    "  Leave targetDomains.primary EMPTY when the product genuinely serves any space (a general-purpose analytics tool, " +
+      "a payments rail). Empty means 'no preference' and is scored as neutral — it is a real answer, not a failure. " +
+      "Do NOT list every domain to express that.",
+    "  Base it on the product category and target user (manual brief wins). Never include the 'unknown' role.",
     "Also fill valuedRegions — the macro-regions where THIS product is economically relevant (reason from product " +
       "ECONOMICS, not mere popularity): a stablecoin/payments/savings/remittance product values high-inflation " +
       "emerging markets (subsaharan_africa, latam, south_asia, southeast_asia, mena); a capital-heavy " +
       "trading/derivatives/prediction-market product values higher-income regions (north_america, western_europe, " +
       "east_asia). Use an EMPTY list [] when the product is globally relevant with no economic regional skew.",
     `  Allowed regions: ${REGION_LIST}.`,
-    "Also set cryptoNative — is THIS BRAND's own product crypto/web3-native (a chain, wallet, DeFi/NFT " +
-      "protocol, exchange, token, crypto infra)? Set false for a brand whose product is not crypto (an AI " +
-      "company, a SaaS tool, a consumer app, a fintech) EVEN IF it markets to a crypto-adjacent crowd. " +
-      "This only changes how the audience is presented back to them, never the score.",
   ];
   return lines.filter(Boolean).join("\n");
 }
@@ -147,24 +153,27 @@ export function buildAudiencePrompt(batch: EngagedAccountRaw[]): string {
     })
     .join("\n");
   return [
-    "Classify EACH engaged account below into exactly one audience bucket.",
-    `Allowed buckets: ${BUCKET_LIST}.`,
+    "Classify EACH engaged account below on THREE INDEPENDENT axes. They are separate questions — answer each on " +
+      "its own; do not let one decide another.",
+    `  role — what this account DOES, regardless of the space they do it in. One of: ${ROLE_LIST}.`,
+    `  domain — what SPACE this account is in. One of: ${DOMAIN_LIST}.`,
+    `  quality — is this real engagement? One of: ${QUALITY_LIST}.`,
+    "Because the axes are independent, a farming account still gets its real role and domain (role=developer, " +
+      "domain=crypto_defi, quality=farmer) — do NOT collapse a farmer or a bot into role=unknown. Likewise a " +
+      'developer building AI tooling is role=developer domain=ai, NOT "outside crypto": there is no such category ' +
+      "here, only domains that happen not to be crypto ones.",
+    'Use "unknown" for role or domain ONLY when there is genuinely nothing to go on, and "general" for a real person ' +
+      "with no professional or topical niche.",
     'Use ALL signals: the bio, the numeric profile stats (follower/following ratio, account age, tweet volume), ' +
       'and — most importantly — `said=` (what they actually replied/quoted, when present). ' +
-      'Generic hype ("🚀🚀", "gm", giveaway-claims, "wen airdrop/token") signals bots_spam / giveaway_hunters / ' +
-      "airdrop_farmers; substantive on-topic replies signal a real bucket. An empty bio alone does NOT make a bot " +
-      "if the reply is substantive.",
+      'Generic hype ("🚀🚀", "gm", giveaway-claims, "wen airdrop/token") signals quality=bot / giveaway_hunter / ' +
+      "farmer; substantive on-topic replies signal quality=real. An empty bio alone does NOT make a bot if the " +
+      "reply is substantive.",
     "Also assign each account a coarse macro-region from `location=` (plus language/handle cues when clear) — one " +
       `of: ${REGION_LIST}. Use "unknown" when the location is blank, a joke ("metaverse", "onchain", "gm"), or ` +
       "genuinely unplaceable. Do NOT guess a region from the audience bucket or topic — only place accounts with a " +
       "real geographic signal.",
-    "For accounts you put in `non_crypto`, ALSO assign a `domain` saying what that account IS actually about — one " +
-      `of: ${DOMAIN_LIST}. This is the only bucket that does not describe itself, and a brand outside crypto needs ` +
-      "to know whether its 'non-crypto' engagement is AI researchers or football fans. Read the bio and `said=` for " +
-      'the account\'s own subject matter. Use "general_consumer" for a real person with no professional or topical ' +
-      'niche, and "unknown" ONLY when there is genuinely nothing to go on. Set domain to null for EVERY other ' +
-      "bucket — those already say what the account is.",
-    "For each account echo its accountId, handle, and source, assign a bucket and a region, and give light signals " +
+    "For each account echo its accountId, handle, and source, assign role/domain/quality and a region, and give light signals " +
       "(botScore 0..1 or null, emptyBio true/false/null, farmingSignals list). " +
       "Do NOT output any counts, percentages, or totals — labels only.",
     `Accounts:\n${rows}`,
@@ -217,51 +226,36 @@ export function selectPostImages(
 
 export function buildReportPrompt(input: GenerateFitReportInput): string {
   const dist = input.audience.distribution;
-  const topBuckets = Object.entries(dist.buckets)
-    .sort((a, b) => (b[1]?.count ?? 0) - (a[1]?.count ?? 0))
-    .slice(0, 6)
-    .map(([b, s]) => `${b}=${Math.round((s?.share ?? 0) * 100)}%`)
-    .join(", ");
+  const top = (
+    record: Partial<Record<string, { count: number; share: number } | undefined>>
+  ): string =>
+    Object.entries(record)
+      .sort((a, b) => (b[1]?.count ?? 0) - (a[1]?.count ?? 0))
+      .slice(0, 6)
+      .map(([k, v]) => `${k}=${Math.round((v?.share ?? 0) * 100)}%`)
+      .join(", ");
 
-  // The bucket line above reports `non_crypto` as a bare percentage, which is
-  // exactly the dead end this breakdown exists to fix — without it the model
-  // writes "42% non-crypto audience" and tells the reader nothing. Shares are
-  // over the outside-crypto accounts, and the prompt says so.
-  const domainCounts = new Map<string, number>();
-  let outsideTotal = 0;
-  for (const a of input.audience.accounts ?? []) {
-    if (a.bucket !== "non_crypto") continue;
-    outsideTotal++;
-    const d = a.domain ?? "unknown";
-    domainCounts.set(d, (domainCounts.get(d) ?? 0) + 1);
-  }
-  const outsideBreakdown =
-    outsideTotal > 0
-      ? [...domainCounts.entries()]
-          .sort((a, b) => b[1] - a[1])
-          .map(([d, n]) => `${d}=${Math.round((n / outsideTotal) * 100)}%`)
-          .join(", ")
-      : "";
-  const brandIsCrypto = input.org.classification.cryptoNative ?? true;
+  // Unit 43: the audience is described on three axes rather than one flat list.
+  // The old single line reported `non_crypto=42%` and the model dutifully wrote
+  // "42% non-crypto audience" — a statement of what the audience is NOT, which
+  // told the reader nothing. Roles and domains each say something positive.
+  const roles = top(dist.roles);
+  const domains = top(dist.domains);
+  const quality = top(dist.quality);
 
   return [
     `Write the qualitative narrative for a KOL-fit report: org @${input.org.handle} vs KOL @${input.kol.handle}.`,
     `Org classification: ${JSON.stringify(input.org.classification)}.`,
     `KOL content: themes=${input.kol.content.themes.join(", ") || "(n/a)"}, verticals=${input.kol.content.verticals.join(", ") || "(n/a)"}, promoPatterns=${input.kol.content.promoPatterns.join(", ") || "none"}.`,
-    `Engaged audience distribution (already computed): ${topBuckets || "(none)"} over ${dist.sampleSize} classified accounts.`,
-    outsideBreakdown
-      ? `Of the accounts in \`non_crypto\`, here is what they are ACTUALLY about (shares are over ` +
-        `those accounts, not the whole sample): ${outsideBreakdown}. NEVER describe this group as merely ` +
-        `"non-crypto" or "outside crypto" and stop there — that names what they are not. Say what they ARE.`
-      : "",
-    brandIsCrypto
-      ? ""
-      : "NOTE: this brand's product is NOT crypto-native. Do not treat the crypto-native share of the audience " +
-        "as the valuable part or the outside-crypto share as waste — for this brand the relationship is closer " +
-        "to the reverse. Judge fit against THIS brand's target users.",
-    input.scores
-      ? `Deterministic scores (FINAL): overall=${input.scores.overall.value}, verdict=${input.verdict ?? "n/a"}, confidence=${input.scores.confidence}.`
-      : "Deterministic scores are not yet available.",
+    `Engaged audience over ${dist.sampleSize} classified accounts, on three INDEPENDENT axes (already computed):`,
+    `  by role (what they do): ${roles || "(none)"}`,
+    `  by domain (what space they are in): ${domains || "(none)"}`,
+    `  by quality (is it real engagement): ${quality || "(none)"}`,
+    "Describe this audience by what it IS — the roles and domains present — and cross the axes when it says " +
+      'something ("mostly developers, and most of those are in AI rather than crypto"). NEVER characterise any ' +
+      'part of it by what it is not ("non-crypto audience", "outside the space"): that is not a finding, and for ' +
+      "a brand that is not itself crypto it is exactly backwards. Judge fit against THIS brand's stated target " +
+      "roles and domains, whatever space those happen to be in.",
     "Write `summary` as a 3-5 sentence plain-English executive summary a reader can skim to understand the " +
       "fit: whether this KOL is a good match for this org and why, grounded in the engaged-audience match, " +
       "content alignment, and any risks. Reference the verdict qualitatively (e.g. \"a weak fit\") but do NOT " +

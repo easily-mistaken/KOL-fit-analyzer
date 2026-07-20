@@ -2,7 +2,11 @@ import { z } from "zod";
 
 import { AudienceAccountSchema, AudienceDistributionSchema } from "./audience.js";
 import { ConfidenceLevelSchema } from "./scores.js";
-import { AudienceBucketSchema, AudienceRegionSchema } from "./vocab.js";
+import {
+  AudienceDomainSchema,
+  AudienceRegionSchema,
+  AudienceRoleSchema,
+} from "./vocab.js";
 
 // Provider-neutral LLM structured outputs. These are the shapes an LLM provider
 // (mock in Unit 11, OpenAI in Unit 17) must return; they must pass Zod
@@ -10,13 +14,22 @@ import { AudienceBucketSchema, AudienceRegionSchema } from "./vocab.js";
 // schemas rather than re-deriving. Unit 29B fields are additive optional so
 // pre-v2 cached classifications and saved reports keep validating.
 
-// The org's wanted audience buckets, inferred by the LLM (Unit 29B). Primary
-// buckets are the core target; secondary are adjacent-but-valuable.
-export const TargetBucketsSchema = z.object({
-  primary: z.array(AudienceBucketSchema).default([]),
-  secondary: z.array(AudienceBucketSchema).default([]),
+// The org's wanted audience, inferred by the LLM (Unit 29B, split onto two
+// axes in Unit 43). Primary is the core target; secondary is
+// adjacent-but-valuable. Roles and domains are targeted INDEPENDENTLY, which is
+// the point of the split: "developers" and "AI" are separate wants, and an
+// account satisfies them separately (see weightedMatch in packages/scoring).
+export const TargetRolesSchema = z.object({
+  primary: z.array(AudienceRoleSchema).default([]),
+  secondary: z.array(AudienceRoleSchema).default([]),
 });
-export type TargetBuckets = z.infer<typeof TargetBucketsSchema>;
+export type TargetRoles = z.infer<typeof TargetRolesSchema>;
+
+export const TargetDomainsSchema = z.object({
+  primary: z.array(AudienceDomainSchema).default([]),
+  secondary: z.array(AudienceDomainSchema).default([]),
+});
+export type TargetDomains = z.infer<typeof TargetDomainsSchema>;
 
 // Output of classifyOrgProfile. Manual brief fields on the request override
 // these inferred fields (Invariant 7).
@@ -27,21 +40,14 @@ export const OrgClassificationSchema = z.object({
   campaignGoal: z.string().optional(),
   region: z.string().optional(),
   keywords: z.array(z.string()).default([]),
-  targetBuckets: TargetBucketsSchema.optional(),
+  targetRoles: TargetRolesSchema.optional(),
+  targetDomains: TargetDomainsSchema.optional(),
   /** Macro-regions where this brand's product is economically relevant (Unit 41
    *  Phase C), inferred from product economics — e.g. a stablecoin/payments
    *  product values high-inflation emerging markets; a capital-heavy trading
    *  product values higher-income regions. Empty/absent = no regional
    *  preference (a global audience serves it). Brand-confirmable (C2). */
   valuedRegions: z.array(AudienceRegionSchema).optional(),
-  /** Is this brand's own product crypto/web3-native? Decides how the audience
-   *  is PRESENTED, never how it is classified or scored: a crypto brand reads
-   *  one "Outside crypto" number, a non-crypto brand gets that slice opened up
-   *  by domain and the crypto-only buckets folded away instead. Kept on the ORG
-   *  classification on purpose — the org call is cheap and per-brand, while the
-   *  audience call is expensive and cached across brands. Absent on pre-v4
-   *  cached classifications; treated as `true` (the historical behaviour). */
-  cryptoNative: z.boolean().optional(),
   confidence: ConfidenceLevelSchema,
 });
 export type OrgClassification = z.infer<typeof OrgClassificationSchema>;

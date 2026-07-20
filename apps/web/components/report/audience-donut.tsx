@@ -2,23 +2,23 @@
 
 import * as React from "react";
 import {
-  AUDIENCE_CRYPTO_NATIVE_KEY,
-  AUDIENCE_DOMAIN_PREFIX,
-  AUDIENCE_LOW_QUALITY_KEY,
   AUDIENCE_OTHER_KEY,
-  foldAudienceSegments,
-  type AudienceBucket,
+  AUDIENCE_QUALITY_LABELS,
+  foldDomainSegments,
+  foldRoleSegments,
   type AudienceDistribution,
   type AudienceDomain,
-  type DomainDistribution,
+  type AudienceQuality,
+  type AudienceRole,
+  type AudienceSegment,
 } from "@kol-fit/shared";
 
 import { cn } from "@/lib/utils";
 
 /*
  * Categorical identity palette, kept deliberately separate from the brand lime
- * so a slice never reads as a control. Colour follows the BUCKET, never its
- * rank, so a bucket keeps its colour as shares move.
+ * so a slice never reads as a control. Colour follows the VALUE, never its
+ * rank, so a value keeps its colour as shares move.
  *
  * The values live in globals.css as --viz-* tokens because light and dark are
  * SELECTED, not flipped: each mode is stepped for its own surface and validated
@@ -27,101 +27,84 @@ import { cn } from "@/lib/utils";
  *   node scripts/validate_palette.js "<hexes>" --mode dark  --surface "#0a0c10"
  *   node scripts/validate_palette.js "<hexes>" --mode light --surface "#ffffff"
  *
- * Only MAX_SEGMENTS slices ever render (see below), so the number of hues that
- * can touch in one chart stays inside what the palette actually separates.
+ * Unit 43 split the taxonomy onto three axes, which made the palette problem
+ * EASIER rather than harder: role and domain are drawn as two separate charts,
+ * so their colours never compete inside one ring, and each axis only ever shows
+ * MAX_SEGMENTS slices. The two maps below may therefore reuse the same eleven
+ * validated hues independently. Quality is not a categorical axis at all — it
+ * is one ordered good→bad reading, so it gets a strip rather than a ring.
+ *
  * Identity still never rests on colour alone: every slice carries a legend
- * swatch, a label, a percentage, and a hover tooltip. (Light mode sits in the
- * contrast relief band, which those same labels cover.)
- */
-const BUCKET_COLOR: Record<AudienceBucket, string> = {
-  developers: "var(--viz-developers)",
-  founders: "var(--viz-founders)",
-  defi_users: "var(--viz-defi-users)",
-  investors_vcs: "var(--viz-investors-vcs)",
-  traders: "var(--viz-traders)",
-  kols_creators: "var(--viz-creators)",
-  ai_crypto: "var(--viz-ai-crypto)",
-  infra_research: "var(--viz-infra-research)",
-  community_managers: "var(--viz-community-managers)",
-  nft_gaming: "var(--viz-nft-gaming)",
-  meme_degens: "var(--viz-meme-degens)",
-  // "Outside our space" is the neutral slot, so it stays grey by intent rather
-  // than spending a hue.
-  non_crypto: "var(--viz-neutral)",
-  // Low-quality buckets are a reserved status tone, never a categorical hue.
-  bots_spam: "var(--viz-low-quality)",
-  airdrop_farmers: "var(--viz-low-quality)",
-  giveaway_hunters: "var(--viz-low-quality)",
-};
-
-/*
- * Domain slices render ONLY in the non-crypto-brand layout — and that layout
- * folds the six crypto-only buckets into one slice and replaces the
- * `non_crypto` bucket, freeing seven validated hues. No new colour is
- * introduced: the domains likeliest to carry real share take the freed hues, so
- * they cannot collide with anything else actually on screen.
- *
- * The rare tail (science, news, culture) reuses a role bucket's hue. Bounded
- * and deliberate: only 6 slices ever render, so a collision needs BOTH the rare
- * domain and its twin role bucket to make the cut, and identity never rests on
- * colour alone here — every slice carries a swatch, a label, and a percentage.
- *
- * "Unclear" shares the "Other" grey on purpose. They are the same thing to a
- * reader (uncategorised remainder), so if both render, one grey family reading
- * as one idea is the honest result rather than a third grey nobody can tell
- * apart from the other two.
+ * swatch, a label, a percentage, and a hover tooltip.
  */
 const DOMAIN_COLOR: Record<AudienceDomain, string> = {
-  ai_ml: "var(--viz-ai-crypto)",
-  software_tech: "var(--viz-infra-research)",
-  finance_business: "var(--viz-traders)",
-  creative_media: "var(--viz-meme-degens)",
-  gaming_esports: "var(--viz-defi-users)",
-  general_consumer: "var(--viz-neutral)",
-  science_academia: "var(--viz-developers)",
-  news_politics: "var(--viz-community-managers)",
-  culture_lifestyle: "var(--viz-creators)",
+  crypto_defi: "var(--viz-defi-users)",
+  crypto_infra: "var(--viz-infra-research)",
+  crypto_nft_gaming: "var(--viz-nft-gaming)",
+  crypto_memecoins: "var(--viz-meme-degens)",
+  ai: "var(--viz-ai-crypto)",
+  software: "var(--viz-developers)",
+  finance: "var(--viz-traders)",
+  creative: "var(--viz-creators)",
+  gaming: "var(--viz-investors-vcs)",
+  science: "var(--viz-community-managers)",
+  culture: "var(--viz-founders)",
+  // 14 domains against 11 validated categorical hues + 2 neutrals, so exactly
+  // one pair must share. `news_politics` doubles up with `culture`: both are
+  // general-interest, non-professional domains, so on the rare run where both
+  // make the top 6 the repeated hue reads as one "general interest" family
+  // rather than as a mislabel. The legend labels every slice regardless.
+  news_politics: "var(--viz-founders)",
+  general: "var(--viz-neutral)",
   unknown: "var(--viz-other)",
 };
 
-const LOW_QUALITY_COLOR = "var(--viz-low-quality)";
+const ROLE_COLOR: Record<AudienceRole, string> = {
+  founder: "var(--viz-founders)",
+  developer: "var(--viz-developers)",
+  investor: "var(--viz-investors-vcs)",
+  trader: "var(--viz-traders)",
+  researcher: "var(--viz-infra-research)",
+  creator: "var(--viz-creators)",
+  operator: "var(--viz-community-managers)",
+  enthusiast: "var(--viz-defi-users)",
+  unknown: "var(--viz-other)",
+};
+
+/** Quality is ORDERED (real → junk), not categorical, so it reads on one
+ *  good-to-bad ramp ending in the reserved error tone. */
+const QUALITY_COLOR: Record<AudienceQuality, string> = {
+  real: "var(--viz-defi-users)",
+  farmer: "var(--viz-traders)",
+  giveaway_hunter: "var(--viz-founders)",
+  bot: "var(--viz-low-quality)",
+};
+
 const OTHER_COLOR = "var(--viz-other)";
-/** The folded crypto-only buckets. Takes `nft_gaming`'s hue — one of the very
- *  buckets folded INTO it, so it is free by construction. */
-const CRYPTO_NATIVE_COLOR = "var(--viz-nft-gaming)";
 
 const TIP_WIDTH = 210;
 /** Below this pointer height there isn't room to sit above the cursor. */
 const TIP_FLIP_Y = 150;
-
-/** Which slices exist (and the fold rules) is pure logic in @kol-fit/shared;
- *  this component only paints them. */
-function colorFor(key: string): string {
-  if (key === AUDIENCE_LOW_QUALITY_KEY) return LOW_QUALITY_COLOR;
-  if (key === AUDIENCE_OTHER_KEY) return OTHER_COLOR;
-  if (key === AUDIENCE_CRYPTO_NATIVE_KEY) return CRYPTO_NATIVE_COLOR;
-  if (key.startsWith(AUDIENCE_DOMAIN_PREFIX)) {
-    const d = key.slice(AUDIENCE_DOMAIN_PREFIX.length) as AudienceDomain;
-    return DOMAIN_COLOR[d] ?? OTHER_COLOR;
-  }
-  return BUCKET_COLOR[key as AudienceBucket] ?? OTHER_COLOR;
-}
 
 function pctLabel(share: number): string {
   const p = share * 100;
   return p >= 1 || p === 0 ? `${Math.round(p)}%` : `${p.toFixed(1)}%`;
 }
 
-export function AudienceDonut({
-  distribution,
-  domains,
-  cryptoNative = true,
+type Entry = AudienceSegment & { color: string };
+
+/** One donut over one axis. Which slices exist (and the fold rules) is pure
+ *  logic in @kol-fit/shared; this only paints them. */
+function AxisDonut({
+  entries,
+  caption,
+  sub,
+  size = 176,
 }: {
-  distribution: AudienceDistribution;
-  /** What the outside-crypto accounts are about. Absent on pre-v4 reports. */
-  domains?: DomainDistribution;
-  /** Is the BRAND crypto-native? Chooses the layout — see foldAudienceSegments. */
-  cryptoNative?: boolean;
+  entries: Entry[];
+  caption: string;
+  sub: string;
+  size?: number;
 }) {
   const [hover, setHover] = React.useState<string | null>(null);
   // The floating tooltip is anchored to the pointer's position inside the ring,
@@ -132,18 +115,7 @@ export function AudienceDonut({
   const [pos, setPos] = React.useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const wrapRef = React.useRef<HTMLDivElement>(null);
 
-  const entries = React.useMemo(
-    () =>
-      foldAudienceSegments(distribution, { domains, cryptoNative }).map((s) => ({
-        ...s,
-        color: colorFor(s.key),
-      })),
-    [distribution, domains, cryptoNative]
-  );
-
-  // Donut geometry
-  const size = 216;
-  const stroke = 26;
+  const stroke = 22;
   const r = (size - stroke) / 2 - 6;
   const c = 2 * Math.PI * r;
   const cx = size / 2;
@@ -167,7 +139,7 @@ export function AudienceDonut({
   }
 
   return (
-    <div className="grid items-center gap-7 sm:grid-cols-[216px_1fr]">
+    <div>
       <div
         ref={wrapRef}
         className="relative mx-auto"
@@ -214,21 +186,24 @@ export function AudienceDonut({
         <div className="pointer-events-none absolute inset-0 grid place-content-center text-center">
           {active ? (
             <>
-              <div className="font-mono text-2xl font-bold" style={{ color: active.color }}>
+              <div
+                className="font-mono text-xl font-bold"
+                style={{ color: active.color }}
+              >
                 {pctLabel(active.share)}
               </div>
-              <div className="max-w-[120px] text-[11px] leading-tight text-secondary-foreground">
+              <div className="max-w-[104px] text-[11px] leading-tight text-secondary-foreground">
                 {active.label}
               </div>
             </>
           ) : (
             <>
               {/* Unit 33: no sample counts client-side — neutral label. */}
-              <div className="max-w-[110px] text-[12px] font-semibold leading-tight text-foreground">
-                Engaged audience
+              <div className="max-w-[104px] text-[12px] font-semibold leading-tight text-foreground">
+                {caption}
               </div>
-              <div className="mt-0.5 text-[10.5px] uppercase tracking-wider text-muted-foreground">
-                by type
+              <div className="mt-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+                {sub}
               </div>
             </>
           )}
@@ -238,7 +213,7 @@ export function AudienceDonut({
           <div
             className="pointer-events-none absolute z-30 w-[210px] rounded-md border border-strong bg-elevated px-2.5 py-1.5 text-xs shadow-card"
             style={{
-              // The ring is only ~216px wide, so a tooltip anchored to the
+              // The ring is only ~176px wide, so a tooltip anchored to the
               // pointer would hang off its left edge and out of the card. Keep
               // it clamped, and drop it below the pointer when a folded slice's
               // breakdown is too tall to sit above.
@@ -284,7 +259,7 @@ export function AudienceDonut({
         )}
       </div>
 
-      <ul className="grid gap-x-5 gap-y-1.5 sm:grid-cols-2">
+      <ul className="mt-3 grid gap-x-4 gap-y-1">
         {entries.map((e) => (
           <li
             key={e.key}
@@ -294,7 +269,7 @@ export function AudienceDonut({
                 : undefined
             }
             className={cn(
-              "grid cursor-default grid-cols-[12px_1fr_auto] items-center gap-2 rounded px-1 text-[13px] transition-colors",
+              "grid cursor-default grid-cols-[12px_1fr_auto] items-center gap-2 rounded px-1 text-[12.5px] transition-colors",
               hover === e.key && "bg-elevated"
             )}
             onMouseEnter={() => setHover(e.key)}
@@ -311,11 +286,6 @@ export function AudienceDonut({
                   ({e.members.length})
                 </span>
               )}
-              {e.low && (
-                <span className="shrink-0 rounded border border-error/40 px-1 py-px text-[9px] uppercase tracking-wide text-error">
-                  low-quality
-                </span>
-              )}
             </span>
             <span className="font-mono text-xs text-foreground">
               {Math.round(e.share * 100)}%
@@ -323,6 +293,99 @@ export function AudienceDonut({
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+/**
+ * Engagement quality as one ordered strip rather than a fourth ring. Quality is
+ * not a categorical question — there is a right answer and the rest are
+ * degrees of wrong — so ranking it good→bad says more than a pie ever could,
+ * and it keeps the two categorical rings free of a reserved error tone.
+ */
+function QualityStrip({ distribution }: { distribution: AudienceDistribution }) {
+  const order: AudienceQuality[] = ["real", "farmer", "giveaway_hunter", "bot"];
+  const rows = order
+    .map((q) => ({ q, bin: distribution.quality[q] }))
+    .filter((r) => (r.bin?.share ?? 0) > 0);
+  if (rows.length === 0) return null;
+
+  return (
+    <div className="mt-6 border-t border-default pt-4">
+      <div className="mb-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+        Engagement quality
+      </div>
+      <div className="flex h-2.5 w-full overflow-hidden rounded-full">
+        {rows.map(({ q, bin }) => (
+          <div
+            key={q}
+            title={`${AUDIENCE_QUALITY_LABELS[q]} ${pctLabel(bin!.share)}`}
+            style={{
+              width: `${bin!.share * 100}%`,
+              backgroundColor: QUALITY_COLOR[q],
+            }}
+          />
+        ))}
+      </div>
+      <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+        {rows.map(({ q, bin }) => (
+          <li key={q} className="flex items-center gap-1.5 text-[12px]">
+            <span
+              className="h-2.5 w-2.5 rounded-sm"
+              style={{ backgroundColor: QUALITY_COLOR[q] }}
+            />
+            <span className="text-secondary-foreground">
+              {AUDIENCE_QUALITY_LABELS[q]}
+            </span>
+            <span className="font-mono text-xs text-foreground">
+              {pctLabel(bin!.share)}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export function AudienceDonut({
+  distribution,
+}: {
+  distribution: AudienceDistribution;
+}) {
+  const domains = React.useMemo(
+    () =>
+      foldDomainSegments(distribution).map((s) => ({
+        ...s,
+        color:
+          s.key === AUDIENCE_OTHER_KEY
+            ? OTHER_COLOR
+            : (DOMAIN_COLOR[s.key as AudienceDomain] ?? OTHER_COLOR),
+      })),
+    [distribution]
+  );
+  const roles = React.useMemo(
+    () =>
+      foldRoleSegments(distribution).map((s) => ({
+        ...s,
+        color:
+          s.key === AUDIENCE_OTHER_KEY
+            ? OTHER_COLOR
+            : (ROLE_COLOR[s.key as AudienceRole] ?? OTHER_COLOR),
+      })),
+    [distribution]
+  );
+
+  return (
+    <div>
+      <div className="grid gap-8 sm:grid-cols-2">
+        <AxisDonut
+          entries={domains}
+          caption="What they're into"
+          sub="by domain"
+        />
+        <AxisDonut entries={roles} caption="What they do" sub="by role" />
+      </div>
+      <QualityStrip distribution={distribution} />
     </div>
   );
 }

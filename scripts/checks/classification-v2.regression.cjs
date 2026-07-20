@@ -1,10 +1,10 @@
 // Unit 29B regression: LLM classification v2. Verifies (1) additive schemas,
-// (2) org targetBuckets round-trip, (3) KOL content per-post labels + safety
+// (2) org targetRoles/targetDomains round-trip, (3) KOL content per-post labels + safety
 // flags + media labels with image parts attached (capped), (4) audience prompt
 // carries 29A reply text + profile stats, (5) audience batches run concurrently
 // on the fast model, input-ordered, (6) the assessContentFit rubric (incl.
 // repair on out-of-range), (7) mock determinism for all new fields, and
-// (8) cls:v4 cache behavior (fit cached, audience key text-sensitive).
+// (8) cls:v5 cache behavior (fit cached, audience key text-sensitive).
 //
 // Run after `pnpm build`:  node scripts/checks/classification-v2.regression.cjs
 // (or `pnpm check:classification-v2`). Injected fetch — no network, no keys.
@@ -24,7 +24,8 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const ORG_OUT = {
   productCategory: "DeFi / AMM", targetUser: "LPs and traders", stage: "mature",
   campaignGoal: "user_acquisition", region: null, keywords: ["amm", "swap"],
-  targetBuckets: { primary: ["defi_users", "traders"], secondary: ["developers"] },
+  targetRoles: { primary: ["trader", "enthusiast"], secondary: ["developer"] },
+  targetDomains: { primary: ["crypto_defi"], secondary: [] },
   confidence: "high",
 };
 const KOL_OUT = {
@@ -45,7 +46,7 @@ const FIT_OUT = {
 };
 const audienceOut = (n) => ({
   accounts: Array.from({ length: n }, () => ({
-    accountId: null, handle: null, source: "REPLY", bucket: "developers",
+    accountId: null, handle: null, source: "REPLY", role: "developer", domain: "crypto_defi", quality: "real",
     signals: { botScore: 0.1, emptyBio: false, farmingSignals: [] },
   })),
 });
@@ -85,15 +86,16 @@ const userText = (req) => (typeof req.input[1].content === "string" ? req.input[
   ck("out-of-range rubric rejected by shared schema",
     !ContentFitAssessmentSchema.safeParse({ ...FIT_OUT, naturalMentionFit: 6 }).success);
 
-  // --- 2. org targetBuckets ------------------------------------------------
+  // --- 2. org targetRoles / targetDomains ------------------------------------------------
   {
     const state = newState();
     const p = llm.createOpenAiLlmProvider({ apiKey: "k", model: "main-x", fetchImpl: makeFetch(state) });
     const org = await p.classifyOrgProfile({ handle: "uniswap", profile: null });
-    ck("org targetBuckets round-trip", org.targetBuckets && org.targetBuckets.primary.includes("defi_users") && org.targetBuckets.secondary.includes("developers"));
+    ck("org targetRoles round-trip", org.targetRoles && org.targetRoles.primary.includes("trader") && org.targetRoles.secondary.includes("developer"));
+    ck("org targetDomains round-trip", org.targetDomains && org.targetDomains.primary.includes("crypto_defi"));
     const schema = state.requests[0].text.format.schema;
-    ck("org JSON schema requires targetBuckets", schema.required.includes("targetBuckets"));
-    ck("org prompt asks for target buckets", userText(state.requests[0]).includes("targetBuckets"));
+    ck("org JSON schema requires both target axes", schema.required.includes("targetRoles") && schema.required.includes("targetDomains"));
+    ck("org prompt asks for both target axes", userText(state.requests[0]).includes("targetRoles") && userText(state.requests[0]).includes("targetDomains"));
   }
 
   // --- 3. kol content: labels + flags + attached images --------------------
@@ -158,7 +160,7 @@ const userText = (req) => (typeof req.input[1].content === "string" ? req.input[
   {
     const mock = llm.createMockLlmProvider();
     const org = await mock.classifyOrgProfile({ handle: "acme", profile: { id: "u1", handle: "acme", bio: "Onchain perps for everyone. Trade with deep liquidity on L2." } });
-    ck("mock org emits targetBuckets", org.targetBuckets && org.targetBuckets.primary.includes("traders"));
+    ck("mock org emits targetRoles", org.targetRoles && org.targetRoles.primary.includes("trader"));
     const posts = [
       { id: "t1", text: "GIVEAWAY! dm me to claim 🎁" },
       { id: "t2", text: "real yield analysis", media: [{ type: "photo", url: "https://mock.local/media/yield-chart.png" }] },
@@ -172,14 +174,14 @@ const userText = (req) => (typeof req.input[1].content === "string" ? req.input[
     ck("mock content-fit deterministic + in range", JSON.stringify(fitA) === JSON.stringify(fitB) && [fitA.topicalAdjacency, fitA.audienceOverlapPotential, fitA.naturalMentionFit].every((v) => Number.isInteger(v) && v >= 0 && v <= 5));
   }
 
-  // --- 8. cache: cls:v4, fit cached, audience key text-sensitive -----------
+  // --- 8. cache: cls:v5, fit cached, audience key text-sensitive -----------
   {
     const calls = { fit: 0, audience: 0 };
     const inner = {
       model: "m",
       async classifyOrgProfile() { throw new Error("unused"); },
       async classifyKolContent() { throw new Error("unused"); },
-      async classifyAudienceAccounts() { calls.audience++; return { accounts: [], distribution: { sampleSize: 0, buckets: {} } }; },
+      async classifyAudienceAccounts() { calls.audience++; return { accounts: [], distribution: { sampleSize: 0, roles: {}, domains: {}, quality: {} } }; },
       async assessContentFit() { calls.fit++; return FIT_OUT; },
       async generateFitReport() { throw new Error("unused"); },
     };
@@ -197,7 +199,7 @@ const userText = (req) => (typeof req.input[1].content === "string" ? req.input[
     await p.classifyAudienceAccounts({ accounts: [acct("gm")] });
     await p.classifyAudienceAccounts({ accounts: [acct("substantive reply")] });
     ck("audience cache text-sensitive (2 inner calls, 1 hit)", calls.audience === 2 && p.cacheStats.audience.hits === 1);
-    ck("keys use the cls:v4 namespace", keys.length > 0 && keys.every((k) => k.startsWith("cls:v4:")));
+    ck("keys use the cls:v5 namespace", keys.length > 0 && keys.every((k) => k.startsWith("cls:v5:")));
   }
 
   console.log(`\nCLASSIFICATION V2 REGRESSION (29B): ${pass} passed, ${fail} failed`);

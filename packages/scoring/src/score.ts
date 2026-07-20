@@ -18,7 +18,6 @@ import {
   mediaProfileReason,
   normalizeGoal,
   paidPromoRisk,
-  domainDistribution,
   regionDistribution,
   resolveGoal,
   resolveTargets,
@@ -65,7 +64,6 @@ export function scoreAnalysis(input: ScoringInput): ScoringResult {
   );
   // Region breakdown of the engaged audience — a dial beside the score.
   const audienceRegions = regionDistribution(accounts);
-  const audienceDomains = domainDistribution(accounts);
 
   // Expected reach: a DIAL beside the score (how MANY target customers engage
   // per post), never blended into the fit (Phase B). value = reach / price and
@@ -165,5 +163,5 @@ export function scoreAnalysis(input: ScoringInput): ScoringResult {
     confidence: effectiveConfidence,
   });
 
-  return { scores, verdict, expectedReach: reach, audienceRegions, audienceDomains };
+  return { scores, verdict, expectedReach: reach, audienceRegions };
 }

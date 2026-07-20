@@ -1,4 +1,4 @@
-import type { AudienceBucket } from "@kol-fit/shared";
+import type { AudienceDomain, AudienceRole } from "@kol-fit/shared";
 
 // Scoring v3 — "audience-honest" (Unit 41). The fit score IS the engaged-audience
 // match; there are NO identity/relationship modifiers and NO weighted blend of
@@ -22,15 +22,29 @@ export const VERDICT_THRESHOLDS = {
 
 export type CurveAnchors = ReadonlyArray<readonly [number, number]>;
 
-/** Engaged-audience match: matched share of REAL (human) engaged accounts.
- *  This curve IS the fit score in v3. */
+/**
+ * Engaged-audience match: matched share of REAL (human) engaged accounts.
+ * This curve IS the fit score.
+ *
+ * RECALIBRATED in Unit 43 (x-values only; the score anchors are untouched).
+ * Two-axis matching awards PARTIAL credit — a right-role/wrong-domain account
+ * contributes DOMAIN_FLOOR instead of a flat zero — so the same audience now
+ * produces a structurally higher matched share than the old single-axis match
+ * did. Left alone, every verdict would have drifted upward for free and the
+ * bands would have stopped meaning what they say.
+ *
+ * The x-values are therefore scaled by ~1.10, the inflation measured on the
+ * saved 2026-07-10 Uniswap benchmark (0.47 single-axis -> 0.52 two-axis under
+ * ROLE_DOMAIN_FLOOR). That audience scored ~90 before and scores ~89 after: the
+ * bands keep their meaning, and only the arithmetic feeding them changed.
+ */
 export const EAM_ANCHORS: CurveAnchors = [
   [0, 0],
-  [0.05, 30],
-  [0.15, 55],
-  [0.3, 75],
-  [0.45, 88],
-  [0.6, 100],
+  [0.055, 30],
+  [0.165, 55],
+  [0.33, 75],
+  [0.5, 88],
+  [0.66, 100],
 ];
 
 /** Content fit: weighted 0-5 rubric average from the 29B assessment. 3/5
@@ -93,6 +107,19 @@ export const REPEAT_ENGAGER_FULL_SHARE = 0.25;
 /** Farmer shares count partially (humans, but low-value). */
 export const FARMER_WEIGHT_QUALITY = 0.6; // in audience_quality lowQ
 export const FARMER_WEIGHT_RISK = 0.5; // in bot_farm_risk fakeShare
+/**
+ * Farmers in the engaged-audience MATCH (Unit 43).
+ *
+ * Under the old flat taxonomy `airdrop_farmers` was its own bucket and simply
+ * was not a target, so a farmer sat in the denominator contributing zero — an
+ * implicit 100% discount nobody had to write down. Splitting quality out means
+ * a farmer now keeps a real role and domain (which is the point), and would
+ * otherwise count as a FULL match and quietly inflate every farm-heavy KOL.
+ *
+ * 0.5 restores the discount without the old all-or-nothing: they are real
+ * people who might convert, at meaningfully lower intent.
+ */
+export const FARMER_WEIGHT_MATCH = 0.5;
 
 /** Engagement-source weights for the audience match: a reply/quote is real
  *  attention; a retweet is cheap; a follow barely counts (kept small, not zero,
@@ -160,66 +187,108 @@ export const CF_RUBRIC_WEIGHTS = {
   naturalMentionFit: 0.3,
 } as const;
 
-// --- Campaign goal -> supporting audience buckets ----------------------------
+/**
+ * What a right-role / wrong-domain account is worth, 0..1 — PER ROLE (Unit 43).
+ *
+ * Domain modulates the match instead of gating it, but how much domain matters
+ * depends entirely on the role, and a single flat floor got this badly wrong.
+ * A developer is a transferable specialist: one building AI tooling is still a
+ * plausible user of a developer product, whatever space they are in. An
+ * ENTHUSIAST is the opposite — they are *defined* by what they are enthusiastic
+ * about, so an enthusiast of the wrong thing is simply not your user. With one
+ * flat floor, any brand targeting consumers scored every random member of the
+ * public at floor value, which is how a casino audience of 70% general public
+ * came out mid-band instead of AVOID.
+ *
+ * So: expertise-led roles keep meaningful cross-domain value, interest-led ones
+ * keep little or none. Re-tune here, and bump SCORING_VERSION when you do.
+ */
+export const ROLE_DOMAIN_FLOOR: Record<AudienceRole, number> = {
+  developer: 0.35,
+  researcher: 0.35,
+  founder: 0.3,
+  investor: 0.3, // capital crosses domains more easily than taste does
+  operator: 0.2,
+  creator: 0.2,
+  trader: 0.1,
+  enthusiast: 0, // their domain IS their identity
+  unknown: 0, // never a target anyway
+};
 
-export const GOAL_BUCKETS: Record<string, AudienceBucket[]> = {
-  developer_adoption: ["developers", "infra_research"],
-  investor_credibility: ["investors_vcs", "founders"],
-  user_acquisition: ["defi_users", "traders", "nft_gaming", "ai_crypto"],
-  token_launch_visibility: ["traders", "meme_degens", "kols_creators"],
-  community_growth: [
-    "community_managers",
-    "kols_creators",
-    "developers",
-    "defi_users",
-  ],
+// --- Campaign goal -> supporting audience ------------------------------------
+
+// Unit 43: a goal implies a ROLE need, and sometimes nothing about domain at
+// all. The old flat table conflated the two — `user_acquisition` listing
+// "defi_users, traders, nft_gaming, ai_crypto" was really saying "any crypto
+// end-user", i.e. a domain statement wearing a role's clothes. Split, each
+// entry says exactly one thing.
+
+export const GOAL_ROLES: Record<string, AudienceRole[]> = {
+  developer_adoption: ["developer", "researcher"],
+  investor_credibility: ["investor", "founder"],
+  user_acquisition: ["enthusiast", "trader"],
+  token_launch_visibility: ["trader", "creator"],
+  community_growth: ["operator", "creator", "enthusiast"],
   awareness: [
-    "founders",
-    "developers",
-    "defi_users",
-    "traders",
-    "investors_vcs",
-    "nft_gaming",
-    "ai_crypto",
-    "infra_research",
-    "community_managers",
-    "kols_creators",
+    "founder",
+    "developer",
+    "investor",
+    "trader",
+    "researcher",
+    "creator",
+    "operator",
+    "enthusiast",
   ],
 };
 
-// Buckets never counted as "target" audience.
-export const NON_TARGET_BUCKETS: AudienceBucket[] = [
-  "bots_spam",
-  "giveaway_hunters",
+/** Goals that also narrow the DOMAIN. Most do not: wanting developers says
+ *  nothing about which space they build in — that comes from the brand. */
+export const GOAL_DOMAINS: Record<string, AudienceDomain[]> = {
+  token_launch_visibility: ["crypto_defi", "crypto_memecoins", "crypto_infra"],
+};
+
+// Roles never counted as a target audience. Quality is a separate axis now, so
+// this list holds only genuine non-targets: an account we could not identify at
+// all. Bots and giveaway hunters are excluded upstream by QUALITY, which is
+// what stopped their exclusion from being a role statement.
+export const NON_TARGET_ROLES: AudienceRole[] = ["unknown"];
+
+// Fallback target set when the brand could not be classified at all. Roles
+// only: guessing a domain for a brand we failed to read would invent the very
+// specificity the generic-target cap exists to admit we lack.
+export const GENERIC_TARGET_ROLES: AudienceRole[] = [
+  "founder",
+  "developer",
+  "investor",
+  "trader",
+  "researcher",
+  "creator",
+  "operator",
+  "enthusiast",
 ];
 
-// Buckets treated as "real crypto audience" for the generic fallback target set.
-export const GENERIC_TARGET_BUCKETS: AudienceBucket[] = [
-  "founders",
-  "developers",
-  "defi_users",
-  "traders",
-  "investors_vcs",
-  "nft_gaming",
-  "ai_crypto",
-  "infra_research",
-  "community_managers",
-  "kols_creators",
-  "meme_degens",
+// Keyword -> target hints. FALLBACK ONLY (29B org.targetRoles/targetDomains is
+// the primary source); scanned over productCategory/targetUser/keywords.
+export const KEYWORD_ROLES: { re: RegExp; roles: AudienceRole[] }[] = [
+  { re: /perp|derivativ|trading|trader|leverage|funding/i, roles: ["trader"] },
+  { re: /developer|\bdev\b|sdk|api|smart contract|infra|protocol|tooling/i, roles: ["developer"] },
+  { re: /research|analytic|data|academic/i, roles: ["researcher"] },
+  { re: /founder|startup|builder/i, roles: ["founder"] },
+  { re: /investor|\bvc\b|fund|angel/i, roles: ["investor"] },
+  { re: /community|creator|kol|influencer/i, roles: ["operator", "creator"] },
+  { re: /consumer|retail|\buser\b|\bapp\b/i, roles: ["enthusiast"] },
 ];
 
-// Keyword -> target bucket hints. FALLBACK ONLY (29B org.targetBuckets is the
-// primary source); scanned over productCategory/targetUser/keywords.
-export const KEYWORD_BUCKETS: { re: RegExp; buckets: AudienceBucket[] }[] = [
-  { re: /perp|derivativ|trading|trader|leverage|funding/i, buckets: ["traders"] },
-  { re: /defi|yield|lending|stablecoin|liquidity|vault|amm|dex/i, buckets: ["defi_users"] },
-  { re: /developer|\bdev\b|sdk|api|smart contract|infra|protocol|tooling/i, buckets: ["developers", "infra_research"] },
-  { re: /nft|gaming|game|metaverse/i, buckets: ["nft_gaming"] },
-  { re: /\bai\b|agent|machine learning/i, buckets: ["ai_crypto"] },
-  { re: /founder|startup|builder/i, buckets: ["founders"] },
-  { re: /investor|\bvc\b|fund|angel/i, buckets: ["investors_vcs"] },
-  { re: /meme|degen/i, buckets: ["meme_degens"] },
-  { re: /community|creator|kol/i, buckets: ["community_managers", "kols_creators"] },
+export const KEYWORD_DOMAINS: { re: RegExp; domains: AudienceDomain[] }[] = [
+  { re: /defi|yield|lending|stablecoin|liquidity|vault|amm|dex/i, domains: ["crypto_defi"] },
+  { re: /nft|metaverse/i, domains: ["crypto_nft_gaming"] },
+  { re: /meme|degen/i, domains: ["crypto_memecoins"] },
+  { re: /\bl1\b|\bl2\b|rollup|zk\b|validator|node|chain|protocol|smart contract/i, domains: ["crypto_infra"] },
+  { re: /\bai\b|artificial intelligence|machine learning|\bllm\b|agent/i, domains: ["ai"] },
+  { re: /\bsaas\b|developer tool|devtool|software|api|platform|productivity/i, domains: ["software"] },
+  { re: /fintech|bank|payment|trading app|brokerage|invest/i, domains: ["finance"] },
+  { re: /design|creative|content|video|music|art/i, domains: ["creative"] },
+  { re: /game|gaming|esports/i, domains: ["gaming"] },
 ];
 
 // --- Geo/language ------------------------------------------------------------

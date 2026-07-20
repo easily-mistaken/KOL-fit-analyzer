@@ -91,10 +91,17 @@ export class MockLlmProvider implements LlmProvider {
     const verdict = input.verdict ?? "OKAY";
     const distribution = input.audience.distribution;
 
-    // Deterministic top bucket for narrative flavor.
-    const topBucket = Object.entries(distribution.buckets).sort(
-      (a, b) => (b[1]?.count ?? 0) - (a[1]?.count ?? 0)
-    )[0]?.[0];
+    // Deterministic top role/domain for narrative flavor (Unit 43).
+    const topOf = (
+      record: Partial<Record<string, { count: number; share: number }>>
+    ): string | undefined =>
+      Object.entries(record).sort(
+        (a, b) => (b[1]?.count ?? 0) - (a[1]?.count ?? 0)
+      )[0]?.[0];
+    const topRole = topOf(distribution.roles);
+    const topDomain = topOf(distribution.domains);
+    const topBucket =
+      topRole && topDomain ? `${topRole} / ${topDomain}` : (topRole ?? topDomain);
 
     const verdictPhrase: Record<string, string> = {
       STRONG: "a strong fit",

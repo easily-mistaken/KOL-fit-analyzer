@@ -1,7 +1,8 @@
 import {
-  AudienceBucketSchema,
   AudienceDomainSchema,
+  AudienceQualitySchema,
   AudienceRegionSchema,
+  AudienceRoleSchema,
   BrandSafetyFlagKindSchema,
   ConfidenceLevelSchema,
   EngagementSourceSchema,
@@ -17,7 +18,8 @@ import {
 const nullableString = { type: ["string", "null"] } as const;
 const stringArray = { type: "array", items: { type: "string" } } as const;
 
-const BUCKETS = [...AudienceBucketSchema.options];
+const ROLES = [...AudienceRoleSchema.options];
+const QUALITY = [...AudienceQualitySchema.options];
 const SOURCES = [...EngagementSourceSchema.options];
 const CONFIDENCE = [...ConfidenceLevelSchema.options];
 const SAFETY_FLAGS = [...BrandSafetyFlagKindSchema.options];
@@ -25,9 +27,14 @@ const MEDIA_KINDS = [...MediaLabelSchema.shape.kind.options];
 const REGIONS = [...AudienceRegionSchema.options];
 const DOMAINS = [...AudienceDomainSchema.options];
 
-const bucketArray = {
+const roleArray = {
   type: "array",
-  items: { type: "string", enum: BUCKETS },
+  items: { type: "string", enum: ROLES },
+} as const;
+
+const domainArray = {
+  type: "array",
+  items: { type: "string", enum: DOMAINS },
 } as const;
 
 const regionArray = {
@@ -38,9 +45,7 @@ const regionArray = {
 // Nullable region enum for per-account labeling (unplaceable -> null/unknown).
 const nullableRegion = { type: ["string", "null"], enum: [...REGIONS, null] } as const;
 
-// Nullable domain enum — carried ONLY for `non_crypto` accounts, null for every
-// other bucket (which already says what the account is).
-const nullableDomain = { type: ["string", "null"], enum: [...DOMAINS, null] } as const;
+
 
 export const ORG_CLASSIFICATION_SCHEMA = {
   type: "object",
@@ -52,21 +57,23 @@ export const ORG_CLASSIFICATION_SCHEMA = {
     campaignGoal: nullableString,
     region: nullableString,
     keywords: stringArray,
-    // The org's wanted audience buckets (Unit 29B) — drives scoring v2's
-    // engaged-audience match instead of regex keyword derivation.
-    targetBuckets: {
+    // The org's wanted audience (Unit 29B), split onto two independent axes in
+    // Unit 43 — drives the engaged-audience match instead of regex derivation.
+    targetRoles: {
       type: "object",
       additionalProperties: false,
-      properties: { primary: bucketArray, secondary: bucketArray },
+      properties: { primary: roleArray, secondary: roleArray },
+      required: ["primary", "secondary"],
+    },
+    targetDomains: {
+      type: "object",
+      additionalProperties: false,
+      properties: { primary: domainArray, secondary: domainArray },
       required: ["primary", "secondary"],
     },
     // Macro-regions where the product is economically relevant (Unit 41 Phase
     // C2). Empty when the product has no regional preference.
     valuedRegions: regionArray,
-    // Is the BRAND's own product crypto-native (Unit 42)? Presentation only —
-    // decides whether the audience reads as one "Outside crypto" number or as a
-    // domain breakdown with the crypto buckets folded away.
-    cryptoNative: { type: "boolean" },
     confidence: { type: "string", enum: CONFIDENCE },
   },
   required: [
@@ -76,9 +83,9 @@ export const ORG_CLASSIFICATION_SCHEMA = {
     "campaignGoal",
     "region",
     "keywords",
-    "targetBuckets",
+    "targetRoles",
+    "targetDomains",
     "valuedRegions",
-    "cryptoNative",
     "confidence",
   ],
 } as const;
@@ -186,12 +193,13 @@ export const AUDIENCE_BATCH_SCHEMA = {
           accountId: nullableString,
           handle: nullableString,
           source: { type: "string", enum: SOURCES },
-          bucket: { type: "string", enum: BUCKETS },
+          // The three orthogonal axes (Unit 43).
+          role: { type: "string", enum: ROLES },
+          domain: { type: "string", enum: DOMAINS },
+          quality: { type: "string", enum: QUALITY },
           // Coarse macro-region inferred from location/language/bio (Unit 41
           // Phase C2). null when not placeable.
           region: nullableRegion,
-          // What the account is ABOUT — only for bucket=non_crypto (Unit 42).
-          domain: nullableDomain,
           signals: {
             type: "object",
             additionalProperties: false,
@@ -210,9 +218,10 @@ export const AUDIENCE_BATCH_SCHEMA = {
           "accountId",
           "handle",
           "source",
-          "bucket",
-          "region",
+          "role",
           "domain",
+          "quality",
+          "region",
           "signals",
         ],
       },

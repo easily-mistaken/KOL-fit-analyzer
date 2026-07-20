@@ -1,7 +1,6 @@
 import type {
   AudienceClassification,
   ContentFitAssessment,
-  DomainDistribution,
   ExpectedReach,
   KolContentClassification,
   OrgClassification,
@@ -71,7 +70,4 @@ export type ScoringResult = {
   expectedReach: ExpectedReach;
   /** Audience geography dial (Phase C) — region breakdown of engaged accounts. */
   audienceRegions: RegionDistribution;
-  /** What the outside-crypto slice is made of (Unit 42). Descriptive only —
-   *  no metric reads it; it exists so that slice isn't a black hole. */
-  audienceDomains: DomainDistribution;
 };
