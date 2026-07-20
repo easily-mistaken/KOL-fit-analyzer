@@ -177,7 +177,7 @@ Set these in the platform's env settings (not a committed file). See
 | `LLM_PROVIDER=openai` + `OPENAI_API_KEY` | live analysis |
 | `ADMIN_PASSWORD` | optional; leave empty to keep the admin panel disabled |
 | `MAX_DAILY_SPEND_USD`, `MAX_ANALYSES_PER_*` | cost/abuse caps |
-| `TELEGRAM_BOT_TOKEN` + `TELEGRAM_ADMIN_CHAT_ID` | operator pings for new leads/requests |
+| `TELEGRAM_BOT_TOKEN` + `TELEGRAM_ADMIN_CHAT_ID` | **private** bot that DMs *you* when a lead lands; never shown to users |
 | `NEXT_PUBLIC_CONTACT_TELEGRAM`, `NEXT_PUBLIC_CONTACT_X` | your handles, shown on finished reports |
 
 ## Post-deploy checklist

@@ -1,7 +1,15 @@
-// Operator notifications (Unit 36). Fire-and-forget pings to the OPERATOR's
-// own Telegram (bot token + chat id from env) — e.g. when a detailed-report
-// request lands, so the "within a day" promise doesn't depend on polling the
-// admin queue. Never throws; a notification failure must never fail the
+// Operator alerts (Unit 36).
+//
+// SCOPE, because this is easy to misread: the bot behind these env vars is
+// PRIVATE. It exists solely to DM the operator when a lead lands, so follow-up
+// doesn't depend on anyone remembering to open the admin panel. It is never
+// shown to users, users never message it, and nothing is ever delivered TO a
+// user through it — outreach happens from the operator's own account, using
+// the handle the requester supplied. (A user-facing "open @bot and tap Start"
+// flow did exist and was removed in Unit 45: a public bot is a second product
+// surface to run, and it bought nothing that a personal DM doesn't.)
+//
+// Fire-and-forget: never throws, and a notification failure must never fail the
 // user-facing request. Silent no-op when the env vars are unset.
 
 const TIMEOUT_MS = 5000;
