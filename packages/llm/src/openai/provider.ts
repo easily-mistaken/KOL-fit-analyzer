@@ -349,12 +349,21 @@ export class OpenAiLlmProvider implements LlmProvider {
             typeof m.region === "string" && m.region !== "unknown"
               ? m.region
               : undefined;
+          // Domain (Unit 42) is only meaningful for `non_crypto` — every other
+          // bucket already names what the account is. Enforced here rather than
+          // trusted from the model, so a stray domain on `traders` can't leak
+          // into the outside-crypto breakdown and inflate its denominator.
+          const domain =
+            m.bucket === "non_crypto" && typeof m.domain === "string"
+              ? m.domain
+              : undefined;
           candidates.push({
             handle: batch[i].user.handle,
             accountId: batch[i].user.id,
             source: batch[i].source,
             bucket: m.bucket,
             ...(region ? { region } : {}),
+            ...(domain ? { domain } : {}),
             signals,
           });
         }

@@ -2,9 +2,11 @@ import type {
   AudienceAccount,
   AudienceBucket,
   AudienceDistribution,
+  AudienceDomain,
   AudienceRegion,
   ConfidenceLevel,
   ContentFitAssessment,
+  DomainDistribution,
   ExpectedReach,
   KolContentClassification,
   OrgClassification,
@@ -329,6 +331,29 @@ export function regionDistribution(
     coverage: accounts.length > 0 ? placed / accounts.length : 0,
     regions,
   };
+}
+
+/** What the OUTSIDE-CRYPTO slice is made of (Unit 42). Shares are over the
+ *  `non_crypto` accounts, not the whole sample — the denominator a reader
+ *  assumes when drilling into that slice. A non_crypto account the model left
+ *  unlabelled counts as "unknown" rather than being dropped, so `total` always
+ *  equals the bucket's own count and the chart can rescale against it. */
+export function domainDistribution(
+  accounts: AudienceAccount[]
+): DomainDistribution {
+  const counts = new Map<AudienceDomain, number>();
+  let total = 0;
+  for (const a of accounts) {
+    if (a.bucket !== "non_crypto") continue;
+    total++;
+    const d = a.domain ?? "unknown";
+    counts.set(d, (counts.get(d) ?? 0) + 1);
+  }
+  const domains: DomainDistribution["domains"] = {};
+  for (const [domain, count] of counts) {
+    domains[domain] = { count, share: total > 0 ? count / total : 0 };
+  }
+  return { total, domains };
 }
 
 // --- metrics --------------------------------------------------------------

@@ -287,7 +287,7 @@ export async function runAnalysis(
 
   // 4. Deterministic scoring (packages/scoring). Numbers are computed here /
   // there — never by the LLM.
-  const { scores, verdict, expectedReach, audienceRegions } = scoreAnalysis({
+  const { scores, verdict, expectedReach, audienceRegions, audienceDomains } = scoreAnalysis({
     org: orgClassification,
     content: kolContent,
     audience,
@@ -359,6 +359,11 @@ export async function runAnalysis(
     profiles: { org: snapshot(orgProfile), kol: snapshot(kolProfile) },
     expectedReach,
     audienceRegions,
+    audienceDomains,
+    // Carried onto the report so the client picks the audience layout without
+    // re-deriving it. Absent on a pre-v4 org classification -> defaults to
+    // crypto-native, which is the historical presentation.
+    brandCryptoNative: orgClassification.cryptoNative ?? true,
     targeting: {
       primaryBuckets: orgClassification.targetBuckets?.primary ?? [],
       secondaryBuckets: orgClassification.targetBuckets?.secondary ?? [],

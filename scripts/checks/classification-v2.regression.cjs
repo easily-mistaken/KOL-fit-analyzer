@@ -4,7 +4,7 @@
 // carries 29A reply text + profile stats, (5) audience batches run concurrently
 // on the fast model, input-ordered, (6) the assessContentFit rubric (incl.
 // repair on out-of-range), (7) mock determinism for all new fields, and
-// (8) cls:v3 cache behavior (fit cached, audience key text-sensitive).
+// (8) cls:v4 cache behavior (fit cached, audience key text-sensitive).
 //
 // Run after `pnpm build`:  node scripts/checks/classification-v2.regression.cjs
 // (or `pnpm check:classification-v2`). Injected fetch — no network, no keys.
@@ -172,7 +172,7 @@ const userText = (req) => (typeof req.input[1].content === "string" ? req.input[
     ck("mock content-fit deterministic + in range", JSON.stringify(fitA) === JSON.stringify(fitB) && [fitA.topicalAdjacency, fitA.audienceOverlapPotential, fitA.naturalMentionFit].every((v) => Number.isInteger(v) && v >= 0 && v <= 5));
   }
 
-  // --- 8. cache: cls:v3, fit cached, audience key text-sensitive -----------
+  // --- 8. cache: cls:v4, fit cached, audience key text-sensitive -----------
   {
     const calls = { fit: 0, audience: 0 };
     const inner = {
@@ -197,7 +197,7 @@ const userText = (req) => (typeof req.input[1].content === "string" ? req.input[
     await p.classifyAudienceAccounts({ accounts: [acct("gm")] });
     await p.classifyAudienceAccounts({ accounts: [acct("substantive reply")] });
     ck("audience cache text-sensitive (2 inner calls, 1 hit)", calls.audience === 2 && p.cacheStats.audience.hits === 1);
-    ck("keys use the cls:v3 namespace", keys.length > 0 && keys.every((k) => k.startsWith("cls:v3:")));
+    ck("keys use the cls:v4 namespace", keys.length > 0 && keys.every((k) => k.startsWith("cls:v4:")));
   }
 
   console.log(`\nCLASSIFICATION V2 REGRESSION (29B): ${pass} passed, ${fail} failed`);

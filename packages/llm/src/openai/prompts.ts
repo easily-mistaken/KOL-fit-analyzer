@@ -1,5 +1,6 @@
 import {
   AUDIENCE_BUCKET_LABELS,
+  AUDIENCE_DOMAIN_LABELS,
   AUDIENCE_REGION_LABELS,
   type EngagedAccountRaw,
   type Tweet,
@@ -40,6 +41,10 @@ const REGION_LIST = Object.entries(AUDIENCE_REGION_LABELS)
   .map(([k, label]) => `${k} (${label})`)
   .join(", ");
 
+const DOMAIN_LIST = Object.entries(AUDIENCE_DOMAIN_LABELS)
+  .map(([k, label]) => `${k} (${label})`)
+  .join(", ");
+
 /** Append a bounded repair instruction after an invalid response. */
 export function repairNote(errorSummary: string): string {
   return (
@@ -70,6 +75,10 @@ export function buildOrgPrompt(input: ClassifyOrgInput): string {
       "trading/derivatives/prediction-market product values higher-income regions (north_america, western_europe, " +
       "east_asia). Use an EMPTY list [] when the product is globally relevant with no economic regional skew.",
     `  Allowed regions: ${REGION_LIST}.`,
+    "Also set cryptoNative — is THIS BRAND's own product crypto/web3-native (a chain, wallet, DeFi/NFT " +
+      "protocol, exchange, token, crypto infra)? Set false for a brand whose product is not crypto (an AI " +
+      "company, a SaaS tool, a consumer app, a fintech) EVEN IF it markets to a crypto-adjacent crowd. " +
+      "This only changes how the audience is presented back to them, never the score.",
   ];
   return lines.filter(Boolean).join("\n");
 }
@@ -149,6 +158,12 @@ export function buildAudiencePrompt(batch: EngagedAccountRaw[]): string {
       `of: ${REGION_LIST}. Use "unknown" when the location is blank, a joke ("metaverse", "onchain", "gm"), or ` +
       "genuinely unplaceable. Do NOT guess a region from the audience bucket or topic — only place accounts with a " +
       "real geographic signal.",
+    "For accounts you put in `non_crypto`, ALSO assign a `domain` saying what that account IS actually about — one " +
+      `of: ${DOMAIN_LIST}. This is the only bucket that does not describe itself, and a brand outside crypto needs ` +
+      "to know whether its 'non-crypto' engagement is AI researchers or football fans. Read the bio and `said=` for " +
+      'the account\'s own subject matter. Use "general_consumer" for a real person with no professional or topical ' +
+      'niche, and "unknown" ONLY when there is genuinely nothing to go on. Set domain to null for EVERY other ' +
+      "bucket — those already say what the account is.",
     "For each account echo its accountId, handle, and source, assign a bucket and a region, and give light signals " +
       "(botScore 0..1 or null, emptyBio true/false/null, farmingSignals list). " +
       "Do NOT output any counts, percentages, or totals — labels only.",
@@ -207,11 +222,43 @@ export function buildReportPrompt(input: GenerateFitReportInput): string {
     .slice(0, 6)
     .map(([b, s]) => `${b}=${Math.round((s?.share ?? 0) * 100)}%`)
     .join(", ");
+
+  // The bucket line above reports `non_crypto` as a bare percentage, which is
+  // exactly the dead end this breakdown exists to fix — without it the model
+  // writes "42% non-crypto audience" and tells the reader nothing. Shares are
+  // over the outside-crypto accounts, and the prompt says so.
+  const domainCounts = new Map<string, number>();
+  let outsideTotal = 0;
+  for (const a of input.audience.accounts ?? []) {
+    if (a.bucket !== "non_crypto") continue;
+    outsideTotal++;
+    const d = a.domain ?? "unknown";
+    domainCounts.set(d, (domainCounts.get(d) ?? 0) + 1);
+  }
+  const outsideBreakdown =
+    outsideTotal > 0
+      ? [...domainCounts.entries()]
+          .sort((a, b) => b[1] - a[1])
+          .map(([d, n]) => `${d}=${Math.round((n / outsideTotal) * 100)}%`)
+          .join(", ")
+      : "";
+  const brandIsCrypto = input.org.classification.cryptoNative ?? true;
+
   return [
     `Write the qualitative narrative for a KOL-fit report: org @${input.org.handle} vs KOL @${input.kol.handle}.`,
     `Org classification: ${JSON.stringify(input.org.classification)}.`,
     `KOL content: themes=${input.kol.content.themes.join(", ") || "(n/a)"}, verticals=${input.kol.content.verticals.join(", ") || "(n/a)"}, promoPatterns=${input.kol.content.promoPatterns.join(", ") || "none"}.`,
     `Engaged audience distribution (already computed): ${topBuckets || "(none)"} over ${dist.sampleSize} classified accounts.`,
+    outsideBreakdown
+      ? `Of the accounts in \`non_crypto\`, here is what they are ACTUALLY about (shares are over ` +
+        `those accounts, not the whole sample): ${outsideBreakdown}. NEVER describe this group as merely ` +
+        `"non-crypto" or "outside crypto" and stop there — that names what they are not. Say what they ARE.`
+      : "",
+    brandIsCrypto
+      ? ""
+      : "NOTE: this brand's product is NOT crypto-native. Do not treat the crypto-native share of the audience " +
+        "as the valuable part or the outside-crypto share as waste — for this brand the relationship is closer " +
+        "to the reverse. Judge fit against THIS brand's target users.",
     input.scores
       ? `Deterministic scores (FINAL): overall=${input.scores.overall.value}, verdict=${input.verdict ?? "n/a"}, confidence=${input.scores.confidence}.`
       : "Deterministic scores are not yet available.",

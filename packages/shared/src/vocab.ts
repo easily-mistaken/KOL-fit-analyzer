@@ -39,8 +39,70 @@ export const AUDIENCE_BUCKET_LABELS: Record<AudienceBucket, string> = {
   kols_creators: "Creators",
   bots_spam: "Bots / spam",
   giveaway_hunters: "Giveaway hunters",
-  non_crypto: "Non-crypto audience",
+  non_crypto: "Outside crypto",
 };
+
+// The SECOND axis, added because `non_crypto` is the one bucket in the list
+// above defined by negation — it says what someone is NOT. That reads fine for
+// a crypto brand (the residual genuinely is "outside my market", one number)
+// but inverts for everyone else: for an AI or consumer brand that residual IS
+// the addressable market, and "42% non-crypto" answers nothing.
+//
+// So accounts landing in `non_crypto` get a coarse domain telling you what they
+// ARE. Deliberately a FIXED enum, not a per-brand vocabulary: the audience
+// classification cache is keyed on accounts + model only (see llm-cache.ts), so
+// one creator's audience is classified once and reused by every brand that
+// analyses them. A brand-specific vocabulary would kill that reuse and make the
+// most expensive LLM step re-run per brand. Brand-awareness lives instead in
+// the cheap org classification (`OrgClassification.cryptoNative`), which only
+// decides how these are PRESENTED.
+export const AudienceDomainSchema = z.enum([
+  "ai_ml",
+  "software_tech",
+  "finance_business",
+  "creative_media",
+  "gaming_esports",
+  "science_academia",
+  "culture_lifestyle",
+  "news_politics",
+  "general_consumer",
+  "unknown",
+]);
+export type AudienceDomain = z.infer<typeof AudienceDomainSchema>;
+
+export const AUDIENCE_DOMAIN_LABELS: Record<AudienceDomain, string> = {
+  ai_ml: "AI / ML",
+  software_tech: "Software & tech",
+  finance_business: "Finance & business",
+  creative_media: "Creative & media",
+  gaming_esports: "Gaming & esports",
+  science_academia: "Science & academia",
+  culture_lifestyle: "Culture & lifestyle",
+  news_politics: "News & politics",
+  general_consumer: "General consumer",
+  unknown: "Unclear",
+};
+
+/**
+ * Buckets that only mean something inside crypto. For a non-crypto brand these
+ * are the noise, so the chart folds them into one labelled slice instead of
+ * spending its whole 6-slice budget on them.
+ *
+ * The rest of the taxonomy (founders, developers, investors_vcs,
+ * community_managers, kols_creators) is ROLE, not domain — a developer in a
+ * crypto creator's audience is still a developer, and an AI devtools brand has
+ * every reason to want that number. Those stay visible for both brand kinds.
+ * `airdrop_farmers` is crypto-specific too but is already claimed by the
+ * low-quality fold, which outranks this one.
+ */
+export const CRYPTO_SPECIFIC_BUCKETS: readonly AudienceBucket[] = [
+  "defi_users",
+  "traders",
+  "meme_degens",
+  "nft_gaming",
+  "ai_crypto",
+  "infra_research",
+];
 
 // Coarse macro-regions for audience geography (Unit 41 v3, Phase C). Country
 // precision isn't reliably inferable from X profile `location` (free text,

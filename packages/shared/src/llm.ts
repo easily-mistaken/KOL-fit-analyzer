@@ -34,6 +34,14 @@ export const OrgClassificationSchema = z.object({
    *  product values higher-income regions. Empty/absent = no regional
    *  preference (a global audience serves it). Brand-confirmable (C2). */
   valuedRegions: z.array(AudienceRegionSchema).optional(),
+  /** Is this brand's own product crypto/web3-native? Decides how the audience
+   *  is PRESENTED, never how it is classified or scored: a crypto brand reads
+   *  one "Outside crypto" number, a non-crypto brand gets that slice opened up
+   *  by domain and the crypto-only buckets folded away instead. Kept on the ORG
+   *  classification on purpose — the org call is cheap and per-brand, while the
+   *  audience call is expensive and cached across brands. Absent on pre-v4
+   *  cached classifications; treated as `true` (the historical behaviour). */
+  cryptoNative: z.boolean().optional(),
   confidence: ConfidenceLevelSchema,
 });
 export type OrgClassification = z.infer<typeof OrgClassificationSchema>;

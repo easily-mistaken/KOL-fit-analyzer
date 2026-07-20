@@ -2,6 +2,7 @@ import type {
   AudienceAccount,
   AudienceBucket,
   AudienceDistribution,
+  AudienceDomain,
   AudienceRegion,
   BrandSafetyFlag,
   ContentFitAssessment,
@@ -111,16 +112,43 @@ function accountSignals(
   return { botScore, emptyBio, farmingSignals };
 }
 
+/** What an OUTSIDE-CRYPTO account is about (mock stand-in for the LLM's domain
+ *  inference, Unit 42). Only called for `non_crypto`; every other bucket
+ *  already names what the account is. Unreadable bio -> "general_consumer",
+ *  which is itself a signal; "unknown" is reserved for nothing to go on. */
+export function classifyDomain(user: TwitterUser): AudienceDomain {
+  const bio = (user.bio ?? "").toLowerCase();
+  if (bio.trim().length === 0) return "unknown";
+  const has = (re: RegExp) => re.test(bio);
+  if (has(/\bai\b|\bml\b|machine learning|llm|neural|deep learning|data scien/)) return "ai_ml";
+  if (has(/engineer|developer|software|saas|devops|frontend|backend|product manager|\bpm\b/)) {
+    return "software_tech";
+  }
+  if (has(/finance|fintech|banking|equities|economist|accountant|consultant|\bceo\b|sales|marketing/)) {
+    return "finance_business";
+  }
+  if (has(/designer|artist|writer|photograph|filmmaker|music|producer|illustrat/)) return "creative_media";
+  if (has(/gamer|gaming|esports|twitch|streamer|speedrun/)) return "gaming_esports";
+  if (has(/phd|professor|researcher|scientist|university|lecturer|academic/)) return "science_academia";
+  if (has(/journalist|reporter|politic|news|correspondent|columnist/)) return "news_politics";
+  if (has(/football|soccer|\bnba\b|fitness|gym|travel|food|chef|fashion|movie|anime/)) {
+    return "culture_lifestyle";
+  }
+  return "general_consumer";
+}
+
 /** One engaged account -> a classified AudienceAccount. */
 export function toAudienceAccount(engager: EngagedAccountRaw): AudienceAccount {
   const bucket = classifyBucket(engager.user);
   const region = classifyRegion(engager.user);
+  const domain = bucket === "non_crypto" ? classifyDomain(engager.user) : undefined;
   return {
     handle: engager.user.handle,
     accountId: engager.user.id,
     source: engager.source,
     bucket,
     ...(region ? { region } : {}),
+    ...(domain ? { domain } : {}),
     signals: accountSignals(engager.user, bucket),
   };
 }
@@ -336,6 +364,22 @@ function extractKeywords(bio: string): string[] {
     .slice(0, 6);
 }
 
+/** Is the BRAND's own product crypto-native (Unit 42)? Mock stand-in for the
+ *  LLM's judgement. Presentation only — never feeds a score. Defaults to true,
+ *  matching both the historical behaviour and this tool's primary market. */
+export function inferCryptoNative(text: string): boolean {
+  const t = text.toLowerCase();
+  const crypto =
+    /crypto|web3|blockchain|onchain|on-chain|defi|\bnft\b|token|wallet|\bdao\b|staking|rollup|\bl2\b|protocol|exchange/;
+  if (crypto.test(t)) return true;
+  // Only claim "not crypto" on a positive signal of some OTHER domain; an
+  // uninformative bio should fall back to the default rather than flip the
+  // whole report's layout on an absence of evidence.
+  const other =
+    /\bai\b|artificial intelligence|machine learning|\bllm\b|\bsaas\b|developer tool|analytics|fintech|e-?commerce|marketplace|consumer app|productivity/;
+  return !other.test(t);
+}
+
 export function inferOrgClassification(
   input: ClassifyOrgInput
 ): OrgClassification {
@@ -355,6 +399,7 @@ export function inferOrgClassification(
     keywords,
     targetBuckets: inferTargetBuckets({ productCategory, targetUser, keywords }),
     valuedRegions: inferValuedRegions({ productCategory, targetUser, keywords }),
+    cryptoNative: inferCryptoNative(`${productCategory} ${targetUser} ${bio}`),
     confidence: input.profile ? "medium" : "low",
   };
 }

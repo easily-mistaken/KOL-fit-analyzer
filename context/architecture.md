@@ -172,7 +172,19 @@ payloads are re-validated against their Zod schema on read (miss on drift), the
 decorator is miss-safe, and **`generateFitReport` is pair-specific and never
 cached**. TTL defaults to 14 days (`CLASSIFICATION_CACHE_TTL_SECONDS`, per-kind
 overridable; `CLASSIFICATION_CACHE_ENABLED=false` disables). Classification
-cache hits/misses are recorded in the LLM `ProviderUsageLog.meta`. Caching lives
+cache hits/misses are recorded in the LLM `ProviderUsageLog.meta`.
+
+**Load-bearing constraint — the audience key is brand-independent.** It hashes
+accounts + limit + model and *nothing about the requesting brand*, which is the
+entire reason one creator's engaged audience is classified once and reused by
+every brand that analyses them. So the per-account audience vocabulary must stay
+a FIXED enum: making it brand-specific (letting the model invent buckets per
+brand) would void this cache, re-run the most expensive LLM step for every
+brand, and make scores incomparable across analyses. Anything brand-relative
+belongs on the **org** classification instead — that call is cheap, per-brand,
+and already cached separately. `OrgClassification.cryptoNative` (Unit 42) is the
+worked example: it changes only how the audience is *presented*, never how it is
+classified or scored. Caching lives
 worker-side (`packages/cache` + `buildProviders`); the pipeline and providers
 stay `@kol-fit/db`-free.
 

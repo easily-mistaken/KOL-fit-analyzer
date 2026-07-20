@@ -345,7 +345,11 @@ export function FitReportView({
           )}
           {fitReport.audienceBreakdown && (
             <>
-              <AudienceDonut distribution={fitReport.audienceBreakdown} />
+              <AudienceDonut
+                distribution={fitReport.audienceBreakdown}
+                domains={fitReport.audienceDomains}
+                cryptoNative={fitReport.brandCryptoNative ?? true}
+              />
               {/* "Other" folds the smaller/outside-space buckets and sorts last
                   by design, so it can be the largest wedge without being a
                   finding — say so, so a big grey slice doesn't read as one. */}

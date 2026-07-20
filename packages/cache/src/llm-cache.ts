@@ -35,7 +35,13 @@ type Parseable<T> = {
 // passes safeParse and would be served as a hit with no region data at all —
 // silently zeroing geoTiltFactor() and the region dial. The namespace bump is
 // what actually invalidates them; the shape-mismatch fallthrough cannot.
-const NS = "cls:v3";
+// v4: Unit 42 added AudienceClassification.domain (what an outside-crypto
+// account is ABOUT) and OrgClassification.cryptoNative. Both are OPTIONAL, so a
+// v3 payload still passes safeParse and would be served as a hit with no domain
+// data — collapsing every outside-crypto account into "Unclear" and silently
+// defeating the breakdown. As with the v3 bump, the namespace is what actually
+// invalidates them; the shape-mismatch fallthrough cannot.
+const NS = "cls:v4";
 
 /** The provider KIND is part of the cache identity (live-calibration incident,
  *  2026-07-14): the mock provider echoes LLM_MODEL, so model-only keys let a

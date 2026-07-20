@@ -103,7 +103,13 @@ The first user is the internal operator/founder/team member evaluating KOLs for 
   - KOLs/creators
   - bots/spam
   - giveaway hunters
-  - non-crypto audience
+  - outside crypto (formerly "non-crypto audience")
+- Break the **outside-crypto** bucket down by what those accounts are ABOUT
+  (AI/ML, software & tech, finance & business, creative & media, gaming, science
+  & academia, culture & lifestyle, news & politics, general consumer, unclear).
+  Every other bucket already names what an account is; that one was defined by
+  negation, which is a dead end for the reader — and an inverted one for a brand
+  that is not itself crypto, since the residual is then their whole market.
 - Compare the audience distribution against the organization's target user.
 
 ### Engagement Quality Analysis

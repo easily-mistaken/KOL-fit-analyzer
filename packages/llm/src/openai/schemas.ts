@@ -1,5 +1,6 @@
 import {
   AudienceBucketSchema,
+  AudienceDomainSchema,
   AudienceRegionSchema,
   BrandSafetyFlagKindSchema,
   ConfidenceLevelSchema,
@@ -22,6 +23,7 @@ const CONFIDENCE = [...ConfidenceLevelSchema.options];
 const SAFETY_FLAGS = [...BrandSafetyFlagKindSchema.options];
 const MEDIA_KINDS = [...MediaLabelSchema.shape.kind.options];
 const REGIONS = [...AudienceRegionSchema.options];
+const DOMAINS = [...AudienceDomainSchema.options];
 
 const bucketArray = {
   type: "array",
@@ -35,6 +37,10 @@ const regionArray = {
 
 // Nullable region enum for per-account labeling (unplaceable -> null/unknown).
 const nullableRegion = { type: ["string", "null"], enum: [...REGIONS, null] } as const;
+
+// Nullable domain enum — carried ONLY for `non_crypto` accounts, null for every
+// other bucket (which already says what the account is).
+const nullableDomain = { type: ["string", "null"], enum: [...DOMAINS, null] } as const;
 
 export const ORG_CLASSIFICATION_SCHEMA = {
   type: "object",
@@ -57,6 +63,10 @@ export const ORG_CLASSIFICATION_SCHEMA = {
     // Macro-regions where the product is economically relevant (Unit 41 Phase
     // C2). Empty when the product has no regional preference.
     valuedRegions: regionArray,
+    // Is the BRAND's own product crypto-native (Unit 42)? Presentation only —
+    // decides whether the audience reads as one "Outside crypto" number or as a
+    // domain breakdown with the crypto buckets folded away.
+    cryptoNative: { type: "boolean" },
     confidence: { type: "string", enum: CONFIDENCE },
   },
   required: [
@@ -68,6 +78,7 @@ export const ORG_CLASSIFICATION_SCHEMA = {
     "keywords",
     "targetBuckets",
     "valuedRegions",
+    "cryptoNative",
     "confidence",
   ],
 } as const;
@@ -179,6 +190,8 @@ export const AUDIENCE_BATCH_SCHEMA = {
           // Coarse macro-region inferred from location/language/bio (Unit 41
           // Phase C2). null when not placeable.
           region: nullableRegion,
+          // What the account is ABOUT — only for bucket=non_crypto (Unit 42).
+          domain: nullableDomain,
           signals: {
             type: "object",
             additionalProperties: false,
@@ -193,7 +206,15 @@ export const AUDIENCE_BATCH_SCHEMA = {
             required: ["botScore", "emptyBio", "farmingSignals"],
           },
         },
-        required: ["accountId", "handle", "source", "bucket", "region", "signals"],
+        required: [
+          "accountId",
+          "handle",
+          "source",
+          "bucket",
+          "region",
+          "domain",
+          "signals",
+        ],
       },
     },
   },

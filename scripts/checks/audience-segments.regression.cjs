@@ -10,6 +10,7 @@ const {
   AUDIENCE_MAX_SEGMENTS,
   AUDIENCE_OTHER_KEY,
   AUDIENCE_LOW_QUALITY_KEY,
+  AUDIENCE_CRYPTO_NATIVE_KEY,
 } = require("../../packages/shared/dist/index.js");
 
 let pass = 0,
@@ -93,7 +94,65 @@ const allLowSegs = foldAudienceSegments(allLow);
 ck("all-low-quality -> one slice", allLowSegs.length === 1 && allLowSegs[0].key === AUDIENCE_LOW_QUALITY_KEY);
 
 // A pathological cap must not produce a chart of pure "Other".
-ck("cap of 1 still shows a real bucket", foldAudienceSegments(many, 1).some((s) => s.key !== AUDIENCE_OTHER_KEY));
+ck("cap of 1 still shows a real bucket", foldAudienceSegments(many, { maxSegments: 1 }).some((s) => s.key !== AUDIENCE_OTHER_KEY));
+
+// --- the outside-crypto slice is never a black hole (Unit 42) ---------------
+// `non_crypto` is the one bucket defined by negation. A crypto brand keeps it as
+// a single slice but must still be able to see what it is made of; a non-crypto
+// brand gets it opened up and the crypto-only buckets folded away instead.
+const withOutside = b([
+  ["developers", 0.2], ["founders", 0.1], ["traders", 0.1], ["defi_users", 0.1],
+  ["non_crypto", 0.5],
+]);
+// 50 accounts outside crypto: 25 AI/ML, 15 software, 10 unclear.
+const domains = {
+  total: 50,
+  domains: {
+    ai_ml: { count: 25, share: 0.5 },
+    software_tech: { count: 15, share: 0.3 },
+    unknown: { count: 10, share: 0.2 },
+  },
+};
+
+const cryptoBrand = foldAudienceSegments(withOutside, { domains, cryptoNative: true });
+const outsideSlice = cryptoBrand.find((s) => s.key === "non_crypto");
+ck("crypto brand keeps one outside-crypto slice", !!outsideSlice);
+ck("outside-crypto slice says what it is made of", outsideSlice.members.length === 3);
+ck(
+  "member shares are rescaled to the whole sample",
+  // 50% of the sample is outside crypto; half of THOSE are AI/ML -> 25% overall.
+  near(outsideSlice.members[0].share, 0.25) && outsideSlice.members[0].label === "AI / ML"
+);
+ck(
+  "members sum back to the slice",
+  near(outsideSlice.members.reduce((a, m) => a + m.share, 0), outsideSlice.share)
+);
+
+const otherBrand = foldAudienceSegments(withOutside, { domains, cryptoNative: false });
+const otherKeys = keys(otherBrand);
+ck("non-crypto brand gets real domain slices", otherKeys.includes("domain:ai_ml"));
+ck("non-crypto brand keeps ROLE buckets visible", otherKeys.includes("developers") && otherKeys.includes("founders"));
+ck("crypto-only buckets fold into one named slice", otherKeys.includes(AUDIENCE_CRYPTO_NATIVE_KEY));
+const cn = otherBrand.find((s) => s.key === AUDIENCE_CRYPTO_NATIVE_KEY);
+ck("the crypto fold sums its members", near(cn.share, 0.2) && cn.members.length === 2);
+ck("the crypto fold is not labelled 'Other'", cn.label === "Crypto-native");
+ck("share is conserved in the non-crypto layout", near(total(otherBrand), 1));
+ck("non-crypto layout still respects the cap", otherBrand.length <= AUDIENCE_MAX_SEGMENTS);
+
+// Defaults and degradation: a pre-v4 report has no domains to open the slice
+// into, so it must fall back to the crypto-native layout rather than inventing
+// or dropping a slice.
+ck(
+  "defaults to the crypto-native layout",
+  keys(foldAudienceSegments(withOutside)).join() === keys(foldAudienceSegments(withOutside, { cryptoNative: true })).join()
+);
+const noDomains = foldAudienceSegments(withOutside, { cryptoNative: false });
+ck("no domain data -> falls back, keeps the bucket", keys(noDomains).includes("non_crypto"));
+ck("no domain data -> share still conserved", near(total(noDomains), 1));
+ck(
+  "empty outside-crypto bucket does not fabricate a slice",
+  !keys(foldAudienceSegments(b([["developers", 1]]), { domains: { total: 0, domains: {} }, cryptoNative: false })).some((k) => k.startsWith("domain:"))
+);
 
 console.log(`\nAUDIENCE SEGMENTS REGRESSION: ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

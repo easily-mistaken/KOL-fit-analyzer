@@ -2,11 +2,15 @@
 
 import * as React from "react";
 import {
+  AUDIENCE_CRYPTO_NATIVE_KEY,
+  AUDIENCE_DOMAIN_PREFIX,
   AUDIENCE_LOW_QUALITY_KEY,
   AUDIENCE_OTHER_KEY,
   foldAudienceSegments,
   type AudienceBucket,
   type AudienceDistribution,
+  type AudienceDomain,
+  type DomainDistribution,
 } from "@kol-fit/shared";
 
 import { cn } from "@/lib/utils";
@@ -50,8 +54,41 @@ const BUCKET_COLOR: Record<AudienceBucket, string> = {
   giveaway_hunters: "var(--viz-low-quality)",
 };
 
+/*
+ * Domain slices render ONLY in the non-crypto-brand layout — and that layout
+ * folds the six crypto-only buckets into one slice and replaces the
+ * `non_crypto` bucket, freeing seven validated hues. No new colour is
+ * introduced: the domains likeliest to carry real share take the freed hues, so
+ * they cannot collide with anything else actually on screen.
+ *
+ * The rare tail (science, news, culture) reuses a role bucket's hue. Bounded
+ * and deliberate: only 6 slices ever render, so a collision needs BOTH the rare
+ * domain and its twin role bucket to make the cut, and identity never rests on
+ * colour alone here — every slice carries a swatch, a label, and a percentage.
+ *
+ * "Unclear" shares the "Other" grey on purpose. They are the same thing to a
+ * reader (uncategorised remainder), so if both render, one grey family reading
+ * as one idea is the honest result rather than a third grey nobody can tell
+ * apart from the other two.
+ */
+const DOMAIN_COLOR: Record<AudienceDomain, string> = {
+  ai_ml: "var(--viz-ai-crypto)",
+  software_tech: "var(--viz-infra-research)",
+  finance_business: "var(--viz-traders)",
+  creative_media: "var(--viz-meme-degens)",
+  gaming_esports: "var(--viz-defi-users)",
+  general_consumer: "var(--viz-neutral)",
+  science_academia: "var(--viz-developers)",
+  news_politics: "var(--viz-community-managers)",
+  culture_lifestyle: "var(--viz-creators)",
+  unknown: "var(--viz-other)",
+};
+
 const LOW_QUALITY_COLOR = "var(--viz-low-quality)";
 const OTHER_COLOR = "var(--viz-other)";
+/** The folded crypto-only buckets. Takes `nft_gaming`'s hue — one of the very
+ *  buckets folded INTO it, so it is free by construction. */
+const CRYPTO_NATIVE_COLOR = "var(--viz-nft-gaming)";
 
 const TIP_WIDTH = 210;
 /** Below this pointer height there isn't room to sit above the cursor. */
@@ -62,6 +99,11 @@ const TIP_FLIP_Y = 150;
 function colorFor(key: string): string {
   if (key === AUDIENCE_LOW_QUALITY_KEY) return LOW_QUALITY_COLOR;
   if (key === AUDIENCE_OTHER_KEY) return OTHER_COLOR;
+  if (key === AUDIENCE_CRYPTO_NATIVE_KEY) return CRYPTO_NATIVE_COLOR;
+  if (key.startsWith(AUDIENCE_DOMAIN_PREFIX)) {
+    const d = key.slice(AUDIENCE_DOMAIN_PREFIX.length) as AudienceDomain;
+    return DOMAIN_COLOR[d] ?? OTHER_COLOR;
+  }
   return BUCKET_COLOR[key as AudienceBucket] ?? OTHER_COLOR;
 }
 
@@ -72,8 +114,14 @@ function pctLabel(share: number): string {
 
 export function AudienceDonut({
   distribution,
+  domains,
+  cryptoNative = true,
 }: {
   distribution: AudienceDistribution;
+  /** What the outside-crypto accounts are about. Absent on pre-v4 reports. */
+  domains?: DomainDistribution;
+  /** Is the BRAND crypto-native? Chooses the layout — see foldAudienceSegments. */
+  cryptoNative?: boolean;
 }) {
   const [hover, setHover] = React.useState<string | null>(null);
   // The floating tooltip is anchored to the pointer's position inside the ring,
@@ -86,11 +134,11 @@ export function AudienceDonut({
 
   const entries = React.useMemo(
     () =>
-      foldAudienceSegments(distribution).map((s) => ({
+      foldAudienceSegments(distribution, { domains, cryptoNative }).map((s) => ({
         ...s,
         color: colorFor(s.key),
       })),
-    [distribution]
+    [distribution, domains, cryptoNative]
   );
 
   // Donut geometry
