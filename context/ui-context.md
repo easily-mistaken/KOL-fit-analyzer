@@ -67,7 +67,7 @@ Token wiring worth knowing: `--accent` is the **brand lime** here, not shadcn's 
 
 The brand mark is `apps/web/public/logo.svg` (tab icon: `apps/web/app/icon.svg`). Swap those files to rebrand; no component change needed.
 
-The hero canvas (`audience-field.tsx`) can't read CSS tokens directly, so it reads the `--field-*` tokens off the document and re-reads them on `data-theme` changes. Lime is invisible on white, so light mode steps the engaged colour down to a deeper green (`--field-engaged`) rather than reusing the brand fill.
+The audience-field canvas (`audience-field.tsx`) can't read CSS tokens directly, so it reads the `--field-*` tokens off the document and re-reads them on `data-theme` changes. Lime is invisible on white, so light mode steps the engaged colour down to a deeper green (`--field-engaged`) rather than reusing the brand fill. It runs **only behind the in-progress panel** (`analysis-status.tsx`) — the landing hero is a plain surface; see the progress tracker for why.
 
 ### Chart color
 
