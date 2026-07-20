@@ -48,6 +48,40 @@ model User {
   lastLoginAt DateTime?
 }
 
+// Captured email addresses (Unit 44). The self-serve flow deliberately needs
+// no account, which means an anonymous visitor could take a full report and
+// leave nothing behind — this is the row that closes that gap.
+//
+// One row PER EMAIL (upserted), not per submission: for outreach a person is a
+// person, and a second submission should refresh them rather than create a
+// duplicate to chase twice. `firstSource` records where they were first
+// captured, since intent differs a lot by capture point.
+//
+// `ownerId` holds EITHER an anonymous cookie id OR a User.id and has no FK, for
+// exactly the reason documented on the User model above.
+model Lead {
+  id      String  @id @default(cuid())
+  email   String  @unique
+  ownerId String?
+
+  firstSource String
+  // What they were looking at when they left the email — the outreach hook.
+  analysisRequestId String?
+  orgHandle         String?
+  kolHandle         String?
+  note              String?
+
+  createdAt DateTime  @default(now()) @db.Timestamptz
+  updatedAt DateTime  @updatedAt @db.Timestamptz
+  // Operator workflow, mirroring DetailedReportRequest: `seenAt` drives the
+  // nav badge, `contactedAt` records that outreach actually happened.
+  seenAt      DateTime? @db.Timestamptz
+  contactedAt DateTime? @db.Timestamptz
+
+  @@index([createdAt])
+  @@index([seenAt])
+}
+
 model Workspace {
   id        String   @id @default(cuid())
   name      String

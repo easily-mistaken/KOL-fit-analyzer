@@ -9,6 +9,7 @@ export * from "./vocab.js";
 export * from "./handle.js";
 export * from "./request.js";
 export * from "./detailed.js";
+export * from "./lead.js";
 export * from "./scores.js";
 export * from "./audience.js";
 export * from "./audience-segments.js";

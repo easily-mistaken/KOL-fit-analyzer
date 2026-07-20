@@ -15,6 +15,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { ConfidenceChip } from "@/components/report/confidence-chip";
 import { ScoreGauge } from "@/components/report/score-gauge";
 import { AudienceDonut } from "@/components/report/audience-donut";
+import { EmailCapture } from "@/components/report/email-capture";
 import { MetricGroups, type MetricMap } from "@/components/report/metric-groups";
 import { ShareReport } from "@/components/report/share-report";
 import {
@@ -542,6 +543,16 @@ export function FitReportView({
           Request curated report
         </a>
       </section>
+
+      {/* Low-friction alternative to the concierge CTA above (Unit 44). The
+          curated-report ask needs Telegram AND an X handle; plenty of readers
+          are warm but not warm enough for that, and this catches them with one
+          field at the point they have just been handed the whole report. */}
+      <EmailCapture
+        analysisRequestId={meta.requestId}
+        orgHandle={meta.orgHandle}
+        kolHandle={meta.kolHandle}
+      />
 
       {/* FOOTER — confidence + timestamp only. Sample sizes and evidence
           notes (providers, models, methodology) stay internal (Unit 33). */}

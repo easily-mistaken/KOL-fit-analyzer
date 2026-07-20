@@ -105,3 +105,41 @@ export type Page<T> = {
   items: T[];
   nextCursor: string | null;
 };
+
+/**
+ * One PERSON in the admin CRM view (Unit 44), keyed by email.
+ *
+ * Merged from three places that each know part of the story: a signed-in
+ * `User`, a captured `Lead`, and a `DetailedReportRequest`. Someone who did all
+ * three is one human and must appear once — a list that shows them three times
+ * is a list nobody trusts enough to work from.
+ */
+export type AdminPersonRow = {
+  email: string;
+  /** Has an actual account (Google sign-in). */
+  hasAccount: boolean;
+  /** Left their email via a capture form. */
+  isLead: boolean;
+  /** Asked for a concierge detailed report — the highest-intent signal here. */
+  requestedDetailed: boolean;
+  /** Where a lead was first captured; null for account-only people. */
+  firstSource: string | null;
+  /** Analyses run by the owner id(s) we can attribute to this person. */
+  analyses: number;
+  /** What they last looked at, when known — the outreach hook. */
+  lastPair: { orgHandle: string | null; kolHandle: string | null } | null;
+  firstSeen: string; // ISO
+  lastSeen: string; // ISO
+  /** Never contacted yet — drives the "needs outreach" filter. */
+  contactedAt: string | null;
+};
+
+export type AdminPeople = {
+  rows: AdminPersonRow[];
+  totals: {
+    people: number;
+    accounts: number;
+    leads: number;
+    uncontacted: number;
+  };
+};

@@ -10,6 +10,7 @@ import {
   LogOut,
   Mail,
   ShieldCheck,
+  Users,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -18,6 +19,7 @@ import { Button } from "@/components/ui/button";
 const LINKS = [
   { href: "/admin", label: "Overview", icon: <LayoutDashboard className="h-4 w-4" /> },
   { href: "/admin/analyses", label: "Analyses", icon: <FileText className="h-4 w-4" /> },
+  { href: "/admin/people", label: "People", icon: <Users className="h-4 w-4" /> },
   { href: "/admin/leads", label: "Leads", icon: <Mail className="h-4 w-4" /> },
   { href: "/admin/usage", label: "Usage", icon: <Coins className="h-4 w-4" /> },
 ];

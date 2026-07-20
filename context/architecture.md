@@ -174,6 +174,13 @@ cached**. TTL defaults to 14 days (`CLASSIFICATION_CACHE_TTL_SECONDS`, per-kind
 overridable; `CLASSIFICATION_CACHE_ENABLED=false` disables). Classification
 cache hits/misses are recorded in the LLM `ProviderUsageLog.meta`.
 
+**Lead capture + operator CRM (Unit 44):** `Lead` holds one row per captured
+email (upserted, never duplicated). `/admin/people` merges it with `User` and
+`DetailedReportRequest` on lowercased email so an operator sees one row per
+human. Nothing in this path sends mail — there is no mail sender in the
+codebase — so capture copy promises human follow-up only, and the operator ping
+rides the existing Telegram channel in `lib/notify.ts`.
+
 **Load-bearing constraint — the audience key is brand-independent.** It hashes
 accounts + limit + model and *nothing about the requesting brand*, which is the
 entire reason one creator's engaged audience is classified once and reused by

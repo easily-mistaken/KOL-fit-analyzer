@@ -51,3 +51,27 @@ export function buildDetailedRequestNotification(input: {
   if (base) lines.push(`${base.replace(/\/+$/, "")}/admin/detailed`);
   return lines.join("\n");
 }
+
+/** Compact operator-facing summary of a captured email (Unit 44). Sent to the
+ *  same Telegram channel as detailed-report requests: a lead is only worth
+ *  capturing if someone actually follows up, and polling the admin panel is not
+ *  a follow-up mechanism. */
+export function buildLeadNotification(input: {
+  email: string;
+  source: string;
+  orgHandle?: string | null;
+  kolHandle?: string | null;
+  returning: boolean;
+}): string {
+  const lines = [
+    input.returning ? "🔁 Returning lead" : "📥 New email captured",
+    `Email: ${input.email}`,
+    `Where: ${input.source}`,
+  ];
+  if (input.orgHandle || input.kolHandle) {
+    lines.push(`Looking at: @${input.orgHandle ?? "?"} × @${input.kolHandle ?? "?"}`);
+  }
+  const base = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (base) lines.push(`${base.replace(/\/+$/, "")}/admin/people`);
+  return lines.join("\n");
+}

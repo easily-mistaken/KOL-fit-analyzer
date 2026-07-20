@@ -10,6 +10,8 @@ import type {
   AdminAnalysisRow,
   AdminDetailedRequestRow,
   AdminOverview,
+  AdminPeople,
+  AdminPersonRow,
   AdminUsage,
   AdminUsageRow,
   AdminUsageTotals,
@@ -26,6 +28,9 @@ import type {
 
 const TOP_HANDLES = 8; // rows in the top-KOLs / top-orgs tables
 const RECENT_ANALYSES = 8; // rows in the overview activity feed
+// Hard ceiling on the CRM merge. It reads three tables fully and joins them in
+// memory, so it must not be allowed to grow unbounded with the user base.
+const MAX_PEOPLE = 500;
 
 /** Clamps an untrusted page size, mirroring lib/analyses-list.ts. */
 function takeFor(limit: number | undefined): number {
@@ -429,5 +434,151 @@ export async function listAdminDetailedRequests({
   return {
     items,
     nextCursor: hasMore ? page[page.length - 1].id : null,
+  };
+}
+
+/**
+ * The CRM view (Unit 44): every human we can reach, as ONE row each.
+ *
+ * Three tables know different halves of the same person — `User` (they signed
+ * in), `Lead` (they left an email), `DetailedReportRequest` (they asked for a
+ * custom report) — so this merges on lowercased email. Someone who did all
+ * three appears once, with all three flags set.
+ *
+ * Analyses are attributed through `ownerId`, which holds either a browser
+ * cookie or a `User.id` (see the schema note on User). Both are collected per
+ * person, so a signed-in user's runs and the runs from the browser they left
+ * their email in are counted together.
+ */
+export async function getAdminPeople(limit = 200): Promise<AdminPeople> {
+  const [users, leads, detailed] = await Promise.all([
+    prisma.user.findMany({
+      select: { id: true, email: true, createdAt: true, lastLoginAt: true },
+      orderBy: { createdAt: "desc" },
+      take: MAX_PEOPLE,
+    }),
+    prisma.lead.findMany({
+      select: {
+        email: true,
+        ownerId: true,
+        firstSource: true,
+        orgHandle: true,
+        kolHandle: true,
+        createdAt: true,
+        updatedAt: true,
+        contactedAt: true,
+      },
+      orderBy: { updatedAt: "desc" },
+      take: MAX_PEOPLE,
+    }),
+    prisma.detailedReportRequest.findMany({
+      where: { email: { not: null } },
+      select: { email: true, ownerId: true, createdAt: true },
+      orderBy: { createdAt: "desc" },
+      take: MAX_PEOPLE,
+    }),
+  ]);
+
+  type Acc = {
+    email: string;
+    hasAccount: boolean;
+    isLead: boolean;
+    requestedDetailed: boolean;
+    firstSource: string | null;
+    ownerIds: Set<string>;
+    lastPair: { orgHandle: string | null; kolHandle: string | null } | null;
+    firstSeen: Date;
+    lastSeen: Date;
+    contactedAt: Date | null;
+  };
+  const byEmail = new Map<string, Acc>();
+
+  const touch = (rawEmail: string, seen: Date): Acc => {
+    const email = rawEmail.trim().toLowerCase();
+    const existing = byEmail.get(email);
+    if (existing) {
+      if (seen < existing.firstSeen) existing.firstSeen = seen;
+      if (seen > existing.lastSeen) existing.lastSeen = seen;
+      return existing;
+    }
+    const fresh: Acc = {
+      email,
+      hasAccount: false,
+      isLead: false,
+      requestedDetailed: false,
+      firstSource: null,
+      ownerIds: new Set<string>(),
+      lastPair: null,
+      firstSeen: seen,
+      lastSeen: seen,
+      contactedAt: null,
+    };
+    byEmail.set(email, fresh);
+    return fresh;
+  };
+
+  for (const u of users) {
+    const p = touch(u.email, u.createdAt);
+    p.hasAccount = true;
+    p.ownerIds.add(u.id);
+    if (u.lastLoginAt && u.lastLoginAt > p.lastSeen) p.lastSeen = u.lastLoginAt;
+  }
+  for (const l of leads) {
+    const p = touch(l.email, l.createdAt);
+    p.isLead = true;
+    p.firstSource ??= l.firstSource;
+    if (l.ownerId) p.ownerIds.add(l.ownerId);
+    if (l.updatedAt > p.lastSeen) p.lastSeen = l.updatedAt;
+    if (!p.lastPair && (l.orgHandle || l.kolHandle)) {
+      p.lastPair = { orgHandle: l.orgHandle, kolHandle: l.kolHandle };
+    }
+    if (l.contactedAt) p.contactedAt = l.contactedAt;
+  }
+  for (const d of detailed) {
+    if (!d.email) continue;
+    const p = touch(d.email, d.createdAt);
+    p.requestedDetailed = true;
+    if (d.ownerId) p.ownerIds.add(d.ownerId);
+  }
+
+  // Attribute analyses in ONE grouped query rather than per person — this list
+  // is operator-facing and unbounded in principle, and a query per row is how
+  // an admin page quietly becomes the slowest thing in the product.
+  const allOwnerIds = [...new Set([...byEmail.values()].flatMap((p) => [...p.ownerIds]))];
+  const counts =
+    allOwnerIds.length > 0
+      ? await prisma.analysisRequest.groupBy({
+          by: ["ownerId"],
+          where: { ownerId: { in: allOwnerIds } },
+          _count: { _all: true },
+        })
+      : [];
+  const byOwner = new Map(counts.map((c) => [c.ownerId ?? "", c._count._all]));
+
+  const rows: AdminPersonRow[] = [...byEmail.values()]
+    .map((p) => ({
+      email: p.email,
+      hasAccount: p.hasAccount,
+      isLead: p.isLead,
+      requestedDetailed: p.requestedDetailed,
+      firstSource: p.firstSource,
+      analyses: [...p.ownerIds].reduce((sum, id) => sum + (byOwner.get(id) ?? 0), 0),
+      lastPair: p.lastPair,
+      firstSeen: p.firstSeen.toISOString(),
+      lastSeen: p.lastSeen.toISOString(),
+      contactedAt: p.contactedAt ? p.contactedAt.toISOString() : null,
+    }))
+    // Most recently active first: outreach works down from the warmest.
+    .sort((a, b) => b.lastSeen.localeCompare(a.lastSeen))
+    .slice(0, Math.min(limit, MAX_PEOPLE));
+
+  return {
+    rows,
+    totals: {
+      people: byEmail.size,
+      accounts: rows.filter((r) => r.hasAccount).length,
+      leads: rows.filter((r) => r.isLead).length,
+      uncontacted: rows.filter((r) => !r.contactedAt).length,
+    },
   };
 }
