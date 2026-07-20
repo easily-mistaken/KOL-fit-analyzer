@@ -83,3 +83,30 @@ export function buildLeadNotification(input: {
   if (base) lines.push(`${base.replace(/\/+$/, "")}/admin/people`);
   return lines.join("\n");
 }
+
+/**
+ * A browser's FIRST analysis (Unit 46) — a new user showing up, not a click.
+ *
+ * Deliberately not sent on every run: an alert that fires on all activity is
+ * one you learn to ignore, which quietly costs you the two alerts above that
+ * actually carry a contact. This fires once per owner, ever.
+ *
+ * `email` is present only when they were signed in — that is the difference
+ * between "someone new is trying it" and "someone new is trying it AND you can
+ * reach them", so it leads the message when known.
+ */
+export function buildFirstRunNotification(input: {
+  orgHandle: string;
+  kolHandle: string;
+  email?: string | null;
+}): string {
+  const lines = [
+    input.email ? "🌱 New signed-in user, first run" : "🌱 New visitor, first run",
+  ];
+  if (input.email) lines.push(`Email: ${input.email}`);
+  lines.push(`Analysing: @${input.orgHandle} × @${input.kolHandle}`);
+  if (!input.email) lines.push("No contact yet — anonymous browser.");
+  const base = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (base) lines.push(`${base.replace(/\/+$/, "")}/admin/people`);
+  return lines.join("\n");
+}

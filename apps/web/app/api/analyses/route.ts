@@ -17,6 +17,7 @@ import {
   type AnalysisListResponse,
 } from "@/lib/analyses-list";
 import { getCurrentUser } from "@/lib/auth";
+import { buildFirstRunNotification, notifyOperator } from "@/lib/notify";
 import { ensureOwnerId, getOwnerId } from "@/lib/owner";
 import { checkAnalysisRateLimit } from "@/lib/rate-limit";
 import { checkTierGate } from "@/lib/tier-gate";
@@ -213,6 +214,35 @@ export async function POST(req: Request): Promise<Response> {
       },
       include: { job: true },
     });
+
+    // A browser's FIRST analysis is a new user arriving — worth an alert. Every
+    // subsequent run is not, so this fires only when the count is exactly 1
+    // (the row just created). Counted AFTER the insert, against committed
+    // state.
+    //
+    // A RAW count, deliberately not countLifetimeAnalyses(): that one excludes
+    // FAILED jobs because quota should not punish a failure, but here that
+    // would re-fire "new visitor" for someone whose first run failed and who
+    // came back to retry — the one user we least want to greet as a stranger.
+    //
+    // Best-effort and detached: an alert must never delay or fail the analysis
+    // it is reporting on. `user` is reused from the tier gate above rather than
+    // re-resolved, so this costs one count() and nothing else.
+    void (async () => {
+      try {
+        const priorRuns = await prisma.analysisRequest.count({ where: { ownerId } });
+        if (priorRuns !== 1) return;
+        await notifyOperator(
+          buildFirstRunNotification({
+            orgHandle: input.orgHandle,
+            kolHandle: input.kolHandle,
+            email: user?.email ?? null,
+          })
+        );
+      } catch {
+        /* swallow: an alert must never affect the analysis it reports on */
+      }
+    })();
 
     // job is always present (created above), but the generated relation type is
     // nullable; guard defensively rather than assert.
