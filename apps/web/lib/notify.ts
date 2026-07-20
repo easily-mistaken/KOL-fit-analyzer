@@ -107,6 +107,12 @@ export function buildFirstRunNotification(input: {
   lines.push(`Analysing: @${input.orgHandle} × @${input.kolHandle}`);
   if (!input.email) lines.push("No contact yet — anonymous browser.");
   const base = process.env.NEXT_PUBLIC_APP_URL?.trim();
-  if (base) lines.push(`${base.replace(/\/+$/, "")}/admin/people`);
+  if (base) {
+    // /admin/people is keyed by EMAIL, so an anonymous visitor is provably not
+    // on it — linking there would send you looking for someone who cannot be
+    // found. Their run is on /admin/analyses. (Caught in live verification.)
+    const path = input.email ? "/admin/people" : "/admin/analyses";
+    lines.push(`${base.replace(/\/+$/, "")}${path}`);
+  }
   return lines.join("\n");
 }
