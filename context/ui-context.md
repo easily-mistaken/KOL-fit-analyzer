@@ -51,7 +51,7 @@ Palette (implemented in `apps/web/app/globals.css`). Both modes are **selected**
 | Muted surface | `--bg-muted` | `#E7E7E3` | `#232830` |
 | Primary text | `--text-primary` | `#0A0C10` | `#FFFFFF` |
 | Secondary text | `--text-secondary` | `#55595F` | `#9BA3AF` |
-| Muted text | `--text-muted` | `#83878D` | `#6B7480` |
+| Muted text | `--text-muted` | `#676B71` | `#7F8894` |
 | Brand lime (fill) | `--accent-primary` | `#BEF54B` | `#BEF54B` |
 | On the lime | `--accent-contrast` | `#0A0C10` | `#0A0C10` |
 | Accent as text | `--accent-ink` | `#5B830A` | `#D0F87A` |
@@ -62,6 +62,8 @@ Palette (implemented in `apps/web/app/globals.css`). Both modes are **selected**
 | Info | `--state-info` | `#2563EB` | `#60A5FA` |
 | Border default | `--border-default` | `#E5E5E1` | `#1E232A` |
 | Border strong | `--border-strong` | `#CFCFCA` | `#2E353F` |
+
+**The three text tiers are contrast-validated, not eyeballed.** Every tier clears WCAG AA (4.5:1) for body text on all three surfaces, in both themes — primary ~17–19:1, secondary ~6.2–7.7:1, muted ~4.7–5.4:1. `--text-muted` was raised in both themes on 2026-07-20 after a user reported dim copy in dark mode: it had been `#6B7480` dark / `#83878D` light, measuring 3.6:1 and 3.2:1 on `--bg-elevated`, i.e. failing AA everywhere it was used (hints, captions, `CardDescription`). Re-measure before changing any of these — the tiers must stay ordered AND all stay above 4.5:1.
 
 Token wiring worth knowing: `--accent` is the **brand lime** here, not shadcn's neutral hover surface. shadcn primitives that want a quiet hover say `bg-elevated` explicitly. `--primary-foreground` and `--accent-foreground` both resolve to `--accent-contrast`, which is what keeps lime buttons readable.
 

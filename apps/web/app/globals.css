@@ -32,7 +32,7 @@
   /* Text */
   --text-primary: #0a0c10;
   --text-secondary: #55595f;
-  --text-muted: #83878d;
+  --text-muted: #676b71;
 
   /*
    * Brand accent — acid lime. The lime is a LIGHT colour, which drives the
@@ -139,7 +139,7 @@
 
   --text-primary: #ffffff;
   --text-secondary: #9ba3af;
-  --text-muted: #6b7480;
+  --text-muted: #7f8894;
 
   /* On near-black the lime carries itself, so ink and hover are both lime. */
   --accent-ink: #d0f87a;
