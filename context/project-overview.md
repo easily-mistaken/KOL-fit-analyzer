@@ -185,8 +185,16 @@ The final report should include:
 ## Access Model & Concierge Tier (added 2026-07-16, Units 34-35)
 
 - Tiered access funnel: 3 lifetime analyses per anonymous browser, then Google
-  sign-in; 10 lifetime analyses per account; beyond that (or at ANY time, as an
-  alternative path) users raise a detailed-report request.
+  sign-in; 10 lifetime analyses per account; beyond that a user has TWO paths —
+  raise their self-serve allowance, or raise a detailed-report request.
+- Self-serve allowance raise (Unit 47): a signed-in user who has used their
+  analyses asks to unlock the next rung on a fixed ladder (10 → 25 → 50, one
+  step at a time, 50 the current ceiling). The operator approves from the admin
+  panel, which writes a per-user `User.analysisLimit` override that takes effect
+  on the next run. Signed-in only, because a raised allowance must live on the
+  account (a cookie limit is trivially reset). In exchange the request asks —
+  warmly, never as a hard gate — for a way to reach the user for feedback: one
+  or more of Telegram / email / another channel, at least one required.
 - Detailed-report requests: the user shares their Telegram username and X
   handle/link; the operator manually curates a deep-dive analysis and delivers
   it via Telegram within a day. Requests are captured with an optional org/KOL

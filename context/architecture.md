@@ -181,6 +181,17 @@ human. Nothing in this path sends mail — there is no mail sender in the
 codebase — so capture copy promises human follow-up only, and the operator ping
 rides the existing Telegram channel in `lib/notify.ts`.
 
+**Self-serve allowance raise (Unit 47):** `User.analysisLimit` is a nullable
+per-user override on the lifetime tier (null = the env/default 10). A signed-in
+user who has used their analyses raises a `LimitRaiseRequest` for the next
+ladder rung (`nextLimitTier`: 10 → 25 → 50, cap 50, in `@kol-fit/shared`); the
+operator approves at `/admin/upgrades`, which writes `User.analysisLimit` (only
+ever raises, never lowers). `checkTierGate` and `/api/analyses/quota` read the
+override via `getUserAnalysisLimit`, so the raise takes effect on the next run.
+The request also captures one-or-more review-contact channels (Telegram / email
+/ other) and pings the operator over the same Telegram channel. Signed-in only —
+a durable allowance can't live on a resettable cookie.
+
 **Load-bearing constraint — the audience key is brand-independent.** It hashes
 accounts + limit + model and *nothing about the requesting brand*, which is the
 entire reason one creator's engaged audience is classified once and reused by
@@ -251,9 +262,13 @@ rotating the password invalidates all sessions. A valid admin session is the one
 documented exception to Unit 25 owner scoping — it may read any report via
 `GET /api/analyses/[id]` (a non-owner without it still gets 404). The panel adds
 **no new data collection**: it only reads `AnalysisRequest`, `AnalysisJob`,
-`Report`, `DetailedReportRequest`, and `ProviderUsageLog`, and performs **no
-mutations** (no delete/re-run/export). This is a shared-secret gate for an internal tool, not
-an identity system — real accounts/roles remain the future auth unit.
+`Report`, `DetailedReportRequest`, `LimitRaiseRequest`, and `ProviderUsageLog`.
+Its mutations are limited to **operator queue decisions** on requests users
+raised themselves — detailed-report status (Unit 35) and allowance-raise
+approve/decline (Unit 47, which writes `User.analysisLimit`); it never
+deletes/re-runs/exports analyses or reports. This is a shared-secret gate for an
+internal tool, not an identity system — real accounts/roles remain the future
+auth unit.
 
 ### User Authentication (Unit 28)
 

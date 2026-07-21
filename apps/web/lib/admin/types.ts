@@ -74,6 +74,23 @@ export type AdminDetailedRequestRow = {
   fulfilledAt: string | null; // ISO
 };
 
+// Allowance-raise requests (Unit 47).
+export type AdminLimitRaiseRow = {
+  id: string;
+  createdAt: string; // ISO
+  status: "PENDING" | "APPROVED" | "DECLINED";
+  email: string | null;
+  currentLimit: number;
+  requestedLimit: number;
+  contactTelegram: string | null;
+  contactEmail: string | null;
+  contactOtherLabel: string | null;
+  contactOtherValue: string | null;
+  note: string | null;
+  userId: string | null;
+  decidedAt: string | null; // ISO
+};
+
 export type AdminUsageRow = {
   id: string;
   createdAt: string; // ISO

@@ -9,6 +9,7 @@ import { DEFAULT_LIST_LIMIT, MAX_LIST_LIMIT } from "@/lib/analyses-list";
 import type {
   AdminAnalysisRow,
   AdminDetailedRequestRow,
+  AdminLimitRaiseRow,
   AdminOverview,
   AdminPeople,
   AdminPersonRow,
@@ -429,6 +430,47 @@ export async function listAdminDetailedRequests({
     analysisRequestId: r.analysisRequestId,
     userId: r.userId,
     fulfilledAt: r.fulfilledAt ? iso(r.fulfilledAt) : null,
+  }));
+
+  return {
+    items,
+    nextCursor: hasMore ? page[page.length - 1].id : null,
+  };
+}
+
+/** Allowance-raise requests (Unit 47), newest first. */
+export async function listAdminLimitRaiseRequests({
+  limit,
+  cursor,
+}: {
+  limit?: number;
+  cursor?: string | null;
+} = {}): Promise<Page<AdminLimitRaiseRow>> {
+  const take = takeFor(limit);
+
+  const rows = await prisma.limitRaiseRequest.findMany({
+    orderBy: { createdAt: "desc" },
+    take: take + 1,
+    ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
+  });
+
+  const hasMore = rows.length > take;
+  const page = hasMore ? rows.slice(0, take) : rows;
+
+  const items: AdminLimitRaiseRow[] = page.map((r) => ({
+    id: r.id,
+    createdAt: iso(r.createdAt),
+    status: r.status,
+    email: r.email,
+    currentLimit: r.currentLimit,
+    requestedLimit: r.requestedLimit,
+    contactTelegram: r.contactTelegram,
+    contactEmail: r.contactEmail,
+    contactOtherLabel: r.contactOtherLabel,
+    contactOtherValue: r.contactOtherValue,
+    note: r.note,
+    userId: r.userId,
+    decidedAt: r.decidedAt ? iso(r.decidedAt) : null,
   }));
 
   return {

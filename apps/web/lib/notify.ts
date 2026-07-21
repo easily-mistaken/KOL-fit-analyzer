@@ -84,6 +84,40 @@ export function buildLeadNotification(input: {
   return lines.join("\n");
 }
 
+/** Compact operator-facing summary of a new allowance-raise request (Unit 47).
+ *  Leads the message with the contact channels, since the whole point of the
+ *  ask is to have a way to reach them for feedback. */
+export function buildLimitRaiseNotification(input: {
+  email?: string | null;
+  currentLimit: number;
+  requestedLimit: number;
+  contactTelegram?: string | null;
+  contactEmail?: string | null;
+  contactOtherLabel?: string | null;
+  contactOtherValue?: string | null;
+  note?: string | null;
+}): string {
+  const lines = [
+    "⬆️ New analysis-limit raise request",
+    `Wants: ${input.currentLimit} → ${input.requestedLimit} analyses`,
+  ];
+  if (input.email) lines.push(`Account: ${input.email}`);
+  const contacts: string[] = [];
+  if (input.contactTelegram) contacts.push(`Telegram @${input.contactTelegram}`);
+  if (input.contactEmail) contacts.push(`Email ${input.contactEmail}`);
+  if (input.contactOtherLabel && input.contactOtherValue) {
+    contacts.push(`${input.contactOtherLabel}: ${input.contactOtherValue}`);
+  }
+  if (contacts.length) lines.push(`Reach them: ${contacts.join(" | ")}`);
+  if (input.note) {
+    const note = input.note.length > 120 ? `${input.note.slice(0, 120)}…` : input.note;
+    lines.push(`Note: ${note}`);
+  }
+  const base = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (base) lines.push(`${base.replace(/\/+$/, "")}/admin/upgrades`);
+  return lines.join("\n");
+}
+
 /**
  * A browser's FIRST analysis (Unit 46) — a new user showing up, not a click.
  *

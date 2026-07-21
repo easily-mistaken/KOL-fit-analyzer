@@ -25,7 +25,21 @@ function messageFor(
 ): string {
   return gate === "login_required"
     ? `You've used your ${limits.anonLifetime} free analyses. Sign in with Google to unlock more. It takes ten seconds.`
-    : `You've used all ${limits.userLifetime} included analyses. Request a detailed report and we'll deliver a curated analysis straight to your Telegram within a day.`;
+    : `You've used all ${limits.userLifetime} of your analyses. Request more, or a hand-curated report.`;
+}
+
+/** The user's effective lifetime allowance: their per-user override when the
+ *  operator has raised it (Unit 47), else the passed free-tier fallback. Only
+ *  meaningful for signed-in owners, where ownerId == User.id. */
+export async function getUserAnalysisLimit(
+  userId: string,
+  fallback: number
+): Promise<number> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { analysisLimit: true },
+  });
+  return user?.analysisLimit ?? fallback;
 }
 
 /** Lifetime analyses counted against the funnel tiers. Single source of truth
@@ -42,7 +56,13 @@ export async function checkTierGate(
   ownerId: string,
   isAuthenticated: boolean
 ): Promise<TierGateDecision> {
-  const limits = resolveTierLimits(process.env);
+  const base = resolveTierLimits(process.env);
+  // Signed-in users may have a raised allowance (Unit 47); apply it before the
+  // decision so the gate and its copy reflect their real limit.
+  const userLifetime = isAuthenticated
+    ? await getUserAnalysisLimit(ownerId, base.userLifetime)
+    : base.userLifetime;
+  const limits: TierLimits = { ...base, userLifetime };
   const lifetime = await countLifetimeAnalyses(ownerId);
   const decision = decideTier(lifetime, isAuthenticated, limits);
   if (decision.allowed) return { allowed: true };

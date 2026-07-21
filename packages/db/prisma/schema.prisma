@@ -46,6 +46,12 @@ model User {
   email       String    @unique
   createdAt   DateTime  @default(now())
   lastLoginAt DateTime?
+  // Per-user lifetime-analysis override (Unit 47). Null = the env/default
+  // free-tier allowance (TIER_LIMITS.userLifetime, 10). Raised by the operator
+  // approving a LimitRaiseRequest (10 -> 25 -> 50). Deliberately on User, not a
+  // cookie: a raised allowance must survive and not be resettable by clearing
+  // cookies, which is also why the raise flow is signed-in only.
+  analysisLimit Int?
 }
 
 // Captured email addresses (Unit 44). The self-serve flow deliberately needs
@@ -329,6 +335,12 @@ enum DetailedRequestStatus {
   DISMISSED
 }
 
+enum LimitRaiseStatus {
+  PENDING
+  APPROVED
+  DECLINED
+}
+
 model DetailedReportRequest {
   id      String  @id @default(cuid())
   // Owner cookie or user id (mirrors AnalysisRequest.ownerId semantics).
@@ -353,6 +365,42 @@ model DetailedReportRequest {
   // Chat-style unread marker (Unit 40.1): set when the operator first views
   // the leads queue; the nav badge counts unseen, independent of workflow status.
   seenAt      DateTime?             @db.Timestamptz
+
+  @@index([status, createdAt])
+  @@index([ownerId, createdAt])
+}
+
+// Self-serve allowance-raise requests (Unit 47). A signed-in user who has used
+// their lifetime analyses asks to unlock the next rung (10 -> 25 -> 50); the
+// operator approves from the admin panel, which writes User.analysisLimit. In
+// exchange we ask — warmly, never as a hard gate — for a way to reach them for
+// feedback: one or more of Telegram / email / another channel. Signed-in only,
+// so ownerId here is always a User.id.
+model LimitRaiseRequest {
+  id      String  @id @default(cuid())
+  ownerId String
+  userId  String?
+  // The account email, copied at create time so the operator has it inline.
+  email   String?
+
+  // Snapshot of the allowance when they asked, and the rung they want next.
+  currentLimit   Int
+  requestedLimit Int
+
+  // Review-contact channels — at least one is present (enforced at the route).
+  // "Other" is a free-form channel name + value (Discord, WhatsApp, a phone…).
+  contactTelegram   String?
+  contactEmail      String?
+  contactOtherLabel String?
+  contactOtherValue String?
+  note              String?
+
+  status    LimitRaiseStatus @default(PENDING)
+  createdAt DateTime         @default(now()) @db.Timestamptz
+  decidedAt DateTime?        @db.Timestamptz
+  // Chat-style unread marker, mirrors DetailedReportRequest: set when the
+  // operator first views the queue; the nav badge counts unseen.
+  seenAt    DateTime?        @db.Timestamptz
 
   @@index([status, createdAt])
   @@index([ownerId, createdAt])

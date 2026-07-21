@@ -10,6 +10,7 @@ import {
   LogOut,
   Mail,
   ShieldCheck,
+  TrendingUp,
   Users,
 } from "lucide-react";
 
@@ -21,6 +22,7 @@ const LINKS = [
   { href: "/admin/analyses", label: "Analyses", icon: <FileText className="h-4 w-4" /> },
   { href: "/admin/people", label: "People", icon: <Users className="h-4 w-4" /> },
   { href: "/admin/leads", label: "Leads", icon: <Mail className="h-4 w-4" /> },
+  { href: "/admin/upgrades", label: "Upgrades", icon: <TrendingUp className="h-4 w-4" /> },
   { href: "/admin/usage", label: "Usage", icon: <Coins className="h-4 w-4" /> },
 ];
 
@@ -32,27 +34,38 @@ export function AdminNav() {
   const pathname = usePathname();
   const router = useRouter();
   const [pending, setPending] = React.useState(false);
-  // Unread badge (Unit 39.1): NEW (unhandled) concierge requests, chat-style.
+  // Unread badges (chat-style): NEW concierge requests (Unit 39.1) and pending
+  // allowance-raise requests (Unit 47).
   const [newLeads, setNewLeads] = React.useState(0);
+  const [newUpgrades, setNewUpgrades] = React.useState(0);
 
   React.useEffect(() => {
     let cancelled = false;
-    const load = () =>
-      fetch("/api/admin/detailed-requests", { cache: "no-store" })
+    const count = (url: string, set: (n: number) => void) =>
+      fetch(url, { cache: "no-store" })
         .then((r) => r.json())
         .then((body) => {
-          if (!cancelled && body?.ok) setNewLeads(body.data.newCount ?? 0);
+          if (!cancelled && body?.ok) set(body.data.newCount ?? 0);
         })
         .catch(() => {
           /* badge is best-effort */
         });
-    void load();
+    const load = () => {
+      void count("/api/admin/detailed-requests", setNewLeads);
+      void count("/api/admin/limit-requests", setNewUpgrades);
+    };
+    load();
     const timer = setInterval(load, 60_000);
     return () => {
       cancelled = true;
       clearInterval(timer);
     };
   }, [pathname]);
+
+  const badgeFor: Record<string, number> = {
+    "/admin/leads": newLeads,
+    "/admin/upgrades": newUpgrades,
+  };
 
   async function logout() {
     setPending(true);
@@ -84,9 +97,9 @@ export function AdminNav() {
           >
             {link.icon}
             {link.label}
-            {link.href === "/admin/leads" && newLeads > 0 && (
+            {(badgeFor[link.href] ?? 0) > 0 && (
               <span className="ml-0.5 inline-flex min-w-[18px] items-center justify-center rounded-full bg-accent px-1.5 py-px text-[10.5px] font-semibold leading-4 text-accent-foreground">
-                {newLeads > 99 ? "99+" : newLeads}
+                {badgeFor[link.href] > 99 ? "99+" : badgeFor[link.href]}
               </span>
             )}
           </Link>

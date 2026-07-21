@@ -4,7 +4,7 @@ import { resolveTierLimits, ok, err, type ApiResponse } from "@kol-fit/shared";
 
 import { getCurrentUser } from "@/lib/auth";
 import { getOwnerId } from "@/lib/owner";
-import { countLifetimeAnalyses } from "@/lib/tier-gate";
+import { countLifetimeAnalyses, getUserAnalysisLimit } from "@/lib/tier-gate";
 
 // Quota indicator (Unit 39): how many analyses this visitor has left in their
 // current tier. Read-only — uses getOwnerId (never sets a cookie on a read).
@@ -31,7 +31,12 @@ export async function GET(): Promise<NextResponse> {
     const user = await getCurrentUser();
     const ownerId = await getOwnerId();
     const used = ownerId ? await countLifetimeAnalyses(ownerId) : 0;
-    const limit = user ? limits.userLifetime : limits.anonLifetime;
+    // A signed-in user's limit reflects any operator-approved raise (Unit 47).
+    const userLimit =
+      user && ownerId
+        ? await getUserAnalysisLimit(ownerId, limits.userLifetime)
+        : limits.userLifetime;
+    const limit = user ? userLimit : limits.anonLifetime;
     return json(
       ok<QuotaResponse>({
         used,

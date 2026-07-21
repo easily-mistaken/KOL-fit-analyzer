@@ -6,6 +6,7 @@ import { AlertCircle, ChevronDown, Loader2, Search } from "lucide-react";
 import {
   AnalysisRequestInputSchema,
   CAMPAIGN_GOAL_LABELS,
+  nextLimitTier,
   PRODUCT_STAGE_LABELS,
   TIER_LIMITS,
   type ApiResponse,
@@ -155,6 +156,9 @@ export function AnalysisForm() {
   const anonLimit = quota?.limit ?? TIER_LIMITS.anonLifetime;
   const accountLimit = quota?.limit ?? TIER_LIMITS.userLifetime;
   const signedInLimit = quota?.signedInLimit ?? TIER_LIMITS.userLifetime;
+  // The next self-serve rung this account can request (10 → 25 → 50), or null at
+  // the ceiling — drives whether the upgrade wall offers "Request more" (Unit 47).
+  const upgradeTier = nextLimitTier(accountLimit);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -469,16 +473,23 @@ export function AnalysisForm() {
               className="rounded-xl border border-accent/40 bg-accent/10 px-4 py-3.5 text-sm"
             >
               <p className="font-semibold text-foreground">
-                You&apos;ve used all {accountLimit} included analyses
+                You&apos;ve used all {accountLimit} of your analyses
               </p>
               <p className="mt-1 text-secondary-foreground">
-                For more, request a detailed report: share your Telegram and X
-                handle, and we&apos;ll deliver a curated analysis straight to
-                your Telegram within a day.
+                {upgradeTier
+                  ? `Want to keep going? Unlock ${upgradeTier} — just leave a way to reach you for a bit of feedback and we'll approve it. Or get a hand-curated report from an analyst.`
+                  : "For a deeper look, request a hand-curated report from an analyst, delivered to your Telegram within a day."}
               </p>
-              <Button asChild className="mt-3">
-                <a href="/detailed">Request a curated report</a>
-              </Button>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {upgradeTier && (
+                  <Button asChild>
+                    <a href="/upgrade">Request {upgradeTier} analyses</a>
+                  </Button>
+                )}
+                <Button asChild variant={upgradeTier ? "outline" : "default"}>
+                  <a href="/detailed">Request a curated report</a>
+                </Button>
+              </div>
             </div>
           )}
 
