@@ -377,6 +377,38 @@ const STAGES: {
   },
 ];
 
+// The "why it's worth the wait" line (Unit 45), tied to the REAL active stage
+// and the user's OWN creator. It sits right under the progress bar — the exact
+// spot the eye lands when someone wonders whether to bail — and answers "why is
+// this taking so long?" by reframing the wait as thoroughness, never by
+// promising speed (a speed claim under a running timer just reads as a lie).
+// Handles are always known; the follower count fills in once the KOL profile is
+// read, and the copy degrades gracefully without it.
+function stageReason(
+  stageIndex: number,
+  ctx: { org: string; kol: string; kolFollowers: string | null }
+): string {
+  const { org, kol, kolFollowers } = ctx;
+  switch (stageIndex) {
+    case 0:
+      return `Reading everything @${kol} and @${org} put out — what they post, who they are, what they actually stand for. No skimming.`;
+    case 1:
+      return kolFollowers
+        ? `Going through the ${kolFollowers} people around @${kol} — the real humans, not the headline number. This is the slow part, and the whole reason the answer holds up.`
+        : `Going through the real people who follow and engage @${kol}, one at a time — not the headline number. This is the slow part, and the whole reason the answer holds up.`;
+    case 2:
+      return `Working out how many of @${kol}'s real listeners actually look like @${org}'s customers. Cut corners here and the fit score is worthless — so we don't.`;
+    default:
+      return `Folding everything we found into your scorecard, verdict, and next moves. Almost there.`;
+  }
+}
+
+// Queued: no stage yet, so frame the wait itself as care — the queue is
+// one-at-a-time precisely so each creator gets the full pass (the time line
+// below carries the "any second now").
+const QUEUED_REASON =
+  "You're in line. We take creators one at a time so each gets our full, careful pass — no rushing yours.";
+
 function mmss(total: number): string {
   const m = Math.floor(total / 60);
   const s = total % 60;
@@ -528,6 +560,20 @@ function RunningExperience({ data }: { data: AnalysisStatusResponse }) {
 
   const overrun = elapsed > 430; // past the usual window
 
+  // Why the wait is worth it — the real active stage, spoken about the user's
+  // own creator (with the live follower count once it's read).
+  const kolFollowers =
+    progress?.kol?.followersCount != null
+      ? formatFollowers(progress.kol.followersCount)
+      : null;
+  const reason = queued
+    ? QUEUED_REASON
+    : stageReason(barIdx, {
+        org: data.orgHandle,
+        kol: data.kolHandle,
+        kolFollowers,
+      });
+
   return (
     <div className="relative overflow-hidden rounded-2xl border border-default bg-surface shadow-card">
       {/* the audience being sifted, quietly alive behind the panel */}
@@ -588,13 +634,22 @@ function RunningExperience({ data }: { data: AnalysisStatusResponse }) {
               style={{ width: `${pct}%` }}
             />
           </div>
-          <div className="mt-2 flex items-center gap-1.5 text-xs text-secondary-foreground">
-            <Clock className="h-3.5 w-3.5 shrink-0 text-accent-ink" />
-            {queued
-              ? "A worker will pick this up any second."
-              : overrun
-                ? "Taking a little longer than usual — still going, hang tight."
-                : `Working on it — ${stage.remaining} left.`}
+          <div className="mt-2.5 space-y-1.5">
+            {/* The reason to stay: why it's slow, framed as thoroughness and
+                spoken about THEIR creator. */}
+            <p className="text-[13px] leading-relaxed text-secondary-foreground">
+              {reason}
+            </p>
+            {/* The practical reassurance underneath: coarse time, never a fake
+                precise ETA. */}
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Clock className="h-3.5 w-3.5 shrink-0 text-accent-ink" />
+              {queued
+                ? "A worker will pick this up any second."
+                : overrun
+                  ? "Taking a little longer than usual — still going, hang tight."
+                  : `Working on it — ${stage.remaining} left.`}
+            </div>
           </div>
         </div>
 
