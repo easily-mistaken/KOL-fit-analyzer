@@ -553,10 +553,14 @@ at `context/specs/19-caching-and-cost-controls.md` as the design record.
   `/auth/callback` built its redirect from `new URL(req.url).origin`, which
   behind nginx is whatever the proxy dialed — a live probe returned
   `307 -> https://localhost:3000/login?error=missing_code`, so even a *successful*
-  code exchange would have bounced the user to a dead address. Root cause is the
-  nginx vhost not forwarding the original Host (`proxy_set_header Host $host`),
-  but the app should not be that fragile: the route now prefers
-  `NEXT_PUBLIC_APP_URL` and keeps the request origin as the local-dev fallback.
+  code exchange would have bounced the user to a dead address. **Correction to
+  the first diagnosis in this entry:** this was blamed on the nginx vhost not
+  forwarding the original Host, but inspecting the live vhost proved it already
+  sets `proxy_set_header Host $host` (line 9) — the real cause is Next itself,
+  whose self-hosted route handlers report the internal listening address in
+  `request.url` regardless of the Host header. The route now prefers
+  `NEXT_PUBLIC_APP_URL` and keeps the request origin as the local-dev fallback;
+  no nginx change was needed or made.
   (2) The 502 the user hit on `/auth/callback` was **transient** — they clicked
   sign-in seconds after `systemctl restart overlapx`, so nginx had no upstream
   yet; `/`, `/login` and `/api/analyses/quota` all returned 200 immediately
@@ -569,3 +573,19 @@ at `context/specs/19-caching-and-cost-controls.md` as the design record.
   ownership" until `git config --global --add safe.directory /srv/overlapx` —
   that silently no-op'd a `git pull` and made a rebuild look like it had picked
   up new code when it hadn't.
+
+- 2026-07-22 (deploy verified): Deployed `db97554` to the VPS over SSH and
+  verified from outside. Sequence that finally worked: `git pull`
+  (`291e067 -> db97554`) → `sudo -u overlapx -H pnpm -r build` **with no
+  `--preserve-env` and no `[next.config]` warning**, confirming the root-.env
+  loader works unaided → `systemctl restart overlapx` (up in 4s). Live checks:
+  `/auth/callback` now `307 -> https://overlapx.com/login?error=missing_code`
+  (was `localhost:3000`), the Supabase URL is present in the client chunks (was
+  absent), `/`, `/login`, `/analyses` all 200. The earlier 502 on the callback
+  was purely a restart race — nginx has no upstream for a few seconds after
+  `systemctl restart`, so allow ~5s before testing. Operational note: root's SSH
+  password login is refused on this box (`PermitRootLogin prohibit-password`
+  suspected — `ssh-copy-id` could not authenticate), so the key had to be
+  installed from inside; `ssh racknerd` (192.227.178.118) now works key-only.
+  Remaining, config-only: the Google consent screen still reads
+  "<project-ref>.supabase.co".
