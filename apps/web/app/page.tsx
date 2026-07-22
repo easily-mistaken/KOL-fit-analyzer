@@ -49,9 +49,30 @@ function AboutOverlapX() {
   );
 }
 
+// Machine-readable statement of the same facts, for the automated half of
+// Google's review: the application's name, what it is, and what it does.
+const APP_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "OverlapX",
+  alternateName: "OverlapX Audience Intelligence",
+  url: "https://overlapx.com",
+  applicationCategory: "BusinessApplication",
+  operatingSystem: "Web",
+  description:
+    "OverlapX is an audience-analysis tool for brands deciding whether to pay a creator on X (Twitter). It reads a creator's public posts and the accounts that engage with them, then scores how well that audience matches the people a brand wants to reach.",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+  privacyPolicy: "https://overlapx.com/privacy",
+  termsOfService: "https://overlapx.com/terms",
+};
+
 export default function HomePage() {
   return (
     <section className="rounded-2xl border border-default bg-base">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(APP_JSON_LD) }}
+      />
       <div className="relative flex flex-col items-center gap-8 px-4 py-12 sm:py-16">
         <div className="max-w-2xl text-center">
           <span className="inline-flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.14em] text-secondary-foreground">
@@ -60,8 +81,14 @@ export default function HomePage() {
                 checks the consent-screen app name is visible on the homepage. */}
             OverlapX · Audience intelligence
           </span>
+          {/* The app name leads the <h1> because Google's OAuth review compares
+              the consent-screen name against the homepage's main heading, and
+              failed twice while this read "Know who actually listens" alone. */}
           <h1 className="mt-5 text-4xl font-semibold tracking-tight text-foreground sm:text-[52px] sm:leading-[1.02]">
-            Know who actually listens
+            OverlapX
+            <span className="mt-2 block text-2xl text-secondary-foreground sm:text-[30px] sm:leading-[1.1]">
+              Know who actually listens
+            </span>
           </h1>
           {/* First paragraph names the app and states its purpose in one
               sentence, above the fold. Google's OAuth review reads the top of
