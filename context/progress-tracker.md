@@ -661,3 +661,19 @@ at `context/specs/19-caching-and-cost-controls.md` as the design record.
   Next.js supports the HTML-tag method via `metadata.verification.google` in
   `layout.tsx` if the DNS route is inconvenient. Also still open: the consent
   screen showing `<project-ref>.supabase.co` instead of the brand.
+
+- 2026-07-22 (verification round 2): Ownership cleared via the Search Console
+  **HTML-tag** method after the DNS route failed — `dig` showed the live zone
+  (Hostinger nameservers, `*.dns-parking.com`) held **no TXT records at all**, so
+  the token had been added somewhere that was not authoritative. The token now
+  lives in `layout.tsx` as `metadata.verification.google`; Google re-checks it
+  periodically, so **removing it un-verifies the domain**. Google still reported
+  the purpose/name findings, which are labelled "from the previous verification
+  attempt" and may predate the homepage deploy. Hardened regardless: the first
+  paragraph above the fold now opens "OverlapX is an audience-analysis tool for
+  brands deciding whether to pay a creator on X" (name + purpose in one sentence,
+  before the form), and `robots.ts`/`sitemap.ts` were added — `/robots.txt` was
+  previously a 404, which is a poor signal for a site claiming to be a real
+  product. Confirmed by fetching as Googlebot: the first 200 characters of
+  crawlable text now carry the app name twice and the purpose once, with no JS
+  required.
