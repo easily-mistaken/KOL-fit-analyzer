@@ -589,3 +589,25 @@ at `context/specs/19-caching-and-cost-controls.md` as the design record.
   installed from inside; `ssh racknerd` (192.227.178.118) now works key-only.
   Remaining, config-only: the Google consent screen still reads
   "<project-ref>.supabase.co".
+
+- 2026-07-22 (RESOLVED — Google sign-in works in production): The final blocker
+  was **nginx's proxy header buffer**, not the app. `/var/log/nginx/error.log`
+  on every real login: `upstream sent too big header while reading response
+  header from upstream ... GET /auth/callback?code=...`. Supabase returns the
+  session as several large JWT `Set-Cookie` headers and the callback's success
+  redirect carries them all at once, overflowing nginx's default 4k
+  `proxy_buffer_size`; nginx then discarded a correct response and answered 502.
+  Fixed in the vhost (`proxy_buffer_size 16k` / `proxy_buffers 8 16k` /
+  `proxy_busy_buffers_size 32k`, backup at `/root/overlapx.nginx.bak.*`) and
+  documented in `DEPLOY.md`, since the vhost is not in git and would otherwise be
+  lost on a rebuild. **Debugging lesson worth keeping:** this hid behind curl
+  probes for three rounds because `/auth/callback` was only ever testable via its
+  *error* paths (missing/invalid code), which set no cookies and returned a clean
+  307 — the defect existed exclusively on the success path, which cannot be
+  synthesized without a real Google code. The server logs said so all along
+  (`[auth] claimed 3 anonymous report(s) on login` at 09:26 while the browser
+  showed 502): the login had been succeeding server-side for hours, and only the
+  response delivery was broken. When a probe and a user report disagree, the
+  probe is testing a different code path. Full chain now verified by the user:
+  Google → callback → session → `/analyses`. Still open (cosmetic, config-only):
+  the consent screen reads `<project-ref>.supabase.co`.

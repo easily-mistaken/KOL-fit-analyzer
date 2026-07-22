@@ -137,8 +137,24 @@ location / {
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
     proxy_cache_bypass $http_upgrade;
+    proxy_read_timeout 300s;
+
+    # REQUIRED for Google sign-in. Supabase returns the session as several
+    # large JWT Set-Cookie headers, and the /auth/callback success redirect
+    # carries all of them at once. nginx's default 4k proxy header buffer
+    # overflows and it answers 502 — discarding a response the app produced
+    # correctly. The failure hits ONLY the success path (error redirects set no
+    # cookies), so curl probes of /auth/callback look fine while every real
+    # login 502s. Symptom in /var/log/nginx/error.log:
+    #   "upstream sent too big header while reading response header"
+    proxy_buffer_size 16k;
+    proxy_buffers 8 16k;
+    proxy_busy_buffers_size 32k;
 }
 ```
+
+Apply changes with `nginx -t && systemctl reload nginx` — `-t` validates the
+config first, so a typo can't take the site down.
 
 ### Firewall
 
@@ -160,6 +176,25 @@ sudo -u overlapx pnpm install --frozen-lockfile
 sudo -u overlapx pnpm -r build
 sudo systemctl restart overlapx
 ```
+
+Four things that have each cost a debugging session:
+
+- **`git` as root in a repo owned by `overlapx` fails** with `detected dubious
+  ownership` — and only that step fails, so the build and restart still run and
+  the deploy *looks* successful while shipping the old commit. Fix once with
+  `git config --global --add safe.directory /srv/overlapx`, and confirm with
+  `git log --oneline -1` before building.
+- **Changing a `NEXT_PUBLIC_*` value requires a rebuild, not a restart.** Those
+  are compiled into the browser bundle; a restart re-serves the old one. Only
+  server-side vars (`ADMIN_PASSWORD`, `DATABASE_URL`, API keys) take effect on
+  restart alone.
+- **Watch the build log for `[next.config] … not set at build time`.** It means
+  the build could not read the root `.env`, and the client bundle will ship with
+  Google sign-in dead while the server still looks correctly configured.
+- **Wait ~5s after `systemctl restart` before testing.** nginx has no upstream
+  until Node finishes booting and returns 502 in the meantime — which looks
+  exactly like a crash but isn't. `journalctl -u overlapx -n 30` distinguishes
+  them: a real crash shows a non-zero `NRestarts`.
 
 ## Required environment variables
 
