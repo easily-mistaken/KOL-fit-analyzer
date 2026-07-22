@@ -32,12 +32,20 @@ export async function AppShell({ children }: { children: ReactNode }) {
       <footer className="mx-auto w-full max-w-5xl px-4 pb-8 sm:px-6">
         <div className="flex items-center justify-between gap-4 border-t border-default pt-5 text-xs text-muted-foreground">
           <span>OverlapX</span>
-          <Link
-            href="/privacy"
-            className="transition-colors hover:text-foreground"
-          >
-            Privacy
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/privacy"
+              className="transition-colors hover:text-foreground"
+            >
+              Privacy
+            </Link>
+            <Link
+              href="/terms"
+              className="transition-colors hover:text-foreground"
+            >
+              Terms
+            </Link>
+          </div>
         </div>
       </footer>
     </div>

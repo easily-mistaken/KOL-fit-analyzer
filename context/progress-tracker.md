@@ -627,3 +627,20 @@ at `context/specs/19-caching-and-cost-controls.md` as the design record.
   tanmayjain5114@gmail.com (chosen by the user; matches the configured
   `NEXT_PUBLIC_CONTACT_*` handles). **If the data flow changes, this page must
   change with it** — it is a factual description, not a template.
+
+- 2026-07-22 (terms + legal shell): Added `/terms` and extracted the shared
+  prose shell both legal pages use into `components/legal.tsx`
+  (`LegalPage`/`LegalSection`/`LegalBullets`/`LegalTerm`), refactoring `/privacy`
+  onto it rather than duplicating the markup; the footer now links both. User
+  decisions recorded so they are not re-litigated: **no governing-law clause**
+  (they declined to name a jurisdiction) and OverlapX is described as **run by an
+  individual, not a company** — naming an entity that does not exist would be
+  worse than naming none. The section that carries real weight for this product
+  is "What a report is, and what it is not": the app publishes automated
+  judgements about real people's public accounts and users spend money on them,
+  so the terms state plainly that a report is an estimate from public data at one
+  moment, can be wrong, is not advice or a statement of fact about a person, and
+  that decisions taken after reading one belong to the reader. Acceptable-use
+  rules follow from the same risk (no harassment, no presenting a report as
+  verified fact, no profile-building unrelated to a partnership). Curated reports
+  are documented as free today with any future price shown before commitment.
