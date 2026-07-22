@@ -611,3 +611,19 @@ at `context/specs/19-caching-and-cost-controls.md` as the design record.
   probe is testing a different code path. Full chain now verified by the user:
   Google → callback → session → `/analyses`. Still open (cosmetic, config-only):
   the consent screen reads `<project-ref>.supabase.co`.
+
+- 2026-07-22 (privacy page): Added `/privacy` (`apps/web/app/privacy/page.tsx`)
+  plus a footer link in `app-shell.tsx`, for the Google OAuth consent screen —
+  which requires a policy URL on the app's own verified domain, so this is a real
+  route rather than a hosted document, and Google's review also checks the link
+  is reachable from inside the app. Content is written from the actual data flow
+  in this codebase, not boilerplate: the `kolfit_owner` anonymous cookie (1-year
+  max-age, httpOnly, random UUID) and its claim-on-login behaviour, the `User`
+  email/`lastLoginAt` fields, `AnalysisRequest`'s optional context columns, the
+  `Lead`/`DetailedRequest`/`LimitRaiseRequest` contact captures, and every
+  subprocessor by name (Supabase, TwitterAPI.io, OpenAI, RackNerd, Telegram). It
+  also carries the Limited Use declaration Google verification looks for, and
+  states that sign-in requests only basic profile + email. Contact published:
+  tanmayjain5114@gmail.com (chosen by the user; matches the configured
+  `NEXT_PUBLIC_CONTACT_*` handles). **If the data flow changes, this page must
+  change with it** — it is a factual description, not a template.
