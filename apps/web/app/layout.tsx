@@ -40,6 +40,14 @@ export const metadata = {
     description: DESCRIPTION,
     images: ["/overlapx-og.jpg"],
   },
+  // Google Search Console ownership proof for overlapx.com, required before
+  // Google's OAuth consent screen will accept this domain as ours. Renders as
+  // <meta name="google-site-verification" …> in <head>. Google re-checks it
+  // periodically, so removing this can un-verify the domain and break the
+  // consent screen's brand verification.
+  verification: {
+    google: "xCZovrvymXIvWE3EP2V9rU1NDfuPoA_v1iRazb9SY0c",
+  },
 };
 
 // The shell nav renders per-request auth state (Unit 28), which depends on the
