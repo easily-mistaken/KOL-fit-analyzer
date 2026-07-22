@@ -63,8 +63,13 @@ export default function HomePage() {
           <h1 className="mt-5 text-4xl font-semibold tracking-tight text-foreground sm:text-[52px] sm:leading-[1.02]">
             Know who actually listens
           </h1>
+          {/* First paragraph names the app and states its purpose in one
+              sentence, above the fold. Google's OAuth review reads the top of
+              the homepage for both; keep "OverlapX is" leading this line. */}
           <p className="mx-auto mt-4 max-w-lg text-base leading-relaxed text-secondary-foreground">
-            Followers are cheap to buy. Before you pay a creator, find out
+            <strong className="font-medium text-foreground">OverlapX</strong> is
+            an audience-analysis tool for brands deciding whether to pay a
+            creator on X. Followers are cheap to buy. Before you pay, find out
             whether the people who actually engage with them are the people you
             want to reach.
           </p>
