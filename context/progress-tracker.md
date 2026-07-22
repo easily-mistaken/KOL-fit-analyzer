@@ -547,3 +547,25 @@ at `context/specs/19-caching-and-cost-controls.md` as the design record.
   `.next/static/chunks` and zero `env.NEXT_PUBLIC_SUPABASE_*` references remain.
   **Deploy requires a rebuild, not just a restart** (`NEXT_PUBLIC_*` change).
   Supabase dashboard config was never the problem — no change needed there.
+
+- 2026-07-22 (later): Two production auth follow-ups found by probing the live
+  callback. (1) **Post-login redirects pointed at `localhost:3000`.**
+  `/auth/callback` built its redirect from `new URL(req.url).origin`, which
+  behind nginx is whatever the proxy dialed — a live probe returned
+  `307 -> https://localhost:3000/login?error=missing_code`, so even a *successful*
+  code exchange would have bounced the user to a dead address. Root cause is the
+  nginx vhost not forwarding the original Host (`proxy_set_header Host $host`),
+  but the app should not be that fragile: the route now prefers
+  `NEXT_PUBLIC_APP_URL` and keeps the request origin as the local-dev fallback.
+  (2) The 502 the user hit on `/auth/callback` was **transient** — they clicked
+  sign-in seconds after `systemctl restart overlapx`, so nginx had no upstream
+  yet; `/`, `/login` and `/api/analyses/quota` all returned 200 immediately
+  after. Still open (config, not code): Google's consent screen reads "to
+  continue to <project-ref>.supabase.co" because the OAuth redirect URI lives on
+  Supabase's domain — needs the Google OAuth branding App name set, and the
+  Supabase custom-domain add-on to remove the supabase.co host entirely.
+  Also learned during this deploy: `/srv/overlapx` is owned by `overlapx` while
+  deploys run as root, so every `git` command there fails with "dubious
+  ownership" until `git config --global --add safe.directory /srv/overlapx` —
+  that silently no-op'd a `git pull` and made a rebuild look like it had picked
+  up new code when it hadn't.

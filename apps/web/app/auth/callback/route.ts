@@ -12,8 +12,22 @@ import { resolveAuthMode } from "@kol-fit/auth";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+/**
+ * Base URL for the post-login redirects. Behind a reverse proxy `req.url`'s
+ * host is whatever the proxy dialed (e.g. localhost:3000) unless it forwards
+ * the original Host, which would bounce a successfully signed-in user to a
+ * dead address. NEXT_PUBLIC_APP_URL is the deployment's own idea of its public
+ * origin, so it wins when set; the request origin stays the fallback for local
+ * dev where no such var exists.
+ */
+function appOrigin(req: Request): string {
+  const configured = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (configured) return configured.replace(/\/+$/, "");
+  return new URL(req.url).origin;
+}
+
 async function handle(req: Request): Promise<Response> {
-  const { origin } = new URL(req.url);
+  const origin = appOrigin(req);
 
   // Dev mode has no Supabase callback — send back to login.
   if (resolveAuthMode(process.env) !== "supabase") {
