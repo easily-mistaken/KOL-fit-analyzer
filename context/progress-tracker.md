@@ -644,3 +644,20 @@ at `context/specs/19-caching-and-cost-controls.md` as the design record.
   rules follow from the same risk (no harassment, no presenting a report as
   verified fact, no profile-building unrelated to a partnership). Curated reports
   are documented as free today with any future price shown before commitment.
+
+- 2026-07-22 (Google OAuth verification round 1): Google rejected brand
+  verification with three findings. Two were homepage defects and are fixed +
+  deployed (`2e9df51`): the reviewer found no statement of the app's purpose and
+  no occurrence of the consent-screen name. The marketing headline ("Know who
+  actually listens") reads well but tells an automated checker nothing, and the
+  only rendering of the brand was the lowercase `<Wordmark>` logotype. Added an
+  "About OverlapX" block under the form (what it does, three how-it-works steps,
+  and what Google sign-in is used for — name + email only, optional) and put
+  "OverlapX · Audience intelligence" in the hero eyebrow so the exact name is
+  visible above the fold. **Both are load-bearing for verification — do not
+  reword them away.** The third finding (homepage "not registered to you") is not
+  a code issue: the domain must be verified in Google Search Console **under the
+  same Google account that owns the Cloud project**, which is the usual cause.
+  Next.js supports the HTML-tag method via `metadata.verification.google` in
+  `layout.tsx` if the DNS route is inconvenient. Also still open: the consent
+  screen showing `<project-ref>.supabase.co` instead of the brand.
