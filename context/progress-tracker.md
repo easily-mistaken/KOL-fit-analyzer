@@ -519,3 +519,31 @@ at `context/specs/19-caching-and-cost-controls.md` as the design record.
   (both `.env.example` and the two factories default to `mock`) — which is a
   deploy footgun worth remembering: unset `TWITTER_PROVIDER`/`LLM_PROVIDER` in
   production means live traffic silently runs on mock data. Docs only.
+
+- 2026-07-22: **Production Google sign-in fix — `NEXT_PUBLIC_*` were never
+  inlined into the VPS build.** Symptom: overlapx.com/login rendered the
+  "Continue with Google" card but every click showed "Couldn't start Google
+  sign-in." Diagnosed from outside by fetching the live page's client chunks:
+  they contained the literal strings `process.env.NEXT_PUBLIC_SUPABASE_URL` /
+  `_ANON_KEY` rather than the values, so `createBrowserClient(undefined,
+  undefined)` threw and the `catch` showed the generic message. Root cause is
+  the landmine planted back in Unit 18 (see the 2026-07-10 note): Next only
+  reads `.env` from its own project dir, which locally works via the symlink
+  `apps/web/.env -> ../../.env` — but that symlink is **gitignored** (`.gitignore:12`
+  matches it), so it does not exist on a fresh checkout. On the VPS `next build`
+  therefore saw no `.env` at all, while the *server* kept reading real values
+  from systemd's environment. That split is what made it invisible: server-side
+  `resolveAuthMode()` said "supabase" and rendered the signed-in UI, only the
+  browser half was dead. `middleware.ts` had the same defect (its
+  `isSupabaseMode()` is build-time-inlined too → session refresh was silently
+  off in production). Fix: `apps/web/next.config.mjs` now loads the repo-root
+  `.env` itself before Next resolves the config (minimal KEY=VALUE reader, no
+  new deps; real process env always wins, so systemd/shell overrides keep
+  precedence), plus a build-log warning when the Supabase public pair is absent
+  so an accidentally anonymous-only build is never silent again. Also stopped
+  `login-form.tsx` swallowing the cause (`console.error`, same user-facing
+  copy). Verified by moving the symlink away to mirror the VPS and rebuilding:
+  before → un-inlined refs, after → the project URL is present in
+  `.next/static/chunks` and zero `env.NEXT_PUBLIC_SUPABASE_*` references remain.
+  **Deploy requires a rebuild, not just a restart** (`NEXT_PUBLIC_*` change).
+  Supabase dashboard config was never the problem — no change needed there.

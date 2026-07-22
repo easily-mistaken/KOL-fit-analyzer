@@ -51,6 +51,17 @@ function GoogleSignIn() {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
+  // Keeps the user-facing message generic while leaving the real reason in the
+  // console — a swallowed failure here is indistinguishable from a Supabase
+  // outage, and the most likely cause is local: createBrowserClient receiving
+  // undefined env because the NEXT_PUBLIC_SUPABASE_* vars weren't present at
+  // BUILD time (they are inlined into the bundle, never read at runtime).
+  function fail(cause: unknown) {
+    console.error("[auth] Google sign-in could not start:", cause);
+    setError("Couldn't start Google sign-in. Please try again.");
+    setLoading(false);
+  }
+
   async function signInWithGoogle() {
     setError(null);
     setLoading(true);
@@ -65,13 +76,9 @@ function GoogleSignIn() {
         options: { redirectTo: `${window.location.origin}/auth/callback` },
       });
       // On success the browser redirects to Google; nothing below runs.
-      if (oauthError) {
-        setError("Couldn't start Google sign-in. Please try again.");
-        setLoading(false);
-      }
-    } catch {
-      setError("Couldn't start Google sign-in. Please try again.");
-      setLoading(false);
+      if (oauthError) fail(oauthError);
+    } catch (cause) {
+      fail(cause);
     }
   }
 
