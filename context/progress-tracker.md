@@ -677,3 +677,18 @@ at `context/specs/19-caching-and-cost-controls.md` as the design record.
   product. Confirmed by fetching as Googlebot: the first 200 characters of
   crawlable text now carry the app name twice and the purpose once, with no JS
   required.
+
+- 2026-07-22 (verification round 3): Same two findings returned, so the
+  remaining untouched signal was the `<h1>` — it read "Know who actually
+  listens" with no brand name, while everything Google flagged was present only
+  in body copy. The heading now leads with "OverlapX" and keeps the original
+  line as a subhead (`h1` renders as "OverlapX / Know who actually listens"),
+  and a schema.org `WebApplication` JSON-LD block states the name, description,
+  and policy URLs for the automated half of the review. **Design note for future
+  edits:** the brand name in the `h1`, the "OverlapX is an audience-analysis
+  tool…" opener, and the About block are all verification-load-bearing — reword
+  them only if brand verification is no longer needed. Open question worth
+  settling before another review cycle: whether this app needs brand
+  verification at all, since it requests only non-sensitive scopes (openid,
+  email, profile via `signInWithOAuth`), which are generally publishable without
+  it unless a custom logo is configured.
