@@ -819,6 +819,10 @@ at `context/specs/19-caching-and-cost-controls.md` as the design record.
   before the 200-analyses cap under abuse. Admin dashboard spend numbers light
   up for free (they read the same column). New
   scripts/checks/spend-gate.regression.cjs (10 checks) wired into pnpm check.
-  Also recorded: prod env's LLM_MODEL_FIT=gpt-5 is consumed nowhere in code
-  (all LLM calls run on LLM_MODEL=gpt-5-mini); left as an open product choice,
-  either delete the var or wire a real fit-model client.
+  Also recorded: prod env's LLM_MODEL_FIT=gpt-5 was consumed nowhere in code
+  (all LLM calls run on LLM_MODEL=gpt-5-mini); the fitModel tiering was
+  deliberately removed in the Unit 41 v3 cleanup (2026-07-18) but the var
+  survived in the prod .env. RESOLVED same day: user chose removal over wiring
+  a fit-model client; the var and its comment are deleted from the prod .env
+  (no restart needed, nothing read it). If a stronger report model is ever
+  wanted, that is a new feature, not a config flip.
