@@ -29,6 +29,10 @@ export class MockTwitterProvider implements TwitterProvider {
     return makeKolPosts(handle).slice(0, Math.max(0, limit));
   }
 
+  async getLatestTweets(handle: string, limit: number): Promise<Tweet[]> {
+    return this.getUserTweets(handle, limit);
+  }
+
   async getUserReplies(handle: string, limit: number): Promise<Tweet[]> {
     return makeKolReplies(handle).slice(0, Math.max(0, limit));
   }

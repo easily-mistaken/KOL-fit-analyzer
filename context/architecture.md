@@ -158,6 +158,13 @@ tweets/engagement 6h (`CACHE_TTL_SECONDS` / `CACHE_TTL_TWEETS_SECONDS`).
 `CACHE_ENABLED=false` disables caching (full pass-through). Expired rows are
 deleted lazily on read miss. `searchTweets` is not cached.
 
+**Freshness probe (Unit 48):** `getLatestTweets` (optional provider capability,
+one timeline page) is cached under its own key (`probe:`) on a deliberately
+SHORT TTL (`CACHE_TTL_PROBE_SECONDS`, default 6h, NOT inherited from the base
+TTL). It feeds only the activity signal (days since last original post), so
+raising the bulk tweet TTL for cost — prod runs 30 days — can never make an
+active creator look dormant. Cost: at most one extra request per analysis.
+
 **Implemented (Unit 23) — cross-analysis classification reuse:** the expensive
 LLM classifications are also cached in `ProviderCache` (`provider: "llm"`) via a
 `withLlmCache(provider, store, config)` decorator, so re-analyses reuse them
@@ -473,6 +480,7 @@ Required methods:
 ```ts
 getUserProfile(handle: string)
 getUserTweets(handle: string, limit: number)
+getLatestTweets?(handle: string, limit: number) // optional freshness probe (Unit 48)
 getUserReplies(handle: string, limit: number)
 getTweetReplies(tweetId: string, limit: number)
 getTweetQuotes(tweetId: string, limit: number)

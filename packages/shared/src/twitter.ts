@@ -49,10 +49,22 @@ export const TweetSchema = z.object({
   viewCount: z.number().int().min(0).optional(),
   isReply: z.boolean().optional(),
   isQuote: z.boolean().optional(),
+  /** True when this timeline item is a repost (native retweet) of someone
+   *  else's tweet. Engagement counts on a repost belong to the ORIGINAL tweet,
+   *  so reposts must never be treated as the author's own content. */
+  isRetweet: z.boolean().optional(),
   lang: z.string().optional(),
   media: z.array(TweetMediaSchema).optional(),
 });
 export type Tweet = z.infer<typeof TweetSchema>;
+
+/** Is this timeline item a repost (native retweet)? Prefers the normalized
+ *  flag; falls back to the canonical `RT @` text prefix so payloads cached
+ *  before the flag existed (tw:v2 entries) are still detected without a cache
+ *  invalidation. */
+export function isRepost(t: Tweet): boolean {
+  return t.isRetweet === true || t.text.startsWith("RT @");
+}
 
 // A raw engager tied to a tweet, before audience classification. The
 // pre-classification counterpart of AudienceAccount. `text` is the reply/quote

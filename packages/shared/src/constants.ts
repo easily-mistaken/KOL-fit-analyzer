@@ -27,4 +27,8 @@ export const REPORT_SCHEMA_VERSION = 1;
 // matching became two-dimensional (role AND domain, see weightedMatch). Same
 // inputs now produce different scores, so every pre-v4 report must re-run
 // rather than be served as an instant-reuse hit.
-export const SCORING_VERSION = 4;
+// v5 (Unit 48): reposts (native retweets) are excluded from content and
+// engagement analysis, and the overall fit is multiplied by down-only activity
+// (days since last original post) and originality (repost share) factors. Same
+// inputs now produce different scores AND different sampled data.
+export const SCORING_VERSION = 5;

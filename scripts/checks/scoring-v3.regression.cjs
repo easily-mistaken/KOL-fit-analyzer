@@ -121,7 +121,9 @@ ck("curve interpolates linearly", Math.abs(s.curve(0.2475, s.EAM_ANCHORS) - 65) 
   const { scores, verdict } = s.scoreAnalysis(input);
   ck(`benchmark verdict STRONG (got ${verdict}, overall ${scores.overall.value})`, verdict === "STRONG" && scores.overall.value >= 80);
   ck("benchmark EAM >= 85", scores.components.engaged_audience_match.value >= 85);
-  ck("v3 invariant: overall_fit == engaged_audience_match", scores.overall.value === scores.components.engaged_audience_match.value);
+  // Unit 48 amended the v3 invariant: overall = EAM x activity x originality,
+  // where both factors are 1 when their inputs are absent/healthy (as here).
+  ck("v3 invariant: overall_fit == engaged_audience_match (no activity/originality data)", scores.overall.value === scores.components.engaged_audience_match.value);
   ck("benchmark confidence high (300 classified + text)", scores.confidence === "high");
   const again = s.scoreAnalysis(input);
   ck("deterministic (full result incl. expectedReach)", JSON.stringify(again) === JSON.stringify(s.scoreAnalysis(input)));

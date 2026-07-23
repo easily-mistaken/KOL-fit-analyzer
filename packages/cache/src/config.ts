@@ -3,6 +3,10 @@ export interface CacheTtls {
   profileSeconds: number;
   /** Tweets + engagement. Default 6h. */
   tweetsSeconds: number;
+  /** Freshness probe (latest posts for the activity signal, Unit 48). MUST
+   *  stay short even when tweetsSeconds is cranked up for cost: a stale probe
+   *  makes an active creator look dormant. Default 6h. */
+  probeSeconds: number;
 }
 
 export interface CacheConfig {
@@ -12,6 +16,7 @@ export interface CacheConfig {
 
 const DEFAULT_TTL_SECONDS = 21600; // 6h
 const DEFAULT_PROFILE_TTL_SECONDS = 86400; // 24h
+const DEFAULT_PROBE_TTL_SECONDS = 21600; // 6h — deliberately NOT tied to base
 
 function num(v: string | undefined, def: number): number {
   const n = Number(v);
@@ -31,6 +36,12 @@ export function resolveCacheConfig(): CacheConfig {
         DEFAULT_PROFILE_TTL_SECONDS
       ),
       tweetsSeconds: num(process.env.CACHE_TTL_TWEETS_SECONDS, base),
+      // Not defaulted from `base`: raising the bulk TTL for cost must never
+      // silently stale the activity probe.
+      probeSeconds: num(
+        process.env.CACHE_TTL_PROBE_SECONDS,
+        DEFAULT_PROBE_TTL_SECONDS
+      ),
     },
   };
 }

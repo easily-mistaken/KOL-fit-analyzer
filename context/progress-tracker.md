@@ -725,3 +725,44 @@ at `context/specs/19-caching-and-cost-controls.md` as the design record.
   rounds 1-3 stays as general product hygiene. Still cosmetic-only and open: the
   consent screen shows <project-ref>.supabase.co, fixable solely by the Supabase
   custom-domain add-on, unrelated to verification or the logo.
+
+- 2026-07-23 (Unit 48: activity + originality in the fit score; repost bug fix;
+  API-credit audit): Scoring review requested by the user surfaced three issues,
+  all confirmed against code and production data.
+  1. **Repost contamination (bug, fixed unconditionally):** `last_tweets`
+  returns native retweets and nothing checked `retweeted_tweet`; 6.5% of the
+  3,731 cached prod timeline tweets were "RT @..." items carrying the ORIGINAL
+  author's engagement counts. A viral repost could win a deep-analysis slot
+  (scoring someone else's audience), inflate expected reach, and feed other
+  people's words into content classification. Fix: `Tweet.isRetweet` (from
+  `retweeted_tweet`, with an "RT @" text fallback that also covers pre-flag
+  cached payloads, so no tw:v2 cache invalidation was needed) and reposts are
+  now excluded from top posts, content classification, post languages, and
+  expected-reach volume. An all-repost timeline fails loudly like the other
+  unanalyzable-data guards.
+  2. **Scoring (user decision: fold into the score, not gates):**
+  `overall = engaged_audience_match x activity x originality`, both down-only
+  multipliers with floors at x0.35 (`ACTIVITY_ANCHORS` / `ORIGINALITY_ANCHORS`
+  in packages/scoring/src/weights.ts). Missing data means factor 1, never an
+  invented penalty. The EAM component stays pure. SCORING_VERSION bumped to 5
+  (reuse self-invalidates). Spec 41 amended in place.
+  3. **Activity freshness vs the 30-day prod tweet TTL:** computing recency
+  from a long-TTL cached timeline would make an active creator look dormant by
+  cache age. Added an optional `getLatestTweets` freshness probe (one page,
+  own `probe:` cache key, `CACHE_TTL_PROBE_SECONDS` default 6h, deliberately
+  NOT inherited from the base TTL), which alone feeds the activity signal;
+  falls back to the main timeline when absent.
+  4. **Credit audit (no bug):** prod `ProviderUsageLog` shows the caches work:
+  repeat creators cost 0-3 Twitter requests; every expensive run (~100-170
+  requests) was a FIRST-TIME creator (~90 requests = 20 top posts x 3
+  engagement endpoints, ~8-11 timeline pages). The user chose to keep current
+  depth (no cap trims) despite only ~300 of up to 1500 fetched engagers being
+  LLM-classified.
+  Verification: `pnpm build` green; full `pnpm check` green including the new
+  `scripts/checks/activity-originality.regression.cjs` (34 checks: factor math,
+  repost detection incl. legacy-cache fallback, pipeline exclusion, probe TTL
+  independence). Open questions: (a) should the report UI surface activity and
+  repost share as visible dials rather than only reason strings and an evidence
+  note; (b) `ANALYSIS_REUSE_WINDOW_SECONDS=2592000` means a completed report is
+  served for 30 days regardless of the creator going quiet afterwards, so the
+  activity signal is only as fresh as the last actual run for that pair.

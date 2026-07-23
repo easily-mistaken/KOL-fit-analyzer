@@ -28,6 +28,16 @@ export type ScoringSampleMeta = {
    *  volume input for expected reach (Unit 41 Phase B). Computed by the
    *  pipeline from the fetched tweet engagement counts. */
   avgEngagedPerPost?: number;
+  /** Share (0-1) of the fetched timeline that is reposts (native retweets) —
+   *  drives the originality multiplier (Unit 48). Undefined = unknown, no
+   *  penalty. */
+  repostShare?: number;
+  /** Days since the creator's last ORIGINAL (non-repost) post — drives the
+   *  activity multiplier (Unit 48). Undefined = no timestamp data, no penalty. */
+  daysSinceLastOriginalPost?: number;
+  /** Original posts per week over the fetched timeline window — informational,
+   *  surfaces in the overall reasons (Unit 48). */
+  originalPostsPerWeek?: number;
 };
 
 // Provider-neutral ingestion evidence as plain booleans — the pipeline maps its

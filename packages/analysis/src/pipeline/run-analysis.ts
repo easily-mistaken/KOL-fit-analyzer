@@ -2,12 +2,14 @@ import {
   ANALYSIS_CAPS,
   FitReportSchema,
   foldDomainSegments,
+  isRepost,
   type AnalysisProgress,
   type AnalysisStage,
   type AudienceDistribution,
   type AudienceGlimpse,
   type EngagedAccountRaw,
   type ProfileGlimpse,
+  type Tweet,
   type TwitterUser,
 } from "@kol-fit/shared";
 import { createLlmProvider, type ClassifyOrgInput } from "@kol-fit/llm";
@@ -39,6 +41,39 @@ function buildManualBrief(
 // Bounded-concurrency engagement fetching (Unit 29D): posts in flight at once.
 // Each post still fires its 3 engagement calls in parallel.
 const DEFAULT_ENGAGEMENT_FETCH_CONCURRENCY = 6;
+
+// Freshness-probe size (Unit 48): one API page. The probe feeds ONLY the
+// activity signal, so it must be cheap; depth comes from the main timeline.
+const ACTIVITY_PROBE_LIMIT = 20;
+
+const DAY_MS = 86_400_000;
+
+function postTimeMs(t: Tweet): number | null {
+  if (!t.createdAt) return null;
+  const ms = Date.parse(t.createdAt);
+  return Number.isFinite(ms) ? ms : null;
+}
+
+/** Recency + cadence of ORIGINAL (non-repost) posts in a tweet set, relative
+ *  to `nowMs`. Undefined when no original post carries a parseable timestamp
+ *  (missing data must skip the activity penalty, never invent one). */
+function activityStats(
+  tweets: Tweet[],
+  nowMs: number
+): { daysSinceLastOriginalPost: number; originalPostsPerWeek: number } | undefined {
+  const originals = tweets.filter((t) => !isRepost(t));
+  const times = originals
+    .map(postTimeMs)
+    .filter((n): n is number => n !== null);
+  if (times.length === 0) return undefined;
+  const newest = Math.max(...times);
+  const oldest = Math.min(...times);
+  const windowDays = Math.max(1, (nowMs - oldest) / DAY_MS);
+  return {
+    daysSinceLastOriginalPost: Math.max(0, (nowMs - newest) / DAY_MS),
+    originalPostsPerWeek: (times.length / windowDays) * 7,
+  };
+}
 
 function envConcurrency(): number | undefined {
   const n = Number(process.env.ANALYSIS_ENGAGEMENT_FETCH_CONCURRENCY);
@@ -169,12 +204,22 @@ export async function runAnalysis(
   const ingestPromise = ingest(ingestInput, options.ingestOptions);
 
   // 2. Twitter fetch — profiles/posts/replies are independent, one round-trip.
-  const [orgProfile, kolProfile, kolPosts, kolReplies] = await Promise.all([
-    twitter.getUserProfile(request.orgHandle),
-    twitter.getUserProfile(request.kolHandle),
-    twitter.getUserTweets(request.kolHandle, caps.kolPostsFetched),
-    twitter.getUserReplies(request.kolHandle, caps.kolRepliesFetched),
-  ]);
+  // The freshness probe (Unit 48) rides along: a tiny short-TTL page whose only
+  // job is keeping the activity signal current when the deep timeline is served
+  // from a long-TTL cache. Optional capability, and best-effort: a probe
+  // failure degrades activity to the main timeline, never fails the analysis.
+  const [orgProfile, kolProfile, kolPosts, kolReplies, probePosts] =
+    await Promise.all([
+      twitter.getUserProfile(request.orgHandle),
+      twitter.getUserProfile(request.kolHandle),
+      twitter.getUserTweets(request.kolHandle, caps.kolPostsFetched),
+      twitter.getUserReplies(request.kolHandle, caps.kolRepliesFetched),
+      typeof twitter.getLatestTweets === "function"
+        ? twitter
+            .getLatestTweets(request.kolHandle, ACTIVITY_PROBE_LIMIT)
+            .catch((): Tweet[] => [])
+        : Promise.resolve<Tweet[]>([]),
+    ]);
 
   // Guard (2026-07-14 live-calibration finding): a provider soft-failure (e.g.
   // exhausted API credits returning success envelopes with no data) must fail
@@ -185,6 +230,23 @@ export async function runAnalysis(
       `No posts could be fetched for @${request.kolHandle} — the KOL is unanalyzable (empty or unavailable Twitter data).`
     );
   }
+
+  // Reposts are OTHER people's content carrying the ORIGINAL tweet's engagement
+  // counts (Unit 48). They are excluded from everything that reads as "the
+  // creator's own": top-post selection, content classification, post languages,
+  // and the expected-reach volume. Their share feeds the originality factor.
+  const originalPosts = kolPosts.filter((t) => !isRepost(t));
+  const repostShare = 1 - originalPosts.length / kolPosts.length;
+  if (originalPosts.length === 0) {
+    throw new Error(
+      `All ${kolPosts.length} fetched posts from @${request.kolHandle} are reposts of other accounts. There is no original content to analyze, and reposted engagement belongs to the original authors, so a meaningful fit can't be computed.`
+    );
+  }
+  // Activity from the freshest data available: probe first, main timeline as
+  // the fallback. Relative to the pipeline clock (injectable for tests).
+  const activity =
+    activityStats(probePosts, now().getTime()) ??
+    activityStats(originalPosts, now().getTime());
 
   // Guard (Unit 41 live-verification finding): an empty/failed ORG profile fetch
   // (null after normalization — e.g. a renamed/suspended handle) with no manual
@@ -206,7 +268,10 @@ export async function runAnalysis(
     kol: toGlimpse(request.kolHandle, kolProfile),
   });
 
-  const topPosts = selectTopPosts(kolPosts, caps.topPostsForDeepAnalysis);
+  // Top posts from ORIGINAL posts only: a viral repost would otherwise take a
+  // deep-analysis slot and have the ORIGINAL author's audience scored as the
+  // creator's (Unit 48 fix).
+  const topPosts = selectTopPosts(originalPosts, caps.topPostsForDeepAnalysis);
   // Per-post engagement with bounded concurrency (Unit 29D). Index-ordered
   // results keep the group order identical to the sequential version, so
   // dedupe/appearances/output stay byte-identical.
@@ -245,7 +310,9 @@ export async function runAnalysis(
     llm.classifyKolContent({
       handle: request.kolHandle,
       profile: kolProfile,
-      posts: kolPosts,
+      // Original posts only: "RT @..." bodies are other people's words and
+      // must not be read as the creator's own content (Unit 48).
+      posts: originalPosts,
       replies: kolReplies,
     }),
   ]);
@@ -279,11 +346,13 @@ export async function runAnalysis(
         engagedAccounts.length
       : 0;
 
-  // Typical engaged interactions (reply+quote+retweet) per fetched post — the
-  // volume input for expected reach (Unit 41 Phase B). Mean over all fetched
+  // Typical engaged interactions (reply+quote+retweet) per ORIGINAL post — the
+  // volume input for expected reach (Unit 41 Phase B). Mean over all original
   // posts (a representative "typical post", not the engagement-selected top
-  // posts). Likes/impressions are deliberately excluded (vanity metrics).
-  const engagementCounts = kolPosts.map(
+  // posts); reposts are excluded because their counts belong to the original
+  // author (Unit 48). Likes/impressions are deliberately excluded (vanity
+  // metrics).
+  const engagementCounts = originalPosts.map(
     (t) => (t.replyCount ?? 0) + (t.quoteCount ?? 0) + (t.retweetCount ?? 0)
   );
   const avgEngagedPerPost =
@@ -298,17 +367,22 @@ export async function runAnalysis(
     content: kolContent,
     audience,
     contentFitAssessment,
-    kolPostLangs: kolPosts
+    // Languages of ORIGINAL posts: a repost carries the original author's
+    // language, not the creator's (Unit 48).
+    kolPostLangs: originalPosts
       .map((t) => t.lang)
       .filter((l): l is string => Boolean(l)),
     sample: {
-      kolPostsSampled: kolPosts.length,
+      kolPostsSampled: originalPosts.length,
       kolRepliesSampled: kolReplies.length,
       topPostsAnalyzed: topPosts.length,
       engagedAccountsSampled: engagedAccounts.length,
       engagedAccountsClassified: audience.distribution.sampleSize,
       repeatEngagerShare,
       avgEngagedPerPost,
+      repostShare,
+      daysSinceLastOriginalPost: activity?.daysSinceLastOriginalPost,
+      originalPostsPerWeek: activity?.originalPostsPerWeek,
     },
     evidence: {
       websiteFetched: orgContext.website.status === "fetched",
@@ -335,7 +409,7 @@ export async function runAnalysis(
     scores,
     verdict,
     sampleSizes: {
-      kolPosts: kolPosts.length,
+      kolPosts: originalPosts.length,
       kolReplies: kolReplies.length,
       topPostsAnalyzed: topPosts.length,
       engagedAccounts: engagedAccounts.length,
@@ -381,6 +455,10 @@ export async function runAnalysis(
       notes: [
         ...baseReport.evidence.notes,
         "Scores computed by deterministic scoring (engaged-audience-match weighted).",
+        `Timeline: ${kolPosts.length} recent posts fetched, ${kolPosts.length - originalPosts.length} reposts (${Math.round(repostShare * 100)}%) excluded from content and engagement analysis.` +
+          (activity
+            ? ` Last original post ${Math.round(activity.daysSinceLastOriginalPost)} day(s) ago; ~${Math.round(activity.originalPostsPerWeek * 10) / 10} original posts/week.`
+            : " No post timestamps were available for an activity read."),
         `Providers: twitter=${twitterProviderKind}, llm=${llmProviderKind} (model ${llm.model}).`,
         `Website ingestion: ${orgContext.website.status}; docs ingestion: ${orgContext.docs.status}.`,
       ],
@@ -390,7 +468,7 @@ export async function runAnalysis(
   const evidence: PipelineEvidence = {
     orgHandle: request.orgHandle,
     kolHandle: request.kolHandle,
-    kolPostsSampled: kolPosts.length,
+    kolPostsSampled: originalPosts.length,
     kolRepliesSampled: kolReplies.length,
     topPostsAnalyzed: topPosts.length,
     engagedAccountsSampled: engagedAccounts.length,

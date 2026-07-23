@@ -87,6 +87,21 @@ export class CachingTwitterProvider implements TwitterProvider {
     );
   }
 
+  /** Freshness probe (Unit 48): same data as getUserTweets, but keyed apart
+   *  and on the SHORT probe TTL, so activity stays current while the deep
+   *  timeline rides the long, cheap TTL. Falls back to the inner
+   *  getUserTweets when the wrapped provider lacks the optional method. */
+  getLatestTweets(handle: string, limit: number): Promise<Tweet[]> {
+    return this.cached(
+      `${this.ns}:probe:${norm(handle)}:${limit}`,
+      this.config.ttls.probeSeconds,
+      () =>
+        this.inner.getLatestTweets
+          ? this.inner.getLatestTweets(handle, limit)
+          : this.inner.getUserTweets(handle, limit)
+    );
+  }
+
   getUserReplies(handle: string, limit: number): Promise<Tweet[]> {
     return this.cached(
       `${this.ns}:replies:${norm(handle)}:${limit}`,

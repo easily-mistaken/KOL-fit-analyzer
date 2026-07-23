@@ -59,6 +59,20 @@ User decisions (verbatim intent):
 5. `fit = curve(matchedShare)` on `EAM_ANCHORS` (real audiences are
    heterogeneous, so ~30% target is already strong; ~45%+ exceptional).
 6. **No identity anything.** `overall_fit` **==** `engaged_audience_match`.
+7. **Amended by Unit 48 (user decision, 2026-07-23):** `overall_fit =
+   engaged_audience_match x activity x originality`. Both factors are
+   down-only multipliers (1.0 when healthy or when data is missing):
+   *activity* = curve over days since the last ORIGINAL post
+   (`ACTIVITY_ANCHORS`: free through 7 days, x0.75 at 30, floor x0.35 at 90+),
+   *originality* = curve over the repost share of the fetched timeline
+   (`ORIGINALITY_ANCHORS`: free through 20%, x0.75 at 60%, floor x0.35 at
+   100%). Rationale: a brand buys FUTURE posts in the creator's OWN voice; a
+   dormant or mostly-repost feed cannot deliver the audience the match
+   describes. The `engaged_audience_match` COMPONENT stays pure (it describes
+   the audience); the discount lives only in `overall`. Reposts themselves are
+   excluded upstream from top-post selection, content classification, post
+   languages, and expected reach (their engagement counts belong to the
+   original author).
 
 ### Bands (verdict thresholds on the fit score)
 

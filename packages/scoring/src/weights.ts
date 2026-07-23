@@ -89,6 +89,36 @@ export const GEO_ANCHORS: CurveAnchors = [
   [1, 100],
 ];
 
+// --- Activity + originality multipliers (Unit 48, down-only) -----------------
+// A brand buys FUTURE posts from the creator's OWN voice. Both factors multiply
+// the overall fit (never a component), are 1.0 in the healthy range, and only
+// ever pull DOWN. Curves use the same piecewise-linear interpolation as the
+// score anchors; x beyond the last anchor clamps to the last multiplier.
+
+/** Days since the creator's last ORIGINAL (non-repost) post -> fit multiplier.
+ *  Within a week is fully active; a month silent costs a band; 90+ days
+ *  dormant floors at 0.35 (a STRONG 88 becomes a WEAK ~31). */
+export const ACTIVITY_ANCHORS: CurveAnchors = [
+  [0, 1],
+  [7, 1],
+  [14, 0.92],
+  [30, 0.75],
+  [60, 0.5],
+  [90, 0.35],
+];
+
+/** Share of the fetched timeline that is reposts (native retweets) -> fit
+ *  multiplier. Some resharing is normal curation (free up to 20%); a mostly
+ *  repost timeline has little owned voice to sell and floors at 0.35. */
+export const ORIGINALITY_ANCHORS: CurveAnchors = [
+  [0, 1],
+  [0.2, 1],
+  [0.4, 0.9],
+  [0.6, 0.75],
+  [0.8, 0.55],
+  [1, 0.35],
+];
+
 // --- Baselines / modifiers ---------------------------------------------------
 
 /** Junk engagement (bots + giveaway + weighted farmers) below this share is

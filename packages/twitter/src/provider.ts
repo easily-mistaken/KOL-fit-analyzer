@@ -15,6 +15,12 @@ export interface TwitterProvider {
   /** A user's own posts, newest-first, capped by `limit`. */
   getUserTweets(handle: string, limit: number): Promise<Tweet[]>;
 
+  /** Freshness probe (Unit 48): the newest few posts, identical in shape to
+   *  getUserTweets but cached on a SHORT TTL by the caching decorator, so the
+   *  activity signal stays current while the deep timeline stays on its long,
+   *  cheap TTL. Optional capability: callers must tolerate its absence. */
+  getLatestTweets?(handle: string, limit: number): Promise<Tweet[]>;
+
   /** A user's own replies, newest-first, capped by `limit`. */
   getUserReplies(handle: string, limit: number): Promise<Tweet[]>;
 

@@ -112,6 +112,12 @@ export function normalizeTweet(raw: unknown): Tweet | null {
     viewCount: int(t.viewCount),
     isReply: bool(t.isReply),
     isQuote: t.quoted_tweet != null,
+    // A native repost carries the ORIGINAL tweet's engagement counts, so it
+    // must be identifiable downstream (Unit 48). Belt-and-braces: the API's
+    // retweeted_tweet field, plus the canonical "RT @" text prefix.
+    isRetweet:
+      t.retweeted_tweet != null ||
+      (typeof t.text === "string" && t.text.startsWith("RT @")),
     lang: str(t.lang),
     media: normalizeMedia(t),
   };

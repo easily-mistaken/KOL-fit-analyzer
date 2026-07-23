@@ -18,12 +18,14 @@ import { NON_HUMAN_QUALITY } from "@kol-fit/shared";
 import { minConfidence } from "./confidence.js";
 import type { ScoringBrief } from "./types.js";
 import {
+  ACTIVITY_ANCHORS,
   AQ_SLOPE,
   BOT_RISK_ANCHORS,
   BRAND_SAFETY_DEDUCTIONS,
   CF_ANCHORS,
   CF_RUBRIC_WEIGHTS,
   EAM_ANCHORS,
+  ORIGINALITY_ANCHORS,
   FARMER_WEIGHT_MATCH,
   FARMER_WEIGHT_QUALITY,
   FARMER_WEIGHT_RISK,
@@ -441,6 +443,70 @@ export function regionDistribution(
     placed,
     coverage: accounts.length > 0 ? placed / accounts.length : 0,
     regions,
+  };
+}
+
+// --- activity + originality fit multipliers (Unit 48) ------------------------
+
+export type FitFactor = {
+  /** Multiplier applied to the overall fit (1 = no penalty, down-only). */
+  factor: number;
+  /** Reason line for the overall score; null when there is nothing to say. */
+  reason: string | null;
+};
+
+/** Down-only activity multiplier from days since the last ORIGINAL post. A
+ *  brand buys future posts; a dormant creator's audience match describes a
+ *  feed that has stopped. Undefined/invalid input means no timestamp data was
+ *  available, which skips the penalty rather than inventing one. */
+export function activityFactor(
+  daysSinceLastOriginalPost: number | undefined,
+  originalPostsPerWeek: number | undefined
+): FitFactor {
+  const days = daysSinceLastOriginalPost;
+  if (typeof days !== "number" || !Number.isFinite(days) || days < 0) {
+    return { factor: 1, reason: null };
+  }
+  const cadence =
+    typeof originalPostsPerWeek === "number" &&
+    Number.isFinite(originalPostsPerWeek)
+      ? ` (~${Math.round(originalPostsPerWeek * 10) / 10} original posts/week over the sampled window)`
+      : "";
+  const d = Math.round(days);
+  const factor = curve(days, ACTIVITY_ANCHORS);
+  if (factor >= 1) {
+    return {
+      factor: 1,
+      reason: `Active: last original post ${d} day${d === 1 ? "" : "s"} ago${cadence}.`,
+    };
+  }
+  return {
+    factor,
+    reason: `Low activity: last original post ${d} days ago${cadence}. Fit multiplied by ${factor.toFixed(2)}: a brand is buying future posts, and this feed has slowed or stopped.`,
+  };
+}
+
+/** Down-only originality multiplier from the repost share of the fetched
+ *  timeline. Reposts are other people's content and other people's engagement;
+ *  a mostly-repost account has little owned voice for a brand to buy. */
+export function originalityFactor(repostShare: number | undefined): FitFactor {
+  if (typeof repostShare !== "number" || !Number.isFinite(repostShare)) {
+    return { factor: 1, reason: null };
+  }
+  const share = Math.max(0, Math.min(1, repostShare));
+  const factor = curve(share, ORIGINALITY_ANCHORS);
+  if (factor >= 1) {
+    return {
+      factor: 1,
+      reason:
+        share > 0
+          ? `${pct(share)} of the fetched timeline is reposts: within the normal curation range, no penalty.`
+          : null,
+    };
+  }
+  return {
+    factor,
+    reason: `Heavy reposting: ${pct(share)} of the fetched timeline is reposts of other accounts rather than original content. Fit multiplied by ${factor.toFixed(2)}.`,
   };
 }
 

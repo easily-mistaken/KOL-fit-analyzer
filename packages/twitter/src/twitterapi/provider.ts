@@ -87,6 +87,12 @@ export class TwitterApiProvider implements TwitterProvider {
     );
   }
 
+  /** Same fetch as getUserTweets (one page at probe sizes); the SHORT cache
+   *  TTL that makes it a freshness probe lives in the caching decorator. */
+  async getLatestTweets(handle: string, limit: number): Promise<Tweet[]> {
+    return this.getUserTweets(handle, limit);
+  }
+
   async getUserReplies(handle: string, limit: number): Promise<Tweet[]> {
     return this.client.collect<Tweet>(
       PATHS.userLastTweets,
