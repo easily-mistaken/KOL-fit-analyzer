@@ -14,6 +14,7 @@ export * from "./lead.js";
 export * from "./scores.js";
 export * from "./audience.js";
 export * from "./audience-segments.js";
+export * from "./audience-lens.js";
 export * from "./progress.js";
 export * from "./twitter.js";
 export * from "./llm.js";

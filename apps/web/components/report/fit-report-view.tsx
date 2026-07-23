@@ -15,6 +15,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { ConfidenceChip } from "@/components/report/confidence-chip";
 import { ScoreGauge } from "@/components/report/score-gauge";
 import { AudienceDonut } from "@/components/report/audience-donut";
+import { AudienceLensBar } from "@/components/report/audience-lens-bar";
 import { EmailCapture } from "@/components/report/email-capture";
 import { MetricGroups, type MetricMap } from "@/components/report/metric-groups";
 import { ShareReport } from "@/components/report/share-report";
@@ -346,6 +347,14 @@ export function FitReportView({
           )}
           {fitReport.audienceBreakdown && (
             <>
+              {/* Brand lens (Unit 49): the same audience in the viewing
+                  brand's language, above the neutral axis charts. Renders
+                  nothing for brands that are neither AI nor Web3. */}
+              <AudienceLensBar
+                distribution={fitReport.audienceBreakdown}
+                matrix={fitReport.audienceMatrix}
+                targeting={fitReport.targeting}
+              />
               <AudienceDonut distribution={fitReport.audienceBreakdown} />
               {/* The two rings answer different questions over the same people,
                   so shares are NOT meant to line up across them — say so, or a

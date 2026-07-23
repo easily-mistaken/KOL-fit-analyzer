@@ -3,10 +3,14 @@ import {
   FitReportSchema,
   foldDomainSegments,
   isRepost,
+  lensWorldDomains,
+  matrixKey,
+  resolveBrandLens,
   type AnalysisProgress,
   type AnalysisStage,
   type AudienceDistribution,
   type AudienceGlimpse,
+  type AudienceMatrix,
   type EngagedAccountRaw,
   type ProfileGlimpse,
   type Tweet,
@@ -132,6 +136,7 @@ function toGlimpse(handle: string, u: TwitterUser | null): ProfileGlimpse {
  */
 function topAudienceGlimpse(
   distribution: AudienceDistribution,
+  worldDomains: ReadonlySet<string> = new Set(),
   max = 4
 ): AudienceGlimpse[] {
   const junk = (["bot", "farmer", "giveaway_hunter"] as const).reduce(
@@ -139,9 +144,19 @@ function topAudienceGlimpse(
     0
   );
   const room = junk > 0 ? Math.max(1, max - 1) : max;
-  const out: AudienceGlimpse[] = foldDomainSegments(distribution, room).map(
-    (s) => ({ label: s.label, share: s.share, low: false })
-  );
+  const folded = foldDomainSegments(distribution, room);
+  // Brand lens (Unit 49): a watching AI brand should meet the AI slices first,
+  // a Web3 brand the crypto ones. Stable partition of the KEPT segments only —
+  // which segments survive the fold stays purely size-based.
+  const ordered = [
+    ...folded.filter((s) => worldDomains.has(s.key)),
+    ...folded.filter((s) => !worldDomains.has(s.key)),
+  ];
+  const out: AudienceGlimpse[] = ordered.map((s) => ({
+    label: s.label,
+    share: s.share,
+    low: false,
+  }));
   if (junk > 0) out.push({ label: "Low-quality", share: junk, low: true });
   return out;
 }
@@ -335,8 +350,37 @@ export async function runAnalysis(
 
   // Audience is classified: reveal the first read of who actually engages
   // (folded shares — already client-visible in the report). Stays on "quality"
-  // while scoring runs.
-  emitProgress("quality", { audience: topAudienceGlimpse(audience.distribution) });
+  // while scoring runs. Ordered through the brand's lens (Unit 49).
+  const brandLens = resolveBrandLens(
+    orgClassification.targetDomains?.primary,
+    orgClassification.targetDomains?.secondary
+  );
+  emitProgress("quality", {
+    audience: topAudienceGlimpse(
+      audience.distribution,
+      new Set(lensWorldDomains(brandLens))
+    ),
+  });
+
+  // Joint role x domain tally of the REAL classified accounts (Unit 49) — the
+  // stored marginals cannot say who the "DeFi traders" are. Shares are over
+  // ALL classified accounts so lens groups + junk sum to ~1.
+  const matrixCells = new Map<string, number>();
+  for (const a of audience.accounts) {
+    if (a.quality !== "real") continue;
+    const k = matrixKey(a.role, a.domain);
+    matrixCells.set(k, (matrixCells.get(k) ?? 0) + 1);
+  }
+  const classifiedTotal = audience.accounts.length;
+  const audienceMatrix: AudienceMatrix | undefined =
+    classifiedTotal > 0 && matrixCells.size > 0
+      ? Object.fromEntries(
+          [...matrixCells].map(([k, count]) => [
+            k,
+            { count, share: count / classifiedTotal },
+          ])
+        )
+      : undefined;
 
   // Repeat-engager share from 29A `appearances` (accounts engaging >=2
   // analyzed posts) — feeds the audience-quality community bonus.
@@ -439,6 +483,7 @@ export async function runAnalysis(
     profiles: { org: snapshot(orgProfile), kol: snapshot(kolProfile) },
     expectedReach,
     audienceRegions,
+    audienceMatrix,
     targeting: {
       primaryRoles: orgClassification.targetRoles?.primary ?? [],
       secondaryRoles: orgClassification.targetRoles?.secondary ?? [],

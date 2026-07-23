@@ -5,6 +5,7 @@ import {
   AudienceDistributionSchema,
   RegionDistributionSchema,
 } from "./audience.js";
+import { AudienceMatrixSchema } from "./audience-lens.js";
 import {
   AudienceDomainSchema,
   AudienceRegionSchema,
@@ -94,6 +95,11 @@ export const FitReportSchema = z.object({
     .object({ summary: z.string(), score: ScoreValueSchema })
     .optional(), // 5. Audience Match
   audienceBreakdown: AudienceDistributionSchema.optional(), // 6. Audience Breakdown
+  // Joint role x domain tally of the REAL classified accounts (Unit 49),
+  // injected by the pipeline. Feeds the brand-lens audience view; the per-axis
+  // marginals above cannot say who the "DeFi traders" are. Optional/additive:
+  // older reports fall back to a domain-only lens.
+  audienceMatrix: AudienceMatrixSchema.optional(),
   contentAnalysis: z
     .object({
       classification: KolContentClassificationSchema,

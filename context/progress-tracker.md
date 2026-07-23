@@ -777,3 +777,28 @@ at `context/specs/19-caching-and-cost-controls.md` as the design record.
   SCORING_VERSION stays 5 (verified zero v5 reports existed in prod before the
   amendment). Spec 41 updated; regression script extended to 38 checks, suite
   green.
+
+- 2026-07-23 (Unit 49: brand-lens audience presentation): The product serves AI
+  and Web3 brands; the audience section now reads in the viewing brand's
+  language. New `packages/shared/src/audience-lens.ts`: `resolveBrandLens`
+  (from the report's existing `targeting` domains; crypto ties win, no signal
+  means neutral and no lens UI) and `buildLensView`, which groups the role x
+  domain classification into lens categories (Web3: DeFi traders and users,
+  Degens, Crypto builders, NFT and gaming, Crypto founders/VCs/operators,
+  Other crypto natives, AI and tech crossover, Outside. AI: AI builders,
+  Software engineers, Tech founders and operators, Tech and fintech investors,
+  AI-curious adopters, Broader tech audience, Crypto-native builders, Outside).
+  First-match-wins over disjoint cells; a catch-all guarantees no share is
+  dropped; junk stays its own reserved segment. The classification itself
+  remains brand-agnostic (cache reuse invariant intact): the lens is pure
+  presentation. New report field `audienceMatrix` (joint role x domain tally
+  of real classified accounts, pipeline-injected, optional) because the stored
+  marginals cannot say who the "DeFi traders" are; old reports degrade to a
+  domain-only lens with no junk segment (their marginals already include junk).
+  UI: `audience-lens-bar.tsx` renders an "N% of this creator's engaged
+  audience is in your world" headline, a stacked bar (validated --viz-* hues,
+  fixed per group, faded out-of-world segments), and a legend above the
+  existing donuts; the live progress glimpse now orders in-world domains
+  first. New `scripts/checks/audience-lens.regression.cjs` (31 checks) wired
+  into `pnpm check`; full suite green. Declined for now (user chose report
+  lens only): homepage AI/Web3 toggle, explicit brand-type form field.
