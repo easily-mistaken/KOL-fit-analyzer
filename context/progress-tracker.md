@@ -802,3 +802,23 @@ at `context/specs/19-caching-and-cost-controls.md` as the design record.
   first. New `scripts/checks/audience-lens.regression.cjs` (31 checks) wired
   into `pnpm check`; full suite green. Declined for now (user chose report
   lens only): homepage AI/Web3 toggle, explicit brand-type form field.
+
+- 2026-07-23 (Unit 50: make the daily spend gate real): Security pass before
+  launch found MAX_DAILY_SPEND_USD=25 was dead config: the gate sums
+  ProviderUsageLog.costUsd, but LLM cost rates were unset (costUsd null) and
+  Twitter rows never carried a cost at all, so the sum was always zero and the
+  only real backstop was MAX_ANALYSES_PER_DAY. Fix: (1) Twitter cost is now
+  estimated in code (shared `estimateTwitterCostUsd` + `resolveTwitterCostRates`
+  with twitterapi.io published pricing baked in as defaults: $0.15/1k tweets,
+  $0.18/1k profiles, $0.00015 minimum per call, env-overridable via
+  TWITTERAPI_COST_* vars) and written on every twitter usage row by the worker;
+  the per-request minimum is added on top of per-item cost so a cap-relevant
+  estimate errs high. (2) LLM_INPUT_COST_PER_MTOK=0.25 /
+  LLM_OUTPUT_COST_PER_MTOK=2 set in prod (gpt-5-mini priced on the high side).
+  A typical fresh-creator run now logs ~$0.25-0.30, so the $25/day cap binds
+  before the 200-analyses cap under abuse. Admin dashboard spend numbers light
+  up for free (they read the same column). New
+  scripts/checks/spend-gate.regression.cjs (10 checks) wired into pnpm check.
+  Also recorded: prod env's LLM_MODEL_FIT=gpt-5 is consumed nowhere in code
+  (all LLM calls run on LLM_MODEL=gpt-5-mini); left as an open product choice,
+  either delete the var or wire a real fit-model client.

@@ -117,3 +117,78 @@ export function resolveAbuseLimits(
     ),
   };
 }
+
+// --- Twitter provider spend estimation (Unit 50) ------------------------------
+// The MAX_DAILY_SPEND_USD gate sums ProviderUsageLog.costUsd, and a cost that
+// is never computed cannot gate anything (the 2026-07-23 finding: the $25 cap
+// was dead because no row ever carried a cost). LLM cost stays env-priced in
+// the worker (estimateLlmCostUsd); Twitter cost is estimated here from the
+// usage counters with REAL DEFAULTS baked in, so the gate works even when the
+// env is silent. Rates follow twitterapi.io published pricing: $0.15 per 1k
+// tweets, $0.18 per 1k profiles, 15-credit (=$0.00015) minimum per call.
+
+export interface TwitterCostRates {
+  /** USD per 1,000 tweets returned. */
+  perThousandTweets: number;
+  /** USD per 1,000 user profiles returned. */
+  perThousandProfiles: number;
+  /** USD minimum charge per API request. */
+  minPerRequest: number;
+}
+
+export const TWITTER_COST_RATES: TwitterCostRates = {
+  perThousandTweets: 0.15,
+  perThousandProfiles: 0.18,
+  minPerRequest: 0.00015,
+};
+
+export const TWITTER_COST_ENV_VARS: Record<keyof TwitterCostRates, string> = {
+  perThousandTweets: "TWITTERAPI_COST_PER_1K_TWEETS",
+  perThousandProfiles: "TWITTERAPI_COST_PER_1K_PROFILES",
+  minPerRequest: "TWITTERAPI_MIN_COST_PER_REQUEST",
+};
+
+/** Pure env resolution, same idiom as resolveAbuseLimits. */
+export function resolveTwitterCostRates(
+  env: Record<string, string | undefined> = {}
+): TwitterCostRates {
+  return {
+    perThousandTweets: nonNegNum(
+      env[TWITTER_COST_ENV_VARS.perThousandTweets],
+      TWITTER_COST_RATES.perThousandTweets
+    ),
+    perThousandProfiles: nonNegNum(
+      env[TWITTER_COST_ENV_VARS.perThousandProfiles],
+      TWITTER_COST_RATES.perThousandProfiles
+    ),
+    minPerRequest: nonNegNum(
+      env[TWITTER_COST_ENV_VARS.minPerRequest],
+      TWITTER_COST_RATES.minPerRequest
+    ),
+  };
+}
+
+/**
+ * Estimated USD cost of one analysis's Twitter usage. Adds the per-request
+ * minimum ON TOP of the per-item cost rather than reconstructing the provider's
+ * exact per-call max(items, minimum): the aggregate counters cannot say which
+ * calls were empty, and for a SPEND CAP a mild overestimate (at most
+ * requests x minPerRequest, about two cents on a typical fresh-creator run)
+ * fails in the safe direction.
+ */
+export function estimateTwitterCostUsd(
+  usage: {
+    requests?: number | null;
+    tweetsFetched?: number | null;
+    usersFetched?: number | null;
+  },
+  rates: TwitterCostRates = TWITTER_COST_RATES
+): number {
+  const n = (v: number | null | undefined): number =>
+    typeof v === "number" && Number.isFinite(v) && v > 0 ? v : 0;
+  return (
+    (n(usage.tweetsFetched) / 1000) * rates.perThousandTweets +
+    (n(usage.usersFetched) / 1000) * rates.perThousandProfiles +
+    n(usage.requests) * rates.minPerRequest
+  );
+}

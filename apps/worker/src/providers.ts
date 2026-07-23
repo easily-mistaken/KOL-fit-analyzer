@@ -7,6 +7,10 @@ import {
   type CachingLlmProvider,
   type CachingTwitterProvider,
 } from "@kol-fit/cache";
+import {
+  estimateTwitterCostUsd,
+  resolveTwitterCostRates,
+} from "@kol-fit/shared";
 import { Prisma, prisma } from "@kol-fit/db";
 import { createLlmProvider } from "@kol-fit/llm";
 import {
@@ -92,6 +96,16 @@ export async function logProviderUsage(args: {
     const cache = tw.cache as
       | { hits?: number; misses?: number }
       | undefined;
+    // Estimated Twitter spend (Unit 50): rates default in code so the
+    // MAX_DAILY_SPEND_USD gate and the admin spend numbers work without env.
+    const twCost = estimateTwitterCostUsd(
+      {
+        requests: intOrNull(tw.requests),
+        tweetsFetched: intOrNull(tw.tweetsFetched),
+        usersFetched: intOrNull(tw.usersFetched),
+      },
+      resolveTwitterCostRates(process.env)
+    );
     rows.push({
       requestId: args.requestId,
       reportId: args.reportId ?? null,
@@ -99,6 +113,7 @@ export async function logProviderUsage(args: {
       provider: process.env.TWITTER_PROVIDER ?? "mock",
       operation: "twitter",
       requests: intOrNull(tw.requests),
+      costUsd: twCost > 0 ? new Prisma.Decimal(twCost.toFixed(6)) : null,
       meta: {
         pagesFetched: intOrNull(tw.pagesFetched),
         usersFetched: intOrNull(tw.usersFetched),
