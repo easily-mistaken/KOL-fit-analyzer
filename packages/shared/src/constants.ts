@@ -35,4 +35,8 @@ export const REPORT_SCHEMA_VERSION = 1;
 // penalty is relieved by original cadence — reposting freely is fine while the
 // creator keeps shipping ~3+ original posts/week; the penalty targets accounts
 // whose own voice has thinned.)
-export const SCORING_VERSION = 5;
+// v6 (Unit 51): expected reach's per-post volume switched from MEAN to MEDIAN
+// over original posts — one viral outlier no longer inflates the "typical
+// post" number brands price against. The fit score is untouched, but the
+// reach dial changes for the same inputs, so reuse must re-run.
+export const SCORING_VERSION = 6;

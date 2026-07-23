@@ -114,8 +114,10 @@ Chosen so the share cutoffs land right through `EAM_ANCHORS`
 
 ## The dials (shown beside the score, never blended in)
 
-- **Expected reach** — `≈ avg(replies+quotes+retweets per post) × realness ×
-  matchedShare` = *"~N of your target customers engage per post."* Data confirmed
+- **Expected reach** — `≈ median(replies+quotes+retweets per original post) ×
+  realness × matchedShare` = *"~N of your target customers engage per post."*
+  (Unit 51: median, not mean — one viral outlier must not inflate the number a
+  brand prices against. Unit 48: original posts only.) Data confirmed
   present (`Tweet.replyCount/quoteCount/retweetCount`).
 - **Audience realness** — real vs bot/farm/giveaway share.
 - **Audience geography** — country/region breakdown of the engaged audience.

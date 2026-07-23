@@ -826,3 +826,15 @@ at `context/specs/19-caching-and-cost-controls.md` as the design record.
   a fit-model client; the var and its comment are deleted from the prod .env
   (no restart needed, nothing read it). If a stronger report model is ever
   wanted, that is a new feature, not a config flip.
+
+- 2026-07-23 (Unit 51: median expected reach): The reach dial's per-post volume
+  was a MEAN over original posts, so one viral outlier inflated the number a
+  brand reads as "what a typical post gets" severalfold. Now a MEDIAN over
+  original posts (pipeline-side; scoring passes it through unchanged). The
+  `avgEngagedPerPost` field name is kept everywhere for report-schema
+  compatibility, with comments marking the semantic change; report copy now
+  says "engagements on a typical post". Fit score and verdict untouched, but
+  the dial changes for identical inputs, so SCORING_VERSION -> 6 (reuse
+  re-runs). Spec 41's dial description updated. Regression: the Unit 48
+  pipeline fixture gained a viral original post asserting typical-post reach
+  stays 6 where the mean said ~5005; full suite green (437 assertions).

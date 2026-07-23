@@ -45,8 +45,10 @@ export type ScoreBreakdown = z.infer<typeof ScoreBreakdownSchema>;
 // (reply+quote+retweet) — never impressions/likes (the vanity metrics the
 // product rejects).
 export const ExpectedReachSchema = z.object({
-  /** Typical engaged interactions (reply+quote+retweet) per post, mean over
-   *  fetched posts. */
+  /** Engaged interactions (reply+quote+retweet) on a TYPICAL original post.
+   *  MEDIAN over original posts since Unit 51 (was a mean, which let one viral
+   *  outlier inflate the number severalfold); the key name predates that and
+   *  is kept so old persisted reports stay readable. */
   avgEngagedPerPost: z.number().min(0),
   /** Estimated target customers who engage per post
    *  (avgEngagedPerPost × matchedShareOfEngagers). The headline reach number. */

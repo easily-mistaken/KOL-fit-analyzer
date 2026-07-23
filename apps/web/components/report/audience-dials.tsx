@@ -96,7 +96,7 @@ export function ExpectedReachCard({ reach }: { reach: ExpectedReach }) {
         </span>
       </div>
       <div className="mt-1.5 text-[12px] text-muted-foreground">
-        {fmtCount(reach.avgEngagedPerPost)} total engagements per post ·{" "}
+        {fmtCount(reach.avgEngagedPerPost)} engagements on a typical post ·{" "}
         {onTarget}% on-target
       </div>
       <p className="mt-2 text-[11.5px] leading-snug text-muted-foreground">

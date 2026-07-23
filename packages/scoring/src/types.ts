@@ -24,9 +24,10 @@ export type ScoringSampleMeta = {
   /** Share of unique engaged accounts that engaged >=2 analyzed posts
    *  (from 29A `appearances`; computed by the pipeline). */
   repeatEngagerShare?: number;
-  /** Mean engaged interactions (reply+quote+retweet) per fetched post — the
-   *  volume input for expected reach (Unit 41 Phase B). Computed by the
-   *  pipeline from the fetched tweet engagement counts. */
+  /** Engaged interactions (reply+quote+retweet) per TYPICAL original post —
+   *  the volume input for expected reach (Unit 41 Phase B). A MEDIAN since
+   *  Unit 51 (a viral outlier must not inflate the number a brand reads as
+   *  typical); the name predates that and is kept for schema compatibility. */
   avgEngagedPerPost?: number;
   /** Share (0-1) of the fetched timeline that is reposts (native retweets) —
    *  drives the originality multiplier (Unit 48). Undefined = unknown, no

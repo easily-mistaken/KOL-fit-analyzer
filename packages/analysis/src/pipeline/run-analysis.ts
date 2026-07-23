@@ -391,18 +391,23 @@ export async function runAnalysis(
       : 0;
 
   // Typical engaged interactions (reply+quote+retweet) per ORIGINAL post — the
-  // volume input for expected reach (Unit 41 Phase B). Mean over all original
-  // posts (a representative "typical post", not the engagement-selected top
-  // posts); reposts are excluded because their counts belong to the original
-  // author (Unit 48). Likes/impressions are deliberately excluded (vanity
-  // metrics).
-  const engagementCounts = originalPosts.map(
-    (t) => (t.replyCount ?? 0) + (t.quoteCount ?? 0) + (t.retweetCount ?? 0)
-  );
+  // volume input for expected reach (Unit 41 Phase B). MEDIAN over all original
+  // posts (Unit 51): the mean let a single viral outlier inflate the number a
+  // brand reads as "what a post of mine would get" severalfold; the median is
+  // the honest typical post. Reposts are excluded because their counts belong
+  // to the original author (Unit 48). Likes/impressions are deliberately
+  // excluded (vanity metrics). The field keeps its historical name for
+  // report-schema compatibility.
+  const engagementCounts = originalPosts
+    .map((t) => (t.replyCount ?? 0) + (t.quoteCount ?? 0) + (t.retweetCount ?? 0))
+    .sort((a, b) => a - b);
+  const mid = engagementCounts.length >> 1;
   const avgEngagedPerPost =
-    engagementCounts.length > 0
-      ? engagementCounts.reduce((a, b) => a + b, 0) / engagementCounts.length
-      : 0;
+    engagementCounts.length === 0
+      ? 0
+      : engagementCounts.length % 2 === 1
+        ? engagementCounts[mid]
+        : (engagementCounts[mid - 1] + engagementCounts[mid]) / 2;
 
   // 4. Deterministic scoring (packages/scoring). Numbers are computed here /
   // there — never by the LLM.

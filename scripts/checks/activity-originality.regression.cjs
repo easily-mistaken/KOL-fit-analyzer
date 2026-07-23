@@ -124,11 +124,14 @@ const input = (sampleOverrides = {}) => ({
   const NOW = () => new Date("2026-07-23T00:00:00.000Z");
   const day = (n) => new Date(NOW().getTime() - n * 86400000).toUTCString();
   // 10 originals (modest engagement, recent) + 1 VIRAL repost that would win
-  // top-post selection if it were ever eligible.
+  // top-post selection if it were ever eligible. o9 is a viral ORIGINAL: it
+  // must count for engagement analysis but NOT drag the "typical post" reach
+  // number up (Unit 51 median).
   const originals = Array.from({ length: 10 }, (_, i) => ({
     id: `o${i}`, text: `original post ${i} about defi`, createdAt: day(i + 2),
     likeCount: 10, retweetCount: 2, replyCount: 3, quoteCount: 1, lang: "en",
   }));
+  originals[9] = { ...originals[9], likeCount: 90000, retweetCount: 40000, replyCount: 8000, quoteCount: 2000 };
   const viralRepost = { id: "rt1", text: "RT @whale: moon soon", isRetweet: true, createdAt: day(1), likeCount: 90000, retweetCount: 40000, replyCount: 8000, quoteCount: 2000, lang: "es" };
   const mock = tw.createMockTwitterProvider();
   const engagementIds = new Set();
@@ -164,6 +167,9 @@ const input = (sampleOverrides = {}) => ({
   ck("evidence note records fetch + repost exclusion", Boolean(note) && note.includes("11 recent posts fetched") && note.includes("1 reposts"));
   ck("repost share (1/11 = 9%) is under the free allowance -> no discount", !result.scores.overall.reasons.some((r) => r.startsWith("Heavy reposting:")));
   ck("activity read from the probe (newest original 2 days old -> Active)", result.scores.overall.reasons.some((r) => r.startsWith("Active: last original post 2 days ago")));
+  // Unit 51: reach volume is the MEDIAN original post. Nine posts at 6 engaged
+  // + one viral at 50000 -> typical post 6, where the old mean said ~5005.
+  ck(`viral original does not inflate typical-post reach (${result.report.expectedReach.avgEngagedPerPost} == 6)`, result.report.expectedReach.avgEngagedPerPost === 6);
 
   // All-repost timeline fails LOUDLY (no garbage report).
   let threw = null;
