@@ -39,4 +39,12 @@ export const REPORT_SCHEMA_VERSION = 1;
 // over original posts — one viral outlier no longer inflates the "typical
 // post" number brands price against. The fit score is untouched, but the
 // reach dial changes for the same inputs, so reuse must re-run.
-export const SCORING_VERSION = 6;
+// v7 (Unit 52): org target inference now recognises CONSUMER / RETAIL crypto
+// products (prediction markets, exchanges, wallets, launchpads) and targets the
+// retail participant (trader + enthusiast across crypto domains) instead of
+// defaulting trading-sounding brands to sophisticated / institutional
+// investors. The engaged-audience match, and therefore the fit score, changes
+// for the same creator against such brands, so reuse must re-run. (The org
+// PROMPT half of this change rides ORG_PROMPT_REV in packages/cache, not NS, so
+// the expensive audience cache is preserved; this bump only busts report reuse.)
+export const SCORING_VERSION = 7;

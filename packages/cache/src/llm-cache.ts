@@ -45,6 +45,18 @@ type Parseable<T> = {
 // namespace honest about what shape lives under it.
 const NS = "cls:v5";
 
+// Org-classification PROMPT revision (Unit 52). Folded into the ORG cache key
+// ONLY (not NS), so a change to HOW we infer a brand's target audience re-runs
+// the cheap org classification on the next analysis without invalidating the
+// expensive audience/content/fit caches a full NS bump would dump. The audience
+// classification is brand-independent and the dominant LLM cost, so it must
+// survive an org-prompt change untouched. Bump this on any org-prompt change
+// that should re-infer targets for already-analyzed brands.
+// u52: consumer/retail crypto products now target the retail participant
+// (trader + enthusiast across crypto domains) instead of defaulting
+// trading-sounding brands to sophisticated/institutional investors.
+const ORG_PROMPT_REV = "u52-consumer-crypto-targets";
+
 /** The provider KIND is part of the cache identity (live-calibration incident,
  *  2026-07-14): the mock provider echoes LLM_MODEL, so model-only keys let a
  *  mock run poison the cache for live runs. Defaults to the same env the
@@ -156,6 +168,7 @@ export class CachingLlmProvider implements LlmProvider {
       profileId: input.profile?.id ?? null,
       website: input.websiteText ? hash(input.websiteText) : null,
       brief: input.manualBrief ?? null,
+      promptRev: ORG_PROMPT_REV,
       model: this.inner.model,
     })}`;
     return this.cached(

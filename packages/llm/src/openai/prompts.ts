@@ -75,6 +75,20 @@ export function buildOrgPrompt(input: ClassifyOrgInput): string {
     `  targetDomains = what SPACE they are in. primary = the core space(s), secondary = adjacent (0-3). Allowed: ${DOMAIN_LIST}.`,
     "  The axes are separate questions: a crypto DeFi protocol targeting developers is roles=[developer] domains=[crypto_defi]; " +
       "an AI devtools company targeting the same people is roles=[developer] domains=[ai, software].",
+    "  WHO A PRODUCT IS FOR follows from who actually uses it and how it makes money, not from how serious its bio " +
+      "sounds. MOST crypto products are CONSUMER / RETAIL apps whose users are the everyday crypto crowd: prediction " +
+      "markets, exchanges / DEXes / perps, wallets, memecoin launchpads and trading terminals, NFT marketplaces, " +
+      "airdrop / points / quest platforms, on-chain games. For these, targetRoles.primary MUST include trader AND " +
+      "enthusiast (the retail participant), with investor as secondary, and targetDomains should be the crypto spaces " +
+      "those users actually live in (crypto_memecoins, crypto_defi, and crypto_nft_gaming where relevant), not a " +
+      "narrow 'finance'. A retail crowd is the target, not a flaw. Example: a prediction market or on-chain exchange " +
+      "is roles primary=[trader, enthusiast] secondary=[investor], domains primary=[crypto_defi, crypto_memecoins] " +
+      "secondary=[crypto_infra, crypto_nft_gaming].",
+    "  Do NOT default a trading- or finance-sounding crypto product to 'sophisticated' or institutional investors: the " +
+      "real users of exchanges, perps, and prediction markets are retail degens and active traders, so enthusiast and " +
+      "trader ARE the target, not investor alone. Reserve investor- or founder-led targeting for products that " +
+      "genuinely sell to professionals or builders (institutional infrastructure, treasury / compliance tooling, " +
+      "funds / VC products, developer platforms), where the earlier developer example applies and enthusiast does not belong.",
     "  Leave targetDomains.primary EMPTY when the product genuinely serves any space (a general-purpose analytics tool, " +
       "a payments rail). Empty means 'no preference' and is scored as neutral — it is a real answer, not a failure. " +
       "Do NOT list every domain to express that.",

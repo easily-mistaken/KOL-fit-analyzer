@@ -838,3 +838,48 @@ at `context/specs/19-caching-and-cost-controls.md` as the design record.
   re-runs). Spec 41's dial description updated. Regression: the Unit 48
   pipeline fixture gained a viral original post asserting typical-post reach
   stays 6 where the mean said ~5005; full suite green (437 assertions).
+
+- 2026-07-23 (Unit 52: consumer/retail crypto target inference): User brought a
+  real prod report (@jup_predict prediction market x @blknoiz06/Ansem) scoring
+  WEAK 47 and asked how a creator whose "43% engaged audience is in their world"
+  could be a weak fit. Diagnosed: the "43% in your world" headline is the Unit 49
+  web3-lens `inWorldShare` = crypto-DOMAIN membership by ANY role; the fit score
+  gates on ROLE first (accountFit, metrics.ts). Ansem's audience is ~46%
+  enthusiast, and jup_predict was being classified as targeting sophisticated /
+  institutional investors, so ~half the audience zeroed on the role gate and the
+  memecoin traders were domain-floored to 0.1 (target domain read as finance, not
+  memecoins). Weighted matched share collapsed 43% -> ~13% -> 47. **Root cause was
+  the org TARGET inference, not the scoring math and NOT a case for web3
+  leniency** (which I argued against to the user: it guts the "who actually
+  listens" thesis, leniency is already in the EAM curve, and a crypto-wide
+  discount is un-actionable + hides the real bug). A prediction market / exchange
+  is a mass-RETAIL speculation product whose ideal users ARE degens + active
+  traders = exactly Ansem's crowd. **Fix (3 coordinated levers):** (1) `buildOrgPrompt`
+  (`packages/llm/src/openai/prompts.ts`) now teaches the model to recognise
+  CONSUMER / RETAIL crypto apps (prediction markets, exchanges/DEXes/perps,
+  wallets, memecoin launchpads, NFT marketplaces, quest/points platforms,
+  on-chain games) and target the retail participant (targetRoles.primary MUST
+  include trader + enthusiast, investor secondary) across the crypto domains
+  those users inhabit (crypto_memecoins/defi/nft_gaming), NOT narrow 'finance';
+  plus an explicit warning NOT to default trading/finance-sounding brands to
+  sophisticated/institutional investors. The developer/builder carve-out is
+  preserved (institutional infra, treasury/compliance, funds, dev platforms still
+  target developers/founders and NOT enthusiast). No scoring math changed --
+  `accountFit`/`resolveTargets` already reward these targets. (2) **Surgical
+  org-only cache invalidation:** added `ORG_PROMPT_REV = "u52-consumer-crypto-targets"`
+  folded into the ORG cache key ONLY (`packages/cache/src/llm-cache.ts`), so the
+  next run re-infers targets WITHOUT dumping the expensive brand-independent
+  audience/content caches a full `NS` bump would (the audience classification is
+  the dominant LLM cost and survives untouched). (3) **`SCORING_VERSION` 6 -> 7**
+  so `findReusableAnalysis` (route.ts) won't serve the stale WEAK report on a
+  re-submit -- the fit changes for the same creator against consumer-crypto
+  brands, so reuse must re-run. **Verified:** `pnpm build` (all projects) green +
+  full `pnpm check` 0 failed, incl. new `scripts/checks/consumer-crypto-targets.regression.cjs`
+  (11 checks, wired into `pnpm check` + `check:consumer-crypto-targets`): asserts
+  the prompt carries the guidance, and that one Ansem-shaped audience scores
+  STRONG (94) against the corrected consumer target vs AVOID (16) against the old
+  institutional target, while a genuine developer-platform brand STILL rejects
+  the same degen audience (0) -- the fix doesn't flatten discrimination. **The
+  saved report the user linked is immutable; the corrected score surfaces only on
+  a RE-RUN of that pair** (post-deploy: org re-inferred due to the rev bump,
+  audience classification a cheap cache hit). No new env vars, no schema change.
