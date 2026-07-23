@@ -31,4 +31,8 @@ export const REPORT_SCHEMA_VERSION = 1;
 // engagement analysis, and the overall fit is multiplied by down-only activity
 // (days since last original post) and originality (repost share) factors. Same
 // inputs now produce different scores AND different sampled data.
+// (Amended same-day before any v5 report existed, so no bump: the originality
+// penalty is relieved by original cadence — reposting freely is fine while the
+// creator keeps shipping ~3+ original posts/week; the penalty targets accounts
+// whose own voice has thinned.)
 export const SCORING_VERSION = 5;

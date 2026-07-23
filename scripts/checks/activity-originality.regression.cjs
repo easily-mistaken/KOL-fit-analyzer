@@ -90,6 +90,14 @@ const input = (sampleOverrides = {}) => ({
   ck(`60% reposts -> x0.75 (${heavy.scores.overall.value})`, heavy.scores.overall.value === Math.round(base * 0.75));
   ck("heavy-repost reason present", heavy.scores.overall.reasons.some((r) => r.startsWith("Heavy reposting:")));
   ck("100% reposts -> floors at x0.35", s.scoreAnalysis(input({ repostShare: 1 })).scores.overall.value === Math.round(base * 0.35));
+  // Cadence relief (user decision 2026-07-23): reposting freely is fine while
+  // original output stays healthy — the penalty targets a thinned own voice.
+  const relieved = s.scoreAnalysis(input({ repostShare: 0.6, originalPostsPerWeek: 5 }));
+  ck("60% reposts + 5 originals/week -> NO penalty (cadence relief)", relieved.scores.overall.value === base);
+  ck("relief reason says original output is healthy", relieved.scores.overall.reasons.some((r) => r.includes("original output is healthy")));
+  const halfRelief = s.scoreAnalysis(input({ repostShare: 0.6, originalPostsPerWeek: 1.5 }));
+  ck(`60% reposts + 1.5/week -> half severity (${halfRelief.scores.overall.value} == ${Math.round(base * 0.875)})`, halfRelief.scores.overall.value === Math.round(base * 0.875));
+  ck("thin-output reason names both signals", halfRelief.scores.overall.reasons.some((r) => r.startsWith("Heavy reposting with thin original output:")));
   const both = s.scoreAnalysis(input({ daysSinceLastOriginalPost: 30, repostShare: 0.6 }));
   ck("factors MULTIPLY (30d x 60% reposts -> x0.5625)", both.scores.overall.value === Math.round(base * 0.75 * 0.75));
   ck("EAM component stays PURE (audience unchanged by factors)", both.scores.components.engaged_audience_match.value === s.scoreAnalysis(input()).scores.components.engaged_audience_match.value);

@@ -766,3 +766,14 @@ at `context/specs/19-caching-and-cost-controls.md` as the design record.
   note; (b) `ANALYSIS_REUSE_WINDOW_SECONDS=2592000` means a completed report is
   served for 30 days regardless of the creator going quiet afterwards, so the
   activity signal is only as fresh as the last actual run for that pair.
+
+- 2026-07-23 (Unit 48 amendment, same day: originality relieved by cadence):
+  User clarified the repost model: reposting freely is fine as long as the
+  creator keeps shipping original content (reposts already carry zero weight in
+  reach, top posts, and content analysis). The repost-share penalty now scales
+  by `1 - min(1, originalPostsPerWeek / 3)` (full relief at ~3+ original
+  posts/week, `ORIGINALITY_CADENCE_RELIEF_PER_WEEK`), so it only catches
+  accounts whose own voice has thinned; unknown cadence keeps it in full.
+  SCORING_VERSION stays 5 (verified zero v5 reports existed in prod before the
+  amendment). Spec 41 updated; regression script extended to 38 checks, suite
+  green.

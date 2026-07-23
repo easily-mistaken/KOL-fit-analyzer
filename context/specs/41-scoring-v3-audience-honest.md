@@ -66,8 +66,13 @@ User decisions (verbatim intent):
    (`ACTIVITY_ANCHORS`: free through 7 days, x0.75 at 30, floor x0.35 at 90+),
    *originality* = curve over the repost share of the fetched timeline
    (`ORIGINALITY_ANCHORS`: free through 20%, x0.75 at 60%, floor x0.35 at
-   100%). Rationale: a brand buys FUTURE posts in the creator's OWN voice; a
-   dormant or mostly-repost feed cannot deliver the audience the match
+   100%), RELIEVED by original cadence: the penalty scales by
+   `1 - min(1, originalPostsPerWeek / 3)`, so a creator who keeps shipping
+   ~3+ original posts/week is not penalized for also reposting heavily
+   (reposts already carry zero weight in reach, top posts, and content
+   analysis; unknown cadence keeps the penalty in full). Rationale: a brand
+   buys FUTURE posts in the creator's OWN voice; a dormant feed, or one whose
+   own voice has thinned to nothing, cannot deliver the audience the match
    describes. The `engaged_audience_match` COMPONENT stays pure (it describes
    the audience); the discount lives only in `overall`. Reposts themselves are
    excluded upstream from top-post selection, content classification, post

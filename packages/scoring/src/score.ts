@@ -119,7 +119,10 @@ export function scoreAnalysis(input: ScoringInput): ScoringResult {
     input.sample.daysSinceLastOriginalPost,
     input.sample.originalPostsPerWeek
   );
-  const orig = originalityFactor(input.sample.repostShare);
+  const orig = originalityFactor(
+    input.sample.repostShare,
+    input.sample.originalPostsPerWeek
+  );
   const overallValue = clampRound(eam.value * act.factor * orig.factor);
 
   const gateInput = {

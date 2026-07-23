@@ -26,6 +26,7 @@ import {
   CF_RUBRIC_WEIGHTS,
   EAM_ANCHORS,
   ORIGINALITY_ANCHORS,
+  ORIGINALITY_CADENCE_RELIEF_PER_WEEK,
   FARMER_WEIGHT_MATCH,
   FARMER_WEIGHT_QUALITY,
   FARMER_WEIGHT_RISK,
@@ -487,15 +488,21 @@ export function activityFactor(
 }
 
 /** Down-only originality multiplier from the repost share of the fetched
- *  timeline. Reposts are other people's content and other people's engagement;
- *  a mostly-repost account has little owned voice for a brand to buy. */
-export function originalityFactor(repostShare: number | undefined): FitFactor {
+ *  timeline, RELIEVED by original cadence (user decision, 2026-07-23):
+ *  reposting freely is fine as long as the creator keeps shipping original
+ *  content — reposts already carry zero weight in reach, top posts, and
+ *  content analysis. The penalty targets accounts whose OWN voice has thinned,
+ *  not active curators. Unknown cadence keeps the penalty in full. */
+export function originalityFactor(
+  repostShare: number | undefined,
+  originalPostsPerWeek: number | undefined
+): FitFactor {
   if (typeof repostShare !== "number" || !Number.isFinite(repostShare)) {
     return { factor: 1, reason: null };
   }
   const share = Math.max(0, Math.min(1, repostShare));
-  const factor = curve(share, ORIGINALITY_ANCHORS);
-  if (factor >= 1) {
+  const base = curve(share, ORIGINALITY_ANCHORS);
+  if (base >= 1) {
     return {
       factor: 1,
       reason:
@@ -504,9 +511,31 @@ export function originalityFactor(repostShare: number | undefined): FitFactor {
           : null,
     };
   }
+  const cadence =
+    typeof originalPostsPerWeek === "number" &&
+    Number.isFinite(originalPostsPerWeek) &&
+    originalPostsPerWeek >= 0
+      ? originalPostsPerWeek
+      : undefined;
+  const severity =
+    cadence === undefined
+      ? 1
+      : 1 - Math.min(1, cadence / ORIGINALITY_CADENCE_RELIEF_PER_WEEK);
+  const factor = 1 - (1 - base) * severity;
+  const rate =
+    cadence === undefined ? "" : `~${Math.round(cadence * 10) / 10}`;
+  if (factor >= 1) {
+    return {
+      factor: 1,
+      reason: `${pct(share)} of the fetched timeline is reposts, but original output is healthy (${rate} original posts/week): no penalty. Reposts still carry no weight in reach or audience analysis.`,
+    };
+  }
   return {
     factor,
-    reason: `Heavy reposting: ${pct(share)} of the fetched timeline is reposts of other accounts rather than original content. Fit multiplied by ${factor.toFixed(2)}.`,
+    reason:
+      cadence === undefined
+        ? `Heavy reposting: ${pct(share)} of the fetched timeline is reposts of other accounts rather than original content. Fit multiplied by ${factor.toFixed(2)}.`
+        : `Heavy reposting with thin original output: ${pct(share)} of the timeline is reposts and only ${rate} original posts/week. Fit multiplied by ${factor.toFixed(2)}.`,
   };
 }
 

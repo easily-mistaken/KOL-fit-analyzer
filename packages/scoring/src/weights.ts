@@ -119,6 +119,14 @@ export const ORIGINALITY_ANCHORS: CurveAnchors = [
   [1, 0.35],
 ];
 
+/** Original posts/week at which the repost-share penalty fully wanes (user
+ *  decision, 2026-07-23): reposting freely is FINE as long as the creator
+ *  keeps shipping original content — reposts already carry zero weight in
+ *  reach, top posts, and content analysis, so the only thing the originality
+ *  penalty should catch is an account whose OWN voice has thinned. The penalty
+ *  scales by 1 - min(1, cadence / this); unknown cadence keeps it in full. */
+export const ORIGINALITY_CADENCE_RELIEF_PER_WEEK = 3;
+
 // --- Baselines / modifiers ---------------------------------------------------
 
 /** Junk engagement (bots + giveaway + weighted farmers) below this share is
