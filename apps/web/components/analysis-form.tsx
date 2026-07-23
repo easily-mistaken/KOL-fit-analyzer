@@ -477,7 +477,7 @@ export function AnalysisForm() {
               </p>
               <p className="mt-1 text-secondary-foreground">
                 {upgradeTier
-                  ? `Want to keep going? Unlock ${upgradeTier} — just leave a way to reach you for a bit of feedback and we'll approve it. Or get a hand-curated report from an analyst.`
+                  ? `Want to keep going? Unlock ${upgradeTier}: just leave a way to reach you for a bit of feedback and we'll approve it. Or get a hand-curated report from an analyst.`
                   : "For a deeper look, request a hand-curated report from an analyst, delivered to your Telegram within a day."}
               </p>
               <div className="mt-3 flex flex-wrap gap-2">

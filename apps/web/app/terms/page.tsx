@@ -42,8 +42,8 @@ export default function TermsPage() {
       <LegalSection title="Using it">
         <p>
           You can run analyses without an account. Signing in with Google keeps
-          your reports across devices. Keep your Google account secure —
-          anything done through a signed-in session is treated as done by you.
+          your reports across devices. Keep your Google account secure.
+          Anything done through a signed-in session is treated as done by you.
         </p>
         <p>
           You need to be at least 16, and if you are using OverlapX for a
@@ -60,7 +60,7 @@ export default function TermsPage() {
           costs change.
         </p>
         <p>
-          Do not work around the caps — no clearing cookies to reset an
+          Do not work around the caps: no clearing cookies to reset an
           allowance, no multiple accounts for the same purpose, no scripted
           submissions.
         </p>
@@ -70,7 +70,7 @@ export default function TermsPage() {
         <p>
           A report is an automated estimate. It is produced by models and
           scoring rules reading public data at one moment in time, and it can be
-          wrong — about the audience, about the creator, about the fit. Handles
+          wrong: about the audience, about the creator, about the fit. Handles
           with little public activity, or accounts our data provider cannot
           read, produce weaker results, and the report says so when it can tell.
         </p>
@@ -149,7 +149,7 @@ export default function TermsPage() {
 
       <LegalSection title="Availability">
         <p>
-          OverlapX is operated by one person and depends on third parties —
+          OverlapX is operated by one person and depends on third parties:
           Supabase for auth and database, a data provider for X content, OpenAI
           for classification. Any of them can be slow, rate-limited, or down,
           and that will affect results. There is no uptime guarantee. Features
@@ -171,8 +171,8 @@ export default function TermsPage() {
           consequential losses, lost profits, lost opportunities, or wasted
           marketing spend arising from your use of the service or reliance on a
           report. Where liability cannot be excluded, it is limited to the
-          amount you paid in the twelve months before the claim — which, while
-          the service is free, is nothing.
+          amount you paid in the twelve months before the claim. While the
+          service is free, that is nothing.
         </p>
         <p>
           Nothing here limits liability for fraud or for anything else that

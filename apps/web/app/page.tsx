@@ -8,7 +8,7 @@ import { AnalysisForm } from "@/components/analysis-form";
 // literal string "OverlapX" and the sign-in explanation if you rewrite it.
 function AboutOverlapX() {
   const steps = [
-    "Enter two public X handles — your brand's and the creator's — plus any context about your product.",
+    "Enter two public X handles (your brand's and the creator's), plus any context about your product.",
     "OverlapX reads their public posts and the accounts that engage with them, then classifies that audience.",
     "You get a fit verdict with a score breakdown and the evidence behind it, so you can judge it yourself.",
   ];
@@ -42,7 +42,7 @@ function AboutOverlapX() {
       <p className="text-sm leading-relaxed text-secondary-foreground">
         You can run analyses without an account. Signing in with Google is
         optional and is used only to identify you so your saved reports follow
-        you across devices — OverlapX requests nothing from your Google account
+        you across devices. OverlapX requests nothing from your Google account
         beyond your name and email address.
       </p>
     </section>

@@ -100,7 +100,7 @@ export function ExpectedReachCard({ reach }: { reach: ExpectedReach }) {
         {onTarget}% on-target
       </div>
       <p className="mt-2 text-[11.5px] leading-snug text-muted-foreground">
-        A separate number from the fit score — weigh it against the creator&apos;s
+        A separate number from the fit score. Weigh it against the creator&apos;s
         price to judge value for money.
       </p>
     </div>
@@ -151,7 +151,7 @@ export function AudienceGeography({ regions }: { regions: RegionDistribution }) 
       </div>
       {coveragePct < 25 && (
         <p className="mt-2 text-[11px] leading-snug text-muted-foreground">
-          Location is sparse on X — this is directional, based on the{" "}
+          Location is sparse on X. This is directional, based on the{" "}
           {coveragePct}% of the audience we could place.
         </p>
       )}

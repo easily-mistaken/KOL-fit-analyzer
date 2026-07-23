@@ -692,3 +692,19 @@ at `context/specs/19-caching-and-cost-controls.md` as the design record.
   verification at all, since it requests only non-sensitive scopes (openid,
   email, profile via `signInWithOAuth`), which are generally publishable without
   it unless a custom logo is configured.
+
+- 2026-07-23 (copy: strip em/en dashes from customer-visible UI): Removed every
+  em dash and en dash from customer-facing rendered text and replaced each with
+  correct punctuation in context (a comma, a colon, parentheses, or two
+  sentences), never a lazy hyphen. Touched the home page, privacy and terms
+  pages, upgrade page, the limit/detailed request forms, the analysis-form
+  upgrade wall, the live analysis-status stage copy, and the report components
+  (metric groups, audience dials, email capture, fit report), plus the
+  client-facing metric copy in `lib/metric-info.ts` (also fixed the `0-100`
+  range, previously an en dash). Empty-value placeholders that rendered a bare
+  "—" (score, verdict, status, invalid date in the analyses list and saved
+  summary) now read "N/A". Remaining dashes live only in code and JSX comments
+  and in one operator-only Telegram alert (`lib/notify.ts`), none of which reach
+  customers; admin dashboard copy was left untouched as internal, not
+  customer-facing. Rationale per CLAUDE.md: dashes as punctuation read as
+  AI-generated and must not be visible to customers.

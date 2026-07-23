@@ -24,7 +24,7 @@ const DATE_FMT = new Intl.DateTimeFormat("en-US", {
 });
 function formatCreatedAt(iso: string): string {
   const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? "—" : DATE_FMT.format(d);
+  return Number.isNaN(d.getTime()) ? "N/A" : DATE_FMT.format(d);
 }
 
 const JOB_STATUS: Record<
@@ -38,7 +38,7 @@ const JOB_STATUS: Record<
 };
 
 function StatusPill({ status }: { status: JobStatus | null }) {
-  if (!status) return <span className="text-muted-foreground">—</span>;
+  if (!status) return <span className="text-muted-foreground">N/A</span>;
   const s = JOB_STATUS[status];
   return (
     <span className={cn("inline-flex items-center gap-1.5 text-[13px]", s.className)}>
@@ -103,7 +103,7 @@ export function AnalysesList({ data }: { data: AnalysisListResponse }) {
                         {score}
                       </span>
                     ) : (
-                      <span className="text-muted-foreground">—</span>
+                      <span className="text-muted-foreground">N/A</span>
                     )}
                   </td>
                   <td className="px-5 py-3.5 font-mono text-xs text-muted-foreground">

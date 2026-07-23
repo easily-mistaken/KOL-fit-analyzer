@@ -10,7 +10,7 @@ export type MetricInfo = { label: string; what: string; read: string };
 export const METRIC_INFO: Record<ScoreMetric, MetricInfo> = {
   overall_fit: {
     label: "Overall fit",
-    what: "The headline 0–100 fit score: how much of the creator's real, engaged audience is your target customer. This is the whole score — content, campaign, and geo signals are shown for context but do not change it.",
+    what: "The headline 0-100 fit score: how much of the creator's real, engaged audience is your target customer. This is the whole score: content, campaign, and geo signals are shown for context but do not change it.",
     read: "Higher means more of your target customer is actually in the room. A fake/farmed audience or a brand-safety problem can cap the verdict. The verdict badge is the plain-English version of this number.",
   },
   engaged_audience_match: {

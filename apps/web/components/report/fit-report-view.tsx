@@ -352,7 +352,7 @@ export function FitReportView({
                   reader tries to reconcile "40% developers" with "30% AI" and
                   concludes one of them is wrong. */}
               <p className="mt-3 text-[11.5px] text-muted-foreground">
-                Both rings cover the same accounts, read two different ways —
+                Both rings cover the same accounts, read two different ways:
                 what they&rsquo;re into, and what they do. &ldquo;Other&rdquo;
                 groups the smaller segments; hover any slice for its breakdown.
               </p>

@@ -43,7 +43,7 @@ export default async function UpgradePage() {
         </h1>
         <p className="max-w-xl text-sm text-secondary-foreground">
           Run out and want to keep comparing creators? Ask for the next tier and
-          we&apos;ll approve it — usually within a day.
+          we&apos;ll approve it, usually within a day.
         </p>
       </div>
 
@@ -72,7 +72,7 @@ async function UpgradeBody({
     return (
       <div className="space-y-4">
         <p className="text-sm text-secondary-foreground">
-          Sign in with Google first — your raised limit (and your history) lives
+          Sign in with Google first. Your raised limit (and your history) lives
           with your account, so it&apos;s there on every device.
         </p>
         <Button asChild>
@@ -119,7 +119,7 @@ async function UpgradeBody({
           You already have a request in review
         </div>
         <p className="mt-1.5 text-secondary-foreground">
-          We&apos;re on it — you&apos;ll be unlocked to {pending.requestedLimit}{" "}
+          We&apos;re on it. You&apos;ll be unlocked to {pending.requestedLimit}{" "}
           analyses soon. Thanks for your patience.
         </p>
       </div>

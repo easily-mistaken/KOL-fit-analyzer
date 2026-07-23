@@ -50,8 +50,8 @@ export default function PrivacyPage() {
             </>,
             <>
               <LegalTerm>Analysis inputs.</LegalTerm> The handles you submit and
-              any optional context you add — website URL, docs URL, product
-              category, target user, campaign goal, stage, region — along with
+              any optional context you add (website URL, docs URL, product
+              category, target user, campaign goal, stage, region), along with
               the resulting report.
             </>,
             <>
@@ -80,8 +80,8 @@ export default function PrivacyPage() {
       <LegalSection title="Information about the accounts you analyse">
         <p>
           An analysis reads <em>publicly available</em> information about the X
-          accounts you name — profile details, posts, and the public accounts
-          that engaged with them — and stores a derived summary as part of your
+          accounts you name (profile details, posts, and the public accounts
+          that engaged with them) and stores a derived summary as part of your
           report. We do not access private or restricted content, and we do not
           use this to build advertising profiles or contact anyone.
         </p>
@@ -93,7 +93,7 @@ export default function PrivacyPage() {
             "To run the analyses you request and show you the resulting reports.",
             "To keep your report history available across your devices when you sign in.",
             "To apply usage limits and prevent abuse of a service that costs real money per analysis.",
-            "To reply to you when you have asked us to — a curated report, an allowance request, or a ready notification.",
+            "To reply to you when you have asked us to: a curated report, an allowance request, or a ready notification.",
             "To operate, debug, and secure the service.",
           ]}
         />
@@ -132,24 +132,24 @@ export default function PrivacyPage() {
         <LegalBullets
           items={[
             <>
-              <LegalTerm>Supabase</LegalTerm> — authentication and our database,
+              <LegalTerm>Supabase</LegalTerm>: authentication and our database,
               where accounts, analyses, and reports are stored.
             </>,
             <>
-              <LegalTerm>TwitterAPI.io</LegalTerm> — retrieves the public X data
+              <LegalTerm>TwitterAPI.io</LegalTerm>: retrieves the public X data
               an analysis is based on. It receives the handles being analysed.
             </>,
             <>
-              <LegalTerm>OpenAI</LegalTerm> — classifies and summarises that
+              <LegalTerm>OpenAI</LegalTerm>: classifies and summarises that
               public content and the context you provide. Sent through their
               API, which does not use the data to train their models.
             </>,
             <>
-              <LegalTerm>RackNerd</LegalTerm> — the server the application runs
+              <LegalTerm>RackNerd</LegalTerm>: the server the application runs
               on.
             </>,
             <>
-              <LegalTerm>Telegram</LegalTerm> — used to alert the operator to
+              <LegalTerm>Telegram</LegalTerm>: used to alert the operator to
               new requests, and to deliver a curated report if you asked for one
               that way.
             </>,

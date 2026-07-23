@@ -391,13 +391,13 @@ function stageReason(
   const { org, kol, kolFollowers } = ctx;
   switch (stageIndex) {
     case 0:
-      return `Reading everything @${kol} and @${org} put out — what they post, who they are, what they actually stand for. No skimming.`;
+      return `Reading everything @${kol} and @${org} put out: what they post, who they are, what they actually stand for. No skimming.`;
     case 1:
       return kolFollowers
-        ? `Going through the ${kolFollowers} people around @${kol} — the real humans, not the headline number. This is the slow part, and the whole reason the answer holds up.`
-        : `Going through the real people who follow and engage @${kol}, one at a time — not the headline number. This is the slow part, and the whole reason the answer holds up.`;
+        ? `Going through the ${kolFollowers} people around @${kol}: the real humans, not the headline number. This is the slow part, and the whole reason the answer holds up.`
+        : `Going through the real people who follow and engage @${kol}, one at a time, not the headline number. This is the slow part, and the whole reason the answer holds up.`;
     case 2:
-      return `Working out how many of @${kol}'s real listeners actually look like @${org}'s customers. Cut corners here and the fit score is worthless — so we don't.`;
+      return `Working out how many of @${kol}'s real listeners actually look like @${org}'s customers. Cut corners here and the fit score is worthless, so we don't.`;
     default:
       return `Folding everything we found into your scorecard, verdict, and next moves. Almost there.`;
   }
@@ -407,7 +407,7 @@ function stageReason(
 // one-at-a-time precisely so each creator gets the full pass (the time line
 // below carries the "any second now").
 const QUEUED_REASON =
-  "You're in line. We take creators one at a time so each gets our full, careful pass — no rushing yours.";
+  "You're in line. We take creators one at a time so each gets our full, careful pass. No rushing yours.";
 
 function mmss(total: number): string {
   const m = Math.floor(total / 60);
@@ -620,7 +620,7 @@ function RunningExperience({ data }: { data: AnalysisStatusResponse }) {
         <div className="mt-6">
           <div className="flex items-end justify-between gap-3">
             <div className="min-w-0 text-sm font-medium text-foreground">
-              {queued ? "Queued — starting any second" : stage.title}
+              {queued ? "Queued, starting any second" : stage.title}
             </div>
             {!queued && (
               <div className="shrink-0 font-mono text-xs text-muted-foreground">
@@ -647,8 +647,8 @@ function RunningExperience({ data }: { data: AnalysisStatusResponse }) {
               {queued
                 ? "A worker will pick this up any second."
                 : overrun
-                  ? "Taking a little longer than usual — still going, hang tight."
-                  : `Working on it — ${stage.remaining} left.`}
+                  ? "Taking a little longer than usual. Still going, hang tight."
+                  : `Working on it, ${stage.remaining} left.`}
             </div>
           </div>
         </div>
@@ -776,7 +776,7 @@ function CompletedBody({ data }: { data: AnalysisStatusResponse }) {
           <p className="text-xs text-muted-foreground">Overall score</p>
           <p className="font-mono text-sm text-foreground">
             {report.overallScore === null
-              ? "—"
+              ? "N/A"
               : `${report.overallScore} / 100`}
           </p>
         </div>

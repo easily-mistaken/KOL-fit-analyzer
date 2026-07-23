@@ -95,7 +95,7 @@ export function EmailCapture({
             Want a deeper read on this creator?
           </p>
           <p className="mt-1 text-[12.5px] leading-relaxed text-secondary-foreground">
-            Leave your email and we&apos;ll get back to you — or reach out
+            Leave your email and we&apos;ll get back to you, or reach out
             directly, whichever is faster.
           </p>
 

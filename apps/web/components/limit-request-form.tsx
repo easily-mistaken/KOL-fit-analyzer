@@ -80,11 +80,11 @@ export function LimitRequestForm({
       <div className="rounded-xl border border-success/40 bg-success/10 px-4 py-4 text-sm">
         <div className="flex items-center gap-2 font-semibold text-foreground">
           <CheckCircle2 className="h-4 w-4 text-success" />
-          Request received — thank you, genuinely
+          Request received. Thank you, genuinely
         </div>
         <p className="mt-1.5 text-secondary-foreground">
           We&apos;ll review it and bump you up to {requestedLimit} analyses
-          soon. When we do, we&apos;ll reach out on the channel you left — we
+          soon. When we do, we&apos;ll reach out on the channel you left. We
           really do read every reply.
         </p>
       </div>
@@ -98,7 +98,7 @@ export function LimitRequestForm({
         <Heart className="mt-0.5 h-4 w-4 shrink-0 text-accent-ink" />
         <p className="text-secondary-foreground">
           We&apos;re a tiny team building this in the open, and it means a lot
-          that you want to keep going. We&apos;ll happily unlock more — all we
+          that you want to keep going. We&apos;ll happily unlock more. All we
           ask in return is a way to reach you, so we can hear what&apos;s working
           and what isn&apos;t. Your feedback is genuinely what makes this better.
         </p>
@@ -148,7 +148,7 @@ export function LimitRequestForm({
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Leave any one of these — whatever&apos;s easiest for you.
+        Leave any one of these, whatever&apos;s easiest for you.
       </p>
 
       <div className="space-y-1.5">

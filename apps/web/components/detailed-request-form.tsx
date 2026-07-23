@@ -96,7 +96,7 @@ export function DetailedRequestForm({
           report.
         </p>
         <p className="mt-1.5 text-xs text-secondary-foreground">
-          Keep an eye on your message requests — the first DM from someone you
+          Keep an eye on your message requests: the first DM from someone you
           haven&apos;t spoken to lands there rather than your main inbox.
         </p>
       </div>

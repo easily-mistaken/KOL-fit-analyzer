@@ -23,7 +23,7 @@ export function VerdictBadge({
   className?: string;
 }) {
   if (!verdict) {
-    return <span className="text-muted-foreground">—</span>;
+    return <span className="text-muted-foreground">N/A</span>;
   }
   return (
     <Badge

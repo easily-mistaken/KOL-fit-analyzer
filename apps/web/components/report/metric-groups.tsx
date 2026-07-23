@@ -85,7 +85,7 @@ export function MetricGroups({ metrics }: { metrics: MetricMap }) {
             Context
           </div>
           <p className="mb-3 text-[12px] text-muted-foreground">
-            Shown to inform your read — these do not change the fit number. (A
+            Shown to inform your read. These do not change the fit number. (A
             serious brand-safety problem can still cap the verdict.)
           </p>
           <div>
@@ -104,7 +104,7 @@ export function MetricGroups({ metrics }: { metrics: MetricMap }) {
             </span>
           </div>
           <p className="mb-3 text-[12px] text-muted-foreground">
-            These never lift the score — a high-enough risk only caps the
+            These never lift the score. A high-enough risk only caps the
             verdict.
           </p>
           <div>
