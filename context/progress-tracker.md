@@ -708,3 +708,20 @@ at `context/specs/19-caching-and-cost-controls.md` as the design record.
   customers; admin dashboard copy was left untouched as internal, not
   customer-facing. Rationale per CLAUDE.md: dashes as punctuation read as
   AI-generated and must not be visible to customers.
+
+- 2026-07-23 (verification resolved: not needed): After a fourth identical
+  rejection on homepage content that provably exists (confirmed by fetching as
+  Googlebot: h1 leads "OverlapX", name+purpose in the first 250 chars), the
+  conclusion is that brand verification was never required for this app. It
+  requests only non-sensitive scopes (openid, email, profile; Supabase default,
+  no extra scopes set) and the user has now removed the custom logo, which were
+  the two things that could trigger verification. Publishing status is In
+  production. Net: external users can sign in without an unverified-app warning,
+  and the repeated findings were the stale result of earlier attempts (Google's
+  panel labels them "from the previous verification attempt" and re-reviews take
+  days). Action recorded for the user: cancel/withdraw any pending verification
+  request rather than resubmit, and confirm via an incognito sign-in with a
+  non-owner Google account. The homepage/robots/sitemap/JSON-LD work done across
+  rounds 1-3 stays as general product hygiene. Still cosmetic-only and open: the
+  consent screen shows <project-ref>.supabase.co, fixable solely by the Supabase
+  custom-domain add-on, unrelated to verification or the logo.
