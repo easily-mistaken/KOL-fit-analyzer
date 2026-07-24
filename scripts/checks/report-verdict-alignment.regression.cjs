@@ -81,6 +81,7 @@ ck("prompt explains risk-metric polarity", /HIGHER = MORE risk/i.test(prompt));
 // --- 2. the alignment instruction is load-bearing ----------------------------
 ck("prompt demands narrative agreement with the verdict", /must AGREE with this verdict/i.test(prompt));
 ck("prompt directs the summary to open with the verdict-consistent conclusion", /Open `summary` with the verdict-consistent/i.test(prompt));
+ck("prompt bans a literal 'Verdict: X' opener (hero line renders beside the verdict word)", /NEVER a literal label/i.test(prompt));
 ck("prompt frames contrary positives as weighed context, never a contradiction", /NEVER as a conclusion that contradicts the verdict/i.test(prompt));
 ck("prompt aligns keyTakeaways too", /keyTakeaways entry/.test(prompt));
 ck("prompt keeps the no-numbers-in-output rule", /do NOT state or invent any numeric scores/i.test(prompt) || /NOT state or invent any numeric scores/.test(prompt));

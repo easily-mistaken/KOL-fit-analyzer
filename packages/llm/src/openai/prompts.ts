@@ -291,7 +291,9 @@ export function buildReportPrompt(input: GenerateFitReportInput): string {
       `Computed reasons for the verdict:\n${overall.reasons.map((r) => `  - ${truncate(r, 300)}`).join("\n") || "  (none)"}`,
       `Component scores (0-100; for paid_promo_risk and bot_farm_risk HIGHER = MORE risk):\n${components || "  (none)"}`,
       "Your ENTIRE narrative must AGREE with this verdict. Open `summary` with the verdict-consistent " +
-        "conclusion (AVOID/WEAK: open by recommending against or cautioning on this pairing), then explain " +
+        "conclusion in natural prose, NEVER a literal label ('Verdict: GOOD.'): the verdict word is already " +
+        "displayed right beside your text (AVOID/WEAK: open by recommending against or cautioning on this " +
+        "pairing), then explain " +
         "what drove it using the computed reasons above. When a genuinely positive signal exists alongside a " +
         "negative verdict, present it as context the verdict already weighed (\"despite a real audience-role " +
         "match, ...\"), NEVER as a conclusion that contradicts the verdict. The first keyTakeaways entry " +
