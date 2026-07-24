@@ -54,6 +54,9 @@ export type AdminAnalysisRow = {
   jobStatus: JobStatus | null;
   attempts: number | null;
   errorCode: string | null;
+  // The user-safe error explanation the worker recorded with the code —
+  // surfaced as a tooltip so the admin panel answers "why" without journalctl.
+  errorMessage: string | null;
   verdict: ReportVerdict | null;
   overallScore: number | null;
 };

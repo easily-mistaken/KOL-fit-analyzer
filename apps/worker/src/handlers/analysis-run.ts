@@ -175,10 +175,20 @@ export async function processAnalysisRun(
       llm,
     });
 
-    // RUNNING -> COMPLETED
+    // RUNNING -> COMPLETED. Clear any error left by a failed earlier attempt:
+    // the retry path stamps errorCode/errorMessage when it re-queues, so
+    // without this a recovered analysis wears its transient error forever and
+    // the admin panel shows "Completed + twitter_timeout" — reading as a
+    // failure when the retry system in fact worked. `attempts` stays as the
+    // honest retry record.
     await prisma.analysisJob.update({
       where: { id: jobId },
-      data: { status: "COMPLETED", completedAt: new Date() },
+      data: {
+        status: "COMPLETED",
+        completedAt: new Date(),
+        errorCode: null,
+        errorMessage: null,
+      },
     });
 
     console.log(

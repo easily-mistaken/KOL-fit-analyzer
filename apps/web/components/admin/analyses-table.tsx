@@ -92,7 +92,7 @@ export function AdminAnalysesTable({
               {row.attempts ?? "—"}
             </td>
             <td className="px-5 py-3.5">
-              <ErrorCode code={row.errorCode} />
+              <ErrorCode code={row.errorCode} message={row.errorMessage} />
             </td>
             <td className="px-5 py-3.5">
               <VerdictBadge verdict={row.verdict} />

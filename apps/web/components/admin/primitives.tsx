@@ -72,9 +72,24 @@ export function JobStatusPill({ status }: { status: JobStatus | null }) {
   );
 }
 
-export function ErrorCode({ code }: { code: string | null }) {
+export function ErrorCode({
+  code,
+  message,
+}: {
+  code: string | null;
+  message?: string | null;
+}) {
   if (!code) return <Dash />;
-  return <span className="font-mono text-xs text-error">{code}</span>;
+  // The worker's user-safe explanation rides along as a native tooltip, so the
+  // panel answers "why did this fail" on hover without a trip to the logs.
+  return (
+    <span
+      className="font-mono text-xs text-error"
+      title={message ?? undefined}
+    >
+      {code}
+    </span>
+  );
 }
 
 /** Card-framed, horizontally scrollable table — matches the reports list. */

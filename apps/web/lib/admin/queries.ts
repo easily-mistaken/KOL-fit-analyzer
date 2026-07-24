@@ -63,7 +63,7 @@ const ANALYSIS_ROW_SELECT = {
   orgHandle: true,
   kolHandle: true,
   ownerId: true,
-  job: { select: { status: true, attempts: true, errorCode: true } },
+  job: { select: { status: true, attempts: true, errorCode: true, errorMessage: true } },
   report: { select: { verdict: true, overallScore: true } },
 } as const;
 
@@ -73,7 +73,12 @@ type AnalysisRowRecord = {
   orgHandle: string;
   kolHandle: string;
   ownerId: string | null;
-  job: { status: JobStatus; attempts: number; errorCode: string | null } | null;
+  job: {
+    status: JobStatus;
+    attempts: number;
+    errorCode: string | null;
+    errorMessage: string | null;
+  } | null;
   report: { verdict: ReportVerdict | null; overallScore: number | null } | null;
 };
 
@@ -87,6 +92,7 @@ function toAnalysisRow(r: AnalysisRowRecord): AdminAnalysisRow {
     jobStatus: r.job?.status ?? null,
     attempts: r.job?.attempts ?? null,
     errorCode: r.job?.errorCode ?? null,
+    errorMessage: r.job?.errorMessage ?? null,
     verdict: r.report?.verdict ?? null,
     overallScore: r.report?.overallScore ?? null,
   };
