@@ -924,3 +924,25 @@ at `context/specs/19-caching-and-cost-controls.md` as the design record.
   the alignment instructions are load-bearing, the block degrades gracefully,
   and the version bump landed. No new env vars, no report-schema change. The
   saved contradictory report is immutable; the fix surfaces on a re-run.
+
+- 2026-07-24 (Unit 53 follow-ups: prose opener + honest admin errors): Two
+  small fixes shipped after watching the first post-deploy traffic. (1) The
+  first report generated under the Unit 53 prompt opened its summary with a
+  literal "Verdict: GOOD." sentence; the UI renders the summary's first
+  sentence as the hero line directly under the verdict word, so the label
+  appeared twice stacked. The alignment instruction now requires the opener in
+  natural prose and bans the literal label; regression extended to 15 checks.
+  (2) Admin panel read "Completed + twitter_timeout" on recovered analyses:
+  the worker's retry path stamps errorCode/errorMessage when re-queuing a
+  transient failure, but the RUNNING -> COMPLETED transition never cleared
+  them, so a recovered analysis wore its first attempt's error forever (reads
+  as a failure; the retry system actually worked - 3/3 twitter_timeouts in the
+  last 10h recovered on retry 1). The worker now clears both fields on
+  completion (attempts stays as the retry record); a one-time prod backfill
+  cleared 8 stale completed jobs. Admin rows also carry errorMessage as a
+  hover tooltip on the error code (types + query select + ErrorCode primitive),
+  so the panel answers "why did this fail" without journalctl. Prod log review
+  same session: 11 completed / 2 failed in 10h, both failures analysis_failed
+  on unanalyzable handles (@rushichavan_, @revelation - no fetchable posts,
+  correctly non-retryable; their attempts=2 came from the Unit 40 manual retry
+  endpoint, not a queue bug).
