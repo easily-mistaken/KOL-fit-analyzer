@@ -883,3 +883,44 @@ at `context/specs/19-caching-and-cost-controls.md` as the design record.
   saved report the user linked is immutable; the corrected score surfaces only on
   a RE-RUN of that pair** (post-deploy: org re-inferred due to the rev bump,
   audience classification a cheap cache hit). No new env vars, no schema change.
+
+- 2026-07-24 (Unit 53: report narrative must agree with the verdict): User
+  brought a prod report (@thalerfinance x @priyansh_ptl18) whose verdict was
+  AVOID (high confidence) while the executive summary opened "The creator is a
+  solid match for the brand's target roles and domains". Diagnosed: the
+  report-narrative prompt (`buildReportPrompt`, packages/llm/src/openai/prompts.ts)
+  asked the model to "reference the verdict qualitatively" but NEVER included
+  the verdict, the overall score, or any computed reason in the prompt. The
+  pipeline passes `scores` + `verdict` into `generateFitReport` and the provider
+  injects them into the report JSON after the fact (`assembleFitReport`), but
+  the prompt itself only carried the raw audience distributions, so the model
+  re-derived fit from those and could conclude the OPPOSITE of the deterministic
+  outcome. The gap is structural: risk gates (bot/farm, promo, safety) and the
+  activity/originality discounts are invisible in the distributions, so exactly
+  the reports where a gate fires (a good-looking audience pulled down to AVOID)
+  were the ones most likely to get contradictory prose. **Fix:** the prompt now
+  carries a "DETERMINISTIC RESULT (FINAL)" block when scores/verdict are present:
+  verdict + a plain-English gloss per band (AVOID = recommend against), overall
+  value + confidence, the overall `reasons` (which already include the risk-gate
+  message and activity/originality discounts from scoring), and per-component
+  values with their top reason (with polarity note for the two risk metrics).
+  Followed by a hard alignment instruction: the narrative must AGREE with the
+  verdict, `summary` opens with the verdict-consistent conclusion, contrary
+  positives are framed as context the verdict already weighed ("despite X"),
+  the first keyTakeaway states the same bottom line, and bestUseCases under
+  AVOID/WEAK are conditional, not endorsements. Numbers remain INPUT only; the
+  ban on repeating them in the output stands, and the block is omitted (not
+  fabricated) when scores/verdict are absent. The mock provider was already
+  verdict-consistent; only the OpenAI prompt was blind. **`SCORING_VERSION` 7 -> 8**
+  so `findReusableAnalysis` won't serve a pre-fix report with contradictory
+  prose on re-submit; scores/verdict are unchanged, only the narrative. The
+  report call is never LLM-cached, so no cache rev is involved (org/content/
+  audience/fit caches all survive; a re-run pays only the report call + fetches).
+  **Verified:** `pnpm build` green + full `pnpm check` 25 suites 0 failed, incl.
+  new `scripts/checks/report-verdict-alignment.regression.cjs` (14 checks, wired
+  into `pnpm check` + `check:report-verdict-alignment`): builds the prompt for
+  an AVOID pair whose distributions LOOK like a match (the thalerfinance shape)
+  and asserts the verdict/gloss/reasons/components/polarity are in the prompt,
+  the alignment instructions are load-bearing, the block degrades gracefully,
+  and the version bump landed. No new env vars, no report-schema change. The
+  saved contradictory report is immutable; the fix surfaces on a re-run.

@@ -238,6 +238,16 @@ export function selectPostImages(
   return { urls, postIds };
 }
 
+// Plain-English gloss per verdict so the model knows what conclusion it is
+// writing toward (Unit 53), without inventing its own reading of the label.
+const VERDICT_GLOSS: Record<string, string> = {
+  AVOID: "recommend AGAINST working with this creator for this brand",
+  WEAK: "a poor fit, below the bar for a paid partnership",
+  OKAY: "a usable fit with real caveats",
+  GOOD: "a good fit worth pursuing",
+  STRONG: "an excellent fit, a clear yes",
+};
+
 export function buildReportPrompt(input: GenerateFitReportInput): string {
   const dist = input.audience.distribution;
   const top = (
@@ -257,6 +267,39 @@ export function buildReportPrompt(input: GenerateFitReportInput): string {
   const domains = top(dist.domains);
   const quality = top(dist.quality);
 
+  // Unit 53: the model writes the narrative AROUND the deterministic outcome,
+  // so it must SEE that outcome. Before this block the prompt asked the model
+  // to "reference the verdict" without ever stating it; the model re-derived
+  // fit from the raw distributions above and could conclude the OPPOSITE of
+  // the computed verdict (a "solid match" summary on an AVOID report — the
+  // risk gates and activity/originality discounts are invisible in the
+  // distributions). The numbers below are INPUT for the model's judgment of
+  // severity; the ban on repeating them in the output stands.
+  const verdictLines: string[] = [];
+  if (input.verdict && input.scores) {
+    const gloss = VERDICT_GLOSS[input.verdict] ?? "an uncertain fit";
+    const overall = input.scores.overall;
+    const components = Object.entries(input.scores.components)
+      .map(
+        ([metric, sv]) =>
+          `  ${metric}=${sv.value}/100${sv.reasons.length > 0 ? ` (${truncate(sv.reasons[0], 220)})` : ""}`
+      )
+      .join("\n");
+    verdictLines.push(
+      `DETERMINISTIC RESULT (computed by code from the data above; FINAL): verdict=${input.verdict} ` +
+        `(meaning: ${gloss}), overall fit ${overall.value}/100, confidence=${input.scores.confidence}.`,
+      `Computed reasons for the verdict:\n${overall.reasons.map((r) => `  - ${truncate(r, 300)}`).join("\n") || "  (none)"}`,
+      `Component scores (0-100; for paid_promo_risk and bot_farm_risk HIGHER = MORE risk):\n${components || "  (none)"}`,
+      "Your ENTIRE narrative must AGREE with this verdict. Open `summary` with the verdict-consistent " +
+        "conclusion (AVOID/WEAK: open by recommending against or cautioning on this pairing), then explain " +
+        "what drove it using the computed reasons above. When a genuinely positive signal exists alongside a " +
+        "negative verdict, present it as context the verdict already weighed (\"despite a real audience-role " +
+        "match, ...\"), NEVER as a conclusion that contradicts the verdict. The first keyTakeaways entry " +
+        "states the same verdict-consistent bottom line. bestUseCases under AVOID/WEAK are conditional " +
+        "(\"if used despite the risks\"), not endorsements."
+    );
+  }
+
   return [
     `Write the qualitative narrative for a KOL-fit report: org @${input.org.handle} vs KOL @${input.kol.handle}.`,
     `Org classification: ${JSON.stringify(input.org.classification)}.`,
@@ -270,10 +313,11 @@ export function buildReportPrompt(input: GenerateFitReportInput): string {
       'part of it by what it is not ("non-crypto audience", "outside the space"): that is not a finding, and for ' +
       "a brand that is not itself crypto it is exactly backwards. Judge fit against THIS brand's stated target " +
       "roles and domains, whatever space those happen to be in.",
+    ...verdictLines,
     "Write `summary` as a 3-5 sentence plain-English executive summary a reader can skim to understand the " +
-      "fit: whether this KOL is a good match for this org and why, grounded in the engaged-audience match, " +
-      "content alignment, and any risks. Reference the verdict qualitatively (e.g. \"a weak fit\") but do NOT " +
-      "state or invent any numeric scores. Write it as flowing prose, not bullet points.",
+      "fit: whether this creator is a good match for this brand and why, grounded in the engaged-audience match, " +
+      "content alignment, and any risks. Reference the verdict above qualitatively (e.g. \"a weak fit\") but do " +
+      "NOT state or invent any numeric scores. Write it as flowing prose, not bullet points.",
     "Write `keyTakeaways` as 3-5 punchy, standalone one-line points (the scannable version of the summary), " +
       "each a concrete \"so what\" a busy reader can grasp in a glance. No numbers, no filler.",
     // The narrative fields are the only model-written text a reader ever sees, so

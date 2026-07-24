@@ -47,4 +47,10 @@ export const REPORT_SCHEMA_VERSION = 1;
 // for the same creator against such brands, so reuse must re-run. (The org
 // PROMPT half of this change rides ORG_PROMPT_REV in packages/cache, not NS, so
 // the expensive audience cache is preserved; this bump only busts report reuse.)
-export const SCORING_VERSION = 7;
+// v8 (Unit 53): the report-narrative prompt now receives the deterministic
+// verdict + score reasons and must write a narrative that AGREES with them.
+// Before, the model never saw the verdict and could write "solid match" prose
+// on an AVOID report. Scores are unchanged, but the narrative for the same
+// inputs is, so reuse must re-run rather than serve a contradictory report.
+// (The report call is never LLM-cached, so no cache rev is involved.)
+export const SCORING_VERSION = 8;
