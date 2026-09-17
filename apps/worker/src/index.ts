@@ -58,6 +58,59 @@ async function main(): Promise<void> {
   );
 
   console.log(`[worker] listening on ${QUEUE_NAMES.ANALYSIS_RUN}`);
+
+  startQueueWatchdog(boss);
+}
+
+// Queue liveness watchdog (2026-09-12 incident). pg-boss reports connection
+// failures through boss.on("error"), which only logs — so when the worker's
+// pool was exhausted by half-open sockets the process stayed "up" and systemd
+// never restarted it. The queue quietly stopped draining for 4.5 days while
+// the web app kept accepting pairs that nothing would ever run.
+//
+// getQueue() is an uncached SELECT through the same pool pg-boss fetches jobs
+// with (the exact call path that failed: Manager.getQueues), so it fails in
+// precisely the cases that matter. After UNREACHABLE_EXIT_MS of unbroken
+// failure we exit non-zero: scripts/start.mjs then brings the container down
+// and systemd (Restart=always) starts a clean process with a fresh pool.
+//
+// The grace window is far longer than the restart interval, so a real outage
+// can't trip systemd's StartLimitBurst (5 restarts / 60s) into giving up.
+const WATCHDOG_INTERVAL_MS = 60_000;
+const UNREACHABLE_EXIT_MS = 5 * 60_000;
+
+function startQueueWatchdog(boss: Awaited<ReturnType<typeof getBoss>>): void {
+  let lastHealthyAt = Date.now();
+  let probing = false;
+
+  const timer = setInterval(() => {
+    // Never stack probes: a hung probe must not queue more pool requests.
+    if (probing) return;
+    probing = true;
+    void (async () => {
+      try {
+        await boss.getQueue(QUEUE_NAMES.ANALYSIS_RUN);
+        lastHealthyAt = Date.now();
+      } catch (error) {
+        const downMs = Date.now() - lastHealthyAt;
+        console.error(
+          `[worker] queue DB probe failed (unreachable for ${Math.round(downMs / 1000)}s):`,
+          error
+        );
+        if (downMs >= UNREACHABLE_EXIT_MS) {
+          console.error(
+            `[worker] queue DB unreachable for ${Math.round(downMs / 1000)}s; exiting so the supervisor restarts with a fresh pool`
+          );
+          process.exit(1);
+        }
+      } finally {
+        probing = false;
+      }
+    })();
+  }, WATCHDOG_INTERVAL_MS);
+
+  // Don't hold the event loop open on shutdown.
+  timer.unref();
 }
 
 let shuttingDown = false;

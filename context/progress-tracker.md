@@ -946,3 +946,44 @@ at `context/specs/19-caching-and-cost-controls.md` as the design record.
   on unanalyzable handles (@rushichavan_, @revelation - no fetchable posts,
   correctly non-retryable; their attempts=2 came from the Unit 40 manual retry
   endpoint, not a queue bug).
+
+- 2026-09-17 (Stuck queue: worker pg-boss pool exhausted by half-open sockets):
+  A pair queued 2026-09-16 15:33 UTC (`outcomexyz` / `tanmayjain5114`) sat at
+  QUEUED for ~17h, never picked up. **Root cause:** at 2026-09-12 20:53:07 UTC
+  all 5 of the worker's pg-boss connections to the Supabase session pooler
+  (port 5432) went silent simultaneously. The server side vanished with no
+  FIN/RST reaching the box, so the kernel still listed every socket as ESTAB
+  (`ss` confirmed: `lastsnd`/`lastrcv` ~= 387,000,000ms = 4.48 days, landing
+  exactly on that timestamp; no `timer:(keepalive,...)` on any socket).
+  Three things compounded: (1) `boss.ts` passed only connectionString + max/
+  supervise/schedule, and node-postgres defaults `keepAlive` to false, so the
+  kernel never probed and a half-open socket stayed ESTAB forever; (2) no
+  `query_timeout`, so the 5 checked-out clients waited on replies that could
+  never arrive - proof they were mid-query, not idle, is that pg reaps *idle*
+  pooled clients after 10s yet these survived 4.5 days; (3) worker pool max is
+  5 (from the 2026-07-15 EMAXCONNSESSION fix), so all 5 leaking exhausted the
+  pool permanently and every `pool.connect()` timed out at pg-boss's 10s
+  default. 7,344 connect-timeout errors in the final 24h alone. It failed
+  silently because `boss.on("error")` logs instead of crashing, so the process
+  looked healthy and systemd's `Restart=always` never fired. The DB itself was
+  never down (fresh connections to 5432 and 6543 both succeeded in <1s during
+  triage), and web has its own pool (max 2) + Prisma on the 6543 transaction
+  pooler, both healthy - so the site kept accepting pairs and writing job rows
+  that nothing would ever consume. **Fix (two layers):** `resolvePgBossOptions`
+  now also returns `keepAlive: true`, `keepAliveInitialDelayMillis: 30_000`,
+  `query_timeout: 60_000`, `maxLifetimeSeconds: 1_800` for every role, so a
+  dead socket FAILS instead of hanging and a leaked slot is always reclaimed
+  (verified pg-boss passes its whole config into `new pg.Pool()` - attorney
+  `getConfig` spreads without whitelisting, `getDb()` hands it straight to
+  DbDefault). Second layer, `apps/worker/src/index.ts`: a `startQueueWatchdog`
+  probes `boss.getQueue()` every 60s (an uncached SELECT through the same pool,
+  the exact `Manager.getQueues` path that failed) and, after 5 min of unbroken
+  failure, exits non-zero so start.mjs takes the container down and systemd
+  restarts with a fresh pool. The 5-min window is far longer than the restart
+  interval, so a real outage can't trip StartLimitBurst (5/60s). Probes never
+  stack; the timer is unref'd. **Verified:** `pnpm -r build` green, full
+  `pnpm check` exit 0 / 472 assertions / 0 failed, with
+  `scripts/checks/pgboss-pool.regression.cjs` extended 7 -> 16 checks asserting
+  the socket-health options for both roles and that `query_timeout` reclaims a
+  fully-leaked pool faster than the watchdog's exit window. No new env vars, no
+  schema change. Deployed to prod; the stuck job drained on restart.

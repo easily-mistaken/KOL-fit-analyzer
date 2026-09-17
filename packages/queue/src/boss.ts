@@ -22,6 +22,16 @@ function connectionString(): string {
   return process.env.DIRECT_URL ?? process.env.DATABASE_URL ?? "";
 }
 
+export interface PgBossOptions {
+  max: number;
+  supervise: boolean;
+  schedule: boolean;
+  keepAlive: boolean;
+  keepAliveInitialDelayMillis: number;
+  query_timeout: number;
+  maxLifetimeSeconds: number;
+}
+
 /**
  * Pool sizing + role options (2026-07-15 incident): Supabase's session pooler
  * caps clients (pool_size 15 by default). pg-boss's default pg Pool is 10 per
@@ -30,10 +40,29 @@ function connectionString(): string {
  * get a tiny pool and no supervision/scheduling loops; the worker (identified
  * by PGBOSS_ROLE=worker, set in apps/worker) gets a small one. Overridable via
  * PGBOSS_POOL_MAX. Pure + exported for the regression check.
+ *
+ * Socket health (2026-09-12 incident): the pooler dropped all 5 of the worker's
+ * connections without a FIN/RST ever reaching the box. node-postgres leaves
+ * SO_KEEPALIVE off by default, so the kernel never probed and the sockets sat
+ * ESTAB forever; with no query timeout the 5 checked-out clients waited on
+ * replies that could never arrive. The pool was permanently exhausted and the
+ * queue silently stopped draining for 4.5 days while the process looked
+ * healthy. These four options make a dead socket *fail* instead of hang:
+ *
+ * - keepAlive/keepAliveInitialDelayMillis: the kernel probes an idle socket
+ *   after 30s (not the 2h system default), so a vanished peer surfaces as an
+ *   error and the pool evicts the client.
+ * - query_timeout: a query that gets no reply aborts and releases its client,
+ *   so one dead socket can never leak a pool slot permanently.
+ * - maxLifetimeSeconds: connections are recycled every 30 min, bounding how
+ *   long any single zombie can persist even if the probes are swallowed.
+ *
+ * pg-boss passes its whole config object into `new pg.Pool()` (attorney
+ * `getConfig` spreads without whitelisting), so these reach the pool as-is.
  */
 export function resolvePgBossOptions(
   env: Record<string, string | undefined> = process.env
-): { max: number; supervise: boolean; schedule: boolean } {
+): PgBossOptions {
   const isWorker = (env.PGBOSS_ROLE ?? "").trim().toLowerCase() === "worker";
   const fromEnv = Number(env.PGBOSS_POOL_MAX);
   const max =
@@ -42,7 +71,15 @@ export function resolvePgBossOptions(
       : isWorker
         ? 5
         : 2;
-  return { max, supervise: isWorker, schedule: isWorker };
+  return {
+    max,
+    supervise: isWorker,
+    schedule: isWorker,
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 30_000,
+    query_timeout: 60_000,
+    maxLifetimeSeconds: 1_800,
+  };
 }
 
 async function createStartedBoss() {
