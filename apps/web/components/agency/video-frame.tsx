@@ -27,6 +27,7 @@ export function VideoFrame({
   className,
   controls = false,
   fit = "cover",
+  fill = false,
 }: {
   video: ProjectVideo | null;
   category: WorkCategory;
@@ -34,8 +35,11 @@ export function VideoFrame({
   className?: string;
   /** Full player controls (project pages) instead of the silent loop. */
   controls?: boolean;
-  /** "contain" letterboxes footage whose own aspect differs from the frame. */
+  /** "contain" letterboxes footage whose own aspect differs from the frame
+   *  (over a blurred copy of its poster, so there are no black bars). */
   fit?: "cover" | "contain";
+  /** Fill the parent (which must be positioned) instead of keeping an aspect. */
+  fill?: boolean;
 }) {
   const ref = useRef<HTMLVideoElement>(null);
 
@@ -54,7 +58,11 @@ export function VideoFrame({
   }, [controls]);
 
   return (
-    <div className={cn("relative overflow-hidden bg-base", ASPECT_CLASS[aspect], className)}>
+    <div className={cn("overflow-hidden bg-base", fill ? "absolute inset-0" : cn("relative", ASPECT_CLASS[aspect]), className)}>
+      {video && fit === "contain" && video.poster ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={video.poster} alt="" aria-hidden className="absolute inset-0 h-full w-full scale-110 object-cover opacity-50 blur-2xl" />
+      ) : null}
       {video ? (
         <video
           ref={ref}

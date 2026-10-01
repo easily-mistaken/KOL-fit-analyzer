@@ -60,8 +60,8 @@ export function Hero() {
             <span className="sr-only">OverlapX: </span>
             Videos made for the{" "}
             <span className="relative inline-block whitespace-nowrap">
-              <span className="absolute inset-x-[-0.06em] bottom-[0.06em] top-[0.12em] -z-0 -rotate-1 rounded-[0.12em] bg-accent-primary" />
-              <span className="relative text-accent-contrast">X timeline.</span>
+              <span className="absolute inset-x-0 bottom-[0.06em] top-[0.12em] -rotate-1 rounded-[0.12em] bg-accent-primary" />
+              <span className="relative px-[0.08em] text-accent-contrast">X timeline.</span>
             </span>
           </h1>
           <p className="mt-7 max-w-xl text-lg leading-relaxed text-secondary-foreground">{POSITIONING.sub}</p>
@@ -74,8 +74,13 @@ export function Hero() {
               See the work
             </Link>
           </div>
-          <p className="mt-10 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-            For {AUDIENCES.join(" · ")}
+          <p className="mt-10 font-mono text-[11px] uppercase leading-relaxed tracking-[0.18em] text-muted-foreground">
+            For {AUDIENCES.map((a, i) => (
+              <span key={a} className="whitespace-nowrap">
+                {a}
+                {i < AUDIENCES.length - 1 ? " · " : ""}
+              </span>
+            ))}
           </p>
         </div>
 

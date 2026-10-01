@@ -8,7 +8,6 @@ import { LogoMark } from "@/components/logo-mark";
 import { Wordmark } from "@/components/wordmark";
 import { MotionPoster } from "@/components/agency/motion-poster";
 import {
-  AUDIENCES,
   CONTACT,
   POSITIONING,
   PROCESS,
@@ -126,7 +125,7 @@ function Kicker({ children }: { children: ReactNode }) {
 
 function Title({ children, className }: { children: ReactNode; className?: string }) {
   return (
-    <h2 className={cn("mt-[1.4cqw] text-[4.4cqw] font-semibold leading-[0.98] tracking-[-0.04em] text-foreground", className)}>
+    <h2 className={cn("mt-[1.4cqw] text-[4.4cqw] font-semibold leading-[0.98] tracking-[-0.04em] text-balance text-foreground", className)}>
       {children}
     </h2>
   );
@@ -149,7 +148,7 @@ function CoverSlide() {
           <span className="rounded-[0.6cqw] bg-accent-primary px-[0.6cqw] text-accent-contrast">X timeline.</span>
         </h1>
         <p className="mt-[2cqw] text-[1.5cqw] text-secondary-foreground">
-          For {AUDIENCES.join(" · ")} · {SITE}
+          For crypto brands, products and AI products · {SITE}
         </p>
       </div>
     </Pad>
@@ -160,16 +159,16 @@ function WhatSlide() {
   return (
     <Pad>
       <Kicker>What OverlapX is</Kicker>
-      <div className="mt-[2cqw] grid flex-1 grid-cols-[1.2fr_1fr] gap-[4cqw]">
+      <div className="mt-[2cqw] grid flex-1 grid-cols-[1fr_1.15fr] items-center gap-[4cqw]">
         <div>
           <Title>A video studio for brands that market on X.</Title>
           <p className="mt-[2cqw] max-w-[44cqw] text-[1.55cqw] leading-relaxed text-secondary-foreground">{POSITIONING.sub}</p>
         </div>
         <div className="grid grid-cols-2 content-center gap-[1.2cqw]">
           {PROMISES.map((p) => (
-            <div key={p.title} className="rounded-[1.2cqw] border border-default bg-surface p-[1.8cqw]">
-              <p className="text-[1.5cqw] font-semibold tracking-tight text-foreground">{p.title}</p>
-              <p className="mt-[0.6cqw] text-[1.05cqw] leading-relaxed text-secondary-foreground">{p.body}</p>
+            <div key={p.title} className="rounded-[1.2cqw] border border-default bg-surface p-[2.2cqw]">
+              <p className="text-[1.9cqw] font-semibold tracking-tight text-foreground">{p.title}</p>
+              <p className="mt-[0.6cqw] text-[1.4cqw] leading-relaxed text-secondary-foreground">{p.body}</p>
             </div>
           ))}
         </div>
@@ -185,12 +184,12 @@ function WhyXSlide() {
       <Title>
         X isn&apos;t YouTube. <span className="text-secondary-foreground">We edit for the scroll.</span>
       </Title>
-      <div className="mt-auto grid grid-cols-4 gap-[1.2cqw]">
+      <div className="my-auto grid grid-cols-4 gap-[1.2cqw]">
         {WHY_X.map((w, i) => (
-          <div key={w.title} className="rounded-[1.2cqw] border border-default bg-surface p-[1.8cqw]">
+          <div key={w.title} className="rounded-[1.2cqw] border border-default bg-surface p-[2.2cqw]">
             <span className="font-mono text-[1.1cqw] text-accent-ink">0{i + 1}</span>
-            <p className="mt-[1cqw] text-[1.6cqw] font-semibold leading-tight tracking-tight text-foreground">{w.title}</p>
-            <p className="mt-[0.8cqw] text-[1.05cqw] leading-relaxed text-secondary-foreground">{w.body}</p>
+            <p className="mt-[1cqw] text-[1.9cqw] font-semibold leading-tight tracking-tight text-foreground">{w.title}</p>
+            <p className="mt-[0.8cqw] text-[1.4cqw] leading-relaxed text-secondary-foreground">{w.body}</p>
           </div>
         ))}
       </div>
@@ -203,14 +202,14 @@ function StylesSlide() {
     <Pad>
       <Kicker>What we make</Kicker>
       <Title>Every style the timeline rewards.</Title>
-      <div className="mt-auto grid grid-cols-5 gap-[1cqw]">
+      <div className="my-auto grid grid-cols-5 gap-[1cqw]">
         {WORK_CATEGORIES.map((c) => (
           <div key={c.id} className="overflow-hidden rounded-[1.2cqw] border border-default bg-surface">
             <StylePoster category={c.id} />
             <div className="p-[1.3cqw]">
               <p className="font-mono text-[0.85cqw] uppercase tracking-[0.16em] text-accent-ink">{projectCount(c.id)}</p>
               <p className="mt-[0.5cqw] text-[1.45cqw] font-semibold tracking-tight text-foreground">{c.title}</p>
-              <p className="mt-[0.5cqw] text-[0.95cqw] leading-relaxed text-secondary-foreground">{c.blurb}</p>
+              <p className="mt-[0.5cqw] text-[1.1cqw] leading-relaxed text-secondary-foreground">{c.blurb}</p>
             </div>
           </div>
         ))}
@@ -263,11 +262,11 @@ function WorkSlide({ featured }: { featured: ReturnType<typeof featuredProjects>
           <Kicker>Selected work</Kicker>
           <Title>Made to be watched on mute, at speed.</Title>
         </div>
-        <a href={`https://${SITE}/work`} className="text-[1.2cqw] text-accent-ink underline-offset-4 hover:underline">
+        <a href={`https://${SITE}/work`} className="whitespace-nowrap text-[1.2cqw] text-accent-ink underline-offset-4 hover:underline">
           Watch it all at {SITE}/work
         </a>
       </div>
-      <div className="mt-auto grid grid-cols-4 gap-[1.2cqw]">
+      <div className="my-auto grid grid-cols-4 gap-[1.2cqw]">
         {tiles.map((t) => (
           <a key={t.key} href={t.href} className="block">
             <div className="relative aspect-video overflow-hidden rounded-[1cqw] border border-default">
@@ -291,7 +290,7 @@ function ClientsSlide({ names }: { names: string[] }) {
     <Pad>
       <Kicker>Brands we&apos;ve worked with</Kicker>
       <Title>Videos for teams shipping on X.</Title>
-      <div className="mt-auto flex flex-wrap items-center gap-x-[5cqw] gap-y-[2cqw]">
+      <div className="my-auto grid grid-cols-3 items-center justify-items-center gap-x-[4cqw] gap-y-[4cqw]">
         {CLIENTS.length > 0
           ? CLIENTS.map((c) => (
               <Image key={c.name} src={c.logo} alt={c.name} width={c.width} height={c.height} style={{ height: `${2.6 * (c.scale ?? 1)}cqw` }} className="w-auto brightness-0 invert opacity-80" />
@@ -343,9 +342,9 @@ function ProcessSlide() {
       <Title>
         From call to final cut in <span className="whitespace-nowrap">{TURNAROUND}</span>.
       </Title>
-      <div className="mt-auto grid grid-cols-5 gap-[1cqw]">
+      <div className="my-auto grid grid-cols-5 gap-[1cqw]">
         {PROCESS.map((s, i) => (
-          <div key={s.title} className="rounded-[1.2cqw] border border-default bg-surface p-[1.6cqw]">
+          <div key={s.title} className="rounded-[1.2cqw] border border-default bg-surface p-[2cqw]">
             <span
               className={cn(
                 "flex h-[2.6cqw] w-[2.6cqw] items-center justify-center rounded-full font-mono text-[1.1cqw]",
@@ -354,8 +353,8 @@ function ProcessSlide() {
             >
               {i + 1}
             </span>
-            <p className="mt-[2cqw] text-[1.5cqw] font-semibold tracking-tight text-foreground">{s.title}</p>
-            <p className="mt-[0.6cqw] text-[1.05cqw] leading-relaxed text-secondary-foreground">{s.body}</p>
+            <p className="mt-[2cqw] text-[1.9cqw] font-semibold tracking-tight text-foreground">{s.title}</p>
+            <p className="mt-[0.6cqw] text-[1.4cqw] leading-relaxed text-secondary-foreground">{s.body}</p>
           </div>
         ))}
       </div>
@@ -374,13 +373,13 @@ function WhyUsSlide() {
     <Pad>
       <Kicker>Why brands work with us</Kicker>
       <Title>Built for the feed. Zero risk to try.</Title>
-      <div className="mt-auto grid grid-cols-2 gap-[1.2cqw]">
+      <div className="my-auto grid grid-cols-2 gap-[1.2cqw]">
         {reasons.map((r) => (
-          <div key={r.t} className="flex gap-[1.6cqw] rounded-[1.2cqw] border border-default bg-surface p-[2cqw]">
+          <div key={r.t} className="flex gap-[2cqw] rounded-[1.2cqw] border border-default bg-surface p-[2cqw]">
             <span className="mt-[0.5cqw] h-[1cqw] w-[1cqw] shrink-0 rotate-45 bg-accent-primary" />
             <div>
-              <p className="text-[1.7cqw] font-semibold tracking-tight text-foreground">{r.t}</p>
-              <p className="mt-[0.5cqw] text-[1.15cqw] leading-relaxed text-secondary-foreground">{r.b}</p>
+              <p className="text-[2cqw] font-semibold tracking-tight text-foreground">{r.t}</p>
+              <p className="mt-[0.5cqw] text-[1.45cqw] leading-relaxed text-secondary-foreground">{r.b}</p>
             </div>
           </div>
         ))}
@@ -394,19 +393,19 @@ function TestimonialsSlide() {
     <Pad>
       <Kicker>Clients</Kicker>
       <Title>Clients come back for more.</Title>
-      <div className="mt-auto grid grid-cols-4 gap-[1.2cqw]">
+      <div className="my-auto grid grid-cols-4 gap-[1.2cqw]">
         {TESTIMONIALS.slice(0, 4).map((t) => (
-          <div key={t.name} className="flex flex-col rounded-[1.4cqw] border border-default bg-surface p-[1.6cqw]">
+          <div key={t.name} className="flex flex-col rounded-[1.4cqw] border border-default bg-surface p-[2cqw]">
             <div className="flex items-center justify-between border-b border-default pb-[1cqw]">
               <span>
-                <span className="block text-[1.2cqw] font-semibold text-foreground">{t.name}</span>
+                <span className="block text-[1.4cqw] font-semibold text-foreground">{t.name}</span>
                 <span className="block text-[0.95cqw] text-muted-foreground">{t.company}</span>
               </span>
               <span className="font-mono text-[0.8cqw] uppercase tracking-[0.16em] text-muted-foreground">{t.source}</span>
             </div>
             <div className="mt-[1cqw] flex flex-col gap-[0.6cqw]">
               {t.messages.map((m, i) => (
-                <p key={i} className="w-fit rounded-[1cqw] rounded-bl-[0.3cqw] bg-elevated px-[1.1cqw] py-[0.7cqw] text-[1.15cqw] leading-snug text-foreground">
+                <p key={i} className="w-fit rounded-[1cqw] rounded-bl-[0.3cqw] bg-elevated px-[1.1cqw] py-[0.7cqw] text-[1.35cqw] leading-snug text-foreground">
                   {m}
                 </p>
               ))}
@@ -430,9 +429,9 @@ function StartSlide() {
     <Pad>
       <div className="pointer-events-none absolute -bottom-[14cqw] -left-[8cqw] h-[36cqw] w-[36cqw] rounded-full bg-accent-primary/15 blur-[8cqw]" />
       <Kicker>Start a project</Kicker>
-      <div className="relative mt-[1.4cqw] grid flex-1 grid-cols-[1.1fr_1fr] gap-[4cqw]">
+      <div className="relative mt-[1.4cqw] grid flex-1 grid-cols-[1.25fr_1fr] items-center gap-[4cqw]">
         <div>
-          <h2 className="text-[6cqw] font-semibold leading-[0.92] tracking-[-0.05em] text-foreground">
+          <h2 className="text-[5cqw] font-semibold leading-[0.95] tracking-[-0.05em] text-balance text-foreground">
             Make your next launch impossible to scroll past.
           </h2>
           <ol className="mt-[2.4cqw] space-y-[0.8cqw] text-[1.35cqw] text-secondary-foreground">

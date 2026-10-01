@@ -14,7 +14,7 @@ export function Section({
   className?: string;
 }) {
   return (
-    <section id={id} className={cn("mx-auto w-full max-w-7xl px-4 py-20 sm:px-8 sm:py-28", className)}>
+    <section id={id} className={cn("mx-auto w-full max-w-7xl px-4 py-16 sm:px-8 sm:py-24", className)}>
       {children}
     </section>
   );
@@ -34,15 +34,17 @@ export function SectionHeading({
   className?: string;
   action?: ReactNode;
 }) {
+  // In a two-column section the heading column must hug the top, not the
+  // bottom; callers pass "md:sticky md:top-24 self-start" for that.
   return (
     <Reveal className={cn("mb-12 flex flex-col gap-6 sm:mb-16 md:flex-row md:items-end md:justify-between", className)}>
       <div className="max-w-3xl">
         <Eyebrow>{eyebrow}</Eyebrow>
-        <h2 className="mt-4 text-[clamp(34px,5.2vw,68px)] font-semibold leading-[0.98] tracking-[-0.035em] text-foreground">
+        <h2 className="mt-4 text-[clamp(34px,5.2vw,68px)] font-semibold leading-[0.98] tracking-[-0.035em] text-balance text-foreground">
           {title}
         </h2>
         {lead ? (
-          <p className="mt-5 max-w-xl text-base leading-relaxed text-secondary-foreground sm:text-lg">{lead}</p>
+          <p className="mt-5 max-w-xl text-base leading-relaxed text-pretty text-secondary-foreground sm:text-lg">{lead}</p>
         ) : null}
       </div>
       {action ? <div className="shrink-0">{action}</div> : null}

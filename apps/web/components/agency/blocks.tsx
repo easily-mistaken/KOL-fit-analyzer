@@ -43,7 +43,7 @@ export function PromiseBar() {
   return (
     <div className="mx-auto grid max-w-7xl gap-px overflow-hidden px-4 sm:px-8 md:grid-cols-4">
       {PROMISES.map((p, i) => (
-        <Reveal key={p.title} delay={i * 80} className="border-l border-default py-8 pl-6 pr-4 first:border-l-0 max-md:border-l-0 max-md:border-t max-md:first:border-t-0 md:first:pl-0">
+        <Reveal key={p.title} delay={i * 80} className="border-default py-7 pr-4 max-md:border-t max-md:first:border-t-0 md:border-l md:py-8 md:pl-6 md:first:border-l-0 md:first:pl-0">
           <p className="text-lg font-semibold tracking-tight text-foreground">{p.title}</p>
           <p className="mt-1.5 text-sm leading-relaxed text-secondary-foreground">{p.body}</p>
         </Reveal>
@@ -76,7 +76,8 @@ export function StylesGrid() {
               <VideoFrame
                 video={PROJECTS.find((p) => p.category === c.id && p.video)?.video ?? null}
                 category={c.id}
-                className="absolute inset-0 opacity-60 transition-opacity duration-500 group-hover:opacity-100"
+                fill
+                className="opacity-60 transition-opacity duration-500 group-hover:opacity-100"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-base via-base/60 to-transparent" />
               <div className="relative p-6">
@@ -225,11 +226,10 @@ export function ToolPromo() {
           <span className="rounded-full bg-elevated px-3 py-1 font-mono text-[11px] uppercase tracking-[0.16em] text-accent-ink">
             Free tool
           </span>
-          <h2 className="mt-5 text-[clamp(28px,3.6vw,44px)] font-semibold leading-[1.02] tracking-[-0.03em] text-foreground">
+          <h2 className="mt-5 text-[clamp(28px,3.6vw,44px)] font-semibold leading-[1.02] tracking-[-0.03em] text-balance text-foreground">
             Paying a creator to post your video? Check who actually listens first.
           </h2>
-          <p className="mt-4 max-w-lg leading-relaxed text-secondary-foreground">
-            Creator Fit reads the accounts that really engage with an X creator and scores how well that audience
+          <p className="mt-4 max-w-lg leading-relaxed text-pretty text-secondary-foreground">            Creator Fit reads the accounts that really engage with an X creator and scores how well that audience
             matches the people you want to reach.
           </p>
           <GhostLink href="/creator-fit" className="mt-7">
@@ -253,7 +253,7 @@ export function FinalCta() {
     <Section className="pb-28">
       <Reveal className="relative overflow-hidden rounded-[32px] border border-default bg-surface px-6 py-16 text-center sm:px-12 sm:py-24">
         <div className="pointer-events-none absolute left-1/2 top-0 h-64 w-[640px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent-primary/20 blur-[100px]" />
-        <h2 className="relative mx-auto max-w-4xl text-[clamp(36px,6vw,84px)] font-semibold leading-[0.95] tracking-[-0.045em] text-foreground">
+        <h2 className="relative mx-auto max-w-4xl text-[clamp(36px,6vw,84px)] font-semibold leading-[0.95] tracking-[-0.045em] text-balance text-foreground">
           Make your next launch impossible to scroll past.
         </h2>
         <p className="relative mx-auto mt-6 max-w-xl text-lg text-secondary-foreground">

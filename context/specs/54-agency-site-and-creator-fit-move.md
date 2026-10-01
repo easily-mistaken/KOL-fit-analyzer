@@ -29,7 +29,7 @@ alongside the site and shares its visual identity.
 - Testimonials: real client chat messages only, verbatim (sentence-case capitalisation allowed), shown as Telegram-style threads with name and company. Source screenshots live in `~/overlapx-assets/testimonials/`.
 - Portfolio categories (the user's asset folders): AI, Motion Graphics, Hype,
   Fast Cuts, Others.
-- Brochure is required.
+- Brochure is required, and **must be regenerated (`node scripts/export-deck.mjs`) and deployed in the same change as any content update** (new videos, testimonials, logos, copy). User rule, 2026-10-02.
 
 ## Decisions delegated to Claude
 

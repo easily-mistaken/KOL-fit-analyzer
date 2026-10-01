@@ -48,7 +48,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
           <ArrowLeft className="h-4 w-4" /> All work
         </Link>
         <p className="mt-8 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{cat.title}</p>
-        <h1 className="mt-3 max-w-4xl text-[clamp(38px,6vw,84px)] font-semibold leading-[0.95] tracking-[-0.045em] text-foreground">
+        <h1 className="mt-3 max-w-4xl text-[clamp(38px,6vw,84px)] font-semibold leading-[0.95] tracking-[-0.045em] text-balance text-foreground">
           {project.title}
         </h1>
       </Section>
@@ -59,7 +59,11 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
           category={project.category}
           aspect={project.aspect}
           controls
-          className={project.aspect === "9:16" ? "mx-auto max-h-[80vh] w-auto rounded-3xl border border-default" : "rounded-3xl border border-default"}
+          className={
+            project.aspect === "16:9"
+              ? "rounded-3xl border border-default"
+              : "mx-auto w-full max-w-xl rounded-3xl border border-default"
+          }
         />
       </div>
 

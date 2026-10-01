@@ -27,6 +27,12 @@ export default function ContactPage() {
       />
       <div className="grid gap-8 lg:grid-cols-[1.5fr_1fr]">
         <Reveal className="overflow-hidden rounded-3xl border border-default bg-surface">
+          {/* Calendly's free plan ignores colour params and renders white, so
+              a dark header frames it as part of the page. */}
+          <div className="flex items-center justify-between gap-4 border-b border-default px-6 py-4">
+            <span className="text-sm font-semibold text-foreground">Book a quick call</span>
+            <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">15 min · Calendly</span>
+          </div>
           <iframe
             title="Book a call with OverlapX"
             src={`${CONTACT.calendly}?embed_type=Inline&hide_gdpr_banner=1&background_color=111419&text_color=ffffff&primary_color=bef54b`}

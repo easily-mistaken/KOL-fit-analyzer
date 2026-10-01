@@ -4,7 +4,7 @@ import { Reveal } from "@/components/agency/reveal";
 import { Section, SectionHeading } from "@/components/agency/section";
 import { FinalCta, ProcessSteps, ToolPromo, WhyX } from "@/components/agency/blocks";
 import { Testimonials } from "@/components/agency/proof";
-import { AUDIENCES, PROMISES } from "@/lib/agency/content";
+import { PROMISES } from "@/lib/agency/content";
 
 export const metadata: Metadata = {
   title: "About",
@@ -28,7 +28,7 @@ export default function AboutPage() {
         <div className="grid gap-10 md:grid-cols-2">
           <Reveal>
             <p className="text-xl leading-relaxed tracking-tight text-foreground">
-              OverlapX makes videos for {AUDIENCES.map((a) => a.toLowerCase()).join(", ")} that market themselves on X.
+              OverlapX makes videos for crypto brands, products and AI products that market themselves on X.
               We don&apos;t make one generic video and post it everywhere. We make it for a fast, muted, opinionated
               timeline, because that&apos;s where your buyers decide whether to care.
             </p>

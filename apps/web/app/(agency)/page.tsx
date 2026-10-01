@@ -66,7 +66,7 @@ export default function AgencyHomePage() {
       <ToolPromo />
 
       <Section id="faq" className="grid gap-12 md:grid-cols-[1fr_1.4fr]">
-        <SectionHeading eyebrow="FAQ" title="Questions, answered." className="mb-0 sm:mb-0" />
+        <SectionHeading eyebrow="FAQ" title="Questions, answered." className="mb-0 self-start sm:mb-0 md:sticky md:top-24" />
         <Faq />
       </Section>
 
