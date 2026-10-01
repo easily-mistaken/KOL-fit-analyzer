@@ -58,22 +58,50 @@ export interface Metric {
   value: string;
 }
 
+/**
+ * Where portfolio video files live. Defaults to /work-media (public/work-media,
+ * kept out of git and synced to the server). Set NEXT_PUBLIC_WORK_MEDIA_BASE to
+ * serve the same filenames from a video host instead; nothing else changes.
+ */
+const MEDIA_BASE = (process.env.NEXT_PUBLIC_WORK_MEDIA_BASE ?? "/work-media").replace(/\/+$/, "");
+
+export interface ProjectVideo {
+  /** Full video, played with controls on the project page. */
+  src: string;
+  /** Short silent loop for grids and the hero timeline. */
+  preview?: string;
+  poster?: string;
+}
+
+/** Builds the media URLs for a project from its slug (see MEDIA_BASE). */
+function media(slug: string): ProjectVideo {
+  return {
+    src: `${MEDIA_BASE}/${slug}.mp4`,
+    preview: `${MEDIA_BASE}/${slug}-preview.mp4`,
+    poster: `/work/posters/${slug}.jpg`,
+  };
+}
+
 export interface Project {
   slug: string;
   title: string;
-  /** null when the client cannot be named (NDA / white-label). */
+  /** null when no client is credited (NDA, white-label, or our own piece). */
   client: string | null;
   category: WorkCategory;
   aspect: Aspect;
   year?: number;
   durationSeconds?: number;
   featured?: boolean;
-  /** Direct, streamable file URL (Bunny Stream MP4 or any host) + poster. */
-  video: { src: string; poster?: string } | null;
-  xUrl?: string;
+  video: ProjectVideo | null;
+  /** The public post the video ran in, and where. */
+  post?: { url: string; platform: "X" | "LinkedIn" };
   objective?: string;
   approach?: string;
   metrics?: Metric[];
+  /** When/where the public counts in `metrics` were read. */
+  metricsNote?: string;
+  /** Featured as the results spotlight on the home page. */
+  spotlight?: boolean;
 }
 
 /** A placeholder tile shown only while PROJECTS is empty. */
@@ -83,7 +111,140 @@ export interface PreviewSlot {
   aspect: Aspect;
 }
 
-export const PROJECTS: Project[] = [];
+// Order = display order. Metrics are the public counts on the post, read
+// 2026-10-01; they are labelled with that date wherever they render in full.
+const COUNTS_NOTE = "Public counts on the post, 1 Oct 2026";
+
+export const PROJECTS: Project[] = [
+  {
+    slug: "outcome-sports-markets",
+    title: "Sports markets go live",
+    client: "Outcome",
+    category: "hype",
+    aspect: "16:9",
+    year: 2026,
+    durationSeconds: 19,
+    featured: true,
+    video: media("outcome-sports-markets"),
+    post: { url: "https://x.com/Outcomexyz/status/2095861545435545606", platform: "X" },
+    objective:
+      "Announce Outcome's first sports prediction market, live on Hyperliquid, and get traders in for the Premier League season.",
+    approach:
+      "A 19-second hype edit that slams real match footage against Outcome's own product UI, with punchy type beats (Trade and earn, Up to $1M in rewards) and a branded sports ticker to close.",
+    metrics: [
+      { label: "views", value: "127K" },
+      { label: "likes", value: "344" },
+      { label: "reposts", value: "39" },
+      { label: "replies", value: "59" },
+    ],
+    metricsNote: COUNTS_NOTE,
+    spotlight: true,
+  },
+  {
+    slug: "chicago-ai-film",
+    title: "A cinematic AI film, set in Chicago",
+    client: null,
+    category: "ai",
+    aspect: "16:9",
+    year: 2026,
+    durationSeconds: 87,
+    featured: true,
+    video: media("chicago-ai-film"),
+    post: { url: "https://x.com/Bartlugm/status/2097304692963385413", platform: "X" },
+    objective: "Show what a fully AI-generated brand film can look like at the level of a real shoot.",
+    approach:
+      "An 87-second narrative film: characters, cars, city streets and iridescent product hero shots, all AI-generated, cut like a trailer and closing on the Solana mark.",
+  },
+  {
+    slug: "webacy-dd-ai",
+    title: "DD AI launch",
+    client: "Webacy",
+    category: "motion-graphics",
+    aspect: "16:9",
+    year: 2026,
+    durationSeconds: 24,
+    featured: true,
+    video: media("webacy-dd-ai"),
+    post: { url: "https://x.com/mywebacy/status/2102004211043242297", platform: "X" },
+    objective: "Launch DD AI, Webacy's onchain analyst that gives AI agents risk judgment, to builders on X.",
+    approach:
+      "Product UI in motion, a typed prompt that turns into a full risk report, and kinetic type cycling through what agents can now do, all in Webacy's dark gradient look.",
+    metrics: [
+      { label: "views", value: "5.7K" },
+      { label: "replies", value: "13" },
+      { label: "likes", value: "21" },
+      { label: "reposts", value: "5" },
+    ],
+    metricsNote: COUNTS_NOTE,
+  },
+  {
+    slug: "superteam-map",
+    title: "The map keeps growing",
+    client: null,
+    category: "fast-cuts",
+    aspect: "1:1",
+    year: 2026,
+    durationSeconds: 9,
+    featured: true,
+    video: media("superteam-map"),
+    post: { url: "https://x.com/Bartlugm/status/2101752592942456924", platform: "X" },
+    objective: "Tease a new Superteam chapter joining the Solana ecosystem.",
+    approach:
+      "Nine seconds of rapid cuts across every regional Superteam mark, ending on a question-mark tile and a 'Don't blink, someone new is joining' sign-off.",
+    metrics: [
+      { label: "views", value: "2.7K" },
+      { label: "likes", value: "91" },
+      { label: "replies", value: "18" },
+      { label: "reposts", value: "7" },
+    ],
+    metricsNote: COUNTS_NOTE,
+  },
+  {
+    slug: "avena-esim",
+    title: "One eSIM, everywhere",
+    client: "Avena",
+    category: "others",
+    aspect: "16:9",
+    year: 2026,
+    durationSeconds: 30,
+    featured: true,
+    video: media("avena-esim"),
+    objective: "Introduce Avena's single global eSIM and make setup feel effortless.",
+    approach:
+      "A product film that walks through the real app (install once, choose a destination, activate data) and ends on a journey across the map: Avena travels with you.",
+  },
+  {
+    slug: "cashxchain-launch",
+    title: "Global business accounts launch",
+    client: "CashXChain",
+    category: "motion-graphics",
+    aspect: "16:9",
+    year: 2026,
+    durationSeconds: 30,
+    featured: true,
+    video: media("cashxchain-launch"),
+    post: {
+      url: "https://www.linkedin.com/feed/update/urn:li:ugcPost:7511312567861047297/",
+      platform: "LinkedIn",
+    },
+    objective: "Launch CashXChain's business accounts: named accounts in USD, EUR, GBP and CAD, with payouts in 70+ currencies.",
+    approach:
+      "Kinetic type and currency stacks around the real dashboard, with burned-in captions so the whole story lands with the sound off.",
+  },
+  {
+    slug: "world-teaser",
+    title: "09.09.26 teaser",
+    client: null,
+    category: "ai",
+    aspect: "1:1",
+    year: 2026,
+    durationSeconds: 11,
+    video: media("world-teaser"),
+    post: { url: "https://x.com/Bartlugm/status/2097304692963385413", platform: "X" },
+    objective: "Build anticipation for a World reveal on 9 September 2026.",
+    approach: "A square AI teaser: iridescent orbs travelling through gaming, geopolitics and crowds, landing on the date.",
+  },
+];
 
 export const PREVIEW_SLOTS: PreviewSlot[] = [
   { key: "p1", category: "motion-graphics", aspect: "16:9" },
@@ -133,6 +294,15 @@ export function featuredProjects(limit = 6): Project[] {
 
 export function projectsWithMetrics(): Project[] {
   return PROJECTS.filter((p) => p.metrics && p.metrics.length > 0);
+}
+
+export function spotlightProject(): Project | undefined {
+  return PROJECTS.find((p) => p.spotlight && p.metrics && p.metrics.length > 0);
+}
+
+/** Credited clients, in portfolio order, for the "worked with" strip. */
+export function clientNames(): string[] {
+  return [...new Set(PROJECTS.map((p) => p.client).filter((c): c is string => Boolean(c)))];
 }
 
 export function projectBySlug(slug: string): Project | undefined {

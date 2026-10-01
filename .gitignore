@@ -33,3 +33,8 @@ packages/db/src/generated/
 # Next.js auto-generated (rewritten by every `next dev` / `next build`;
 # the typed-routes import flips between .next/dev/types and .next/types)
 apps/web/next-env.d.ts
+
+# Agency portfolio video files (Unit 54): too large for git. Served from
+# public/work-media locally and synced to the VPS separately (see DEPLOY.md),
+# or from a video host via NEXT_PUBLIC_WORK_MEDIA_BASE.
+apps/web/public/work-media/

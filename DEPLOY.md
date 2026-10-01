@@ -215,6 +215,21 @@ Set these in the platform's env settings (not a committed file). See
 | `TELEGRAM_BOT_TOKEN` + `TELEGRAM_ADMIN_CHAT_ID` | **private** bot that DMs *you* when a lead lands; never shown to users |
 | `NEXT_PUBLIC_CONTACT_TELEGRAM`, `NEXT_PUBLIC_CONTACT_X` | your handles, shown on finished reports |
 
+### Agency video files (Unit 54)
+
+Portfolio videos live in `apps/web/public/work-media/`, which is **gitignored**
+(too large for git), so `git pull` does not bring them. Sync them from the Mac
+**before** `pnpm -r build` on the server (Next only serves `public/` files that
+exist at build time):
+
+```bash
+rsync -av apps/web/public/work-media/ racknerd:/srv/overlapx/apps/web/public/work-media/
+ssh racknerd chown -R overlapx:overlapx /srv/overlapx/apps/web/public/work-media
+```
+
+Moving them to a video host later needs no code change: upload the same
+filenames and set `NEXT_PUBLIC_WORK_MEDIA_BASE` to its URL, then rebuild.
+
 ## Post-deploy checklist
 
 0. **Google OAuth consent screen (once, after Unit 54 ships):** set the

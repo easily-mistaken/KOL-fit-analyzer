@@ -5,9 +5,9 @@ import { cn } from "@/lib/utils";
 import { BookCallButton, GhostLink } from "@/components/agency/buttons";
 import { Reveal } from "@/components/agency/reveal";
 import { Section, SectionHeading } from "@/components/agency/section";
-import { MotionPoster } from "@/components/agency/motion-poster";
 import { CONTACT, FAQS, PLANS, PROCESS, PROMISES, TURNAROUND, WHY_X } from "@/lib/agency/content";
-import { WORK_CATEGORIES } from "@/lib/agency/work";
+import { PROJECTS, WORK_CATEGORIES } from "@/lib/agency/work";
+import { VideoFrame } from "@/components/agency/video-frame";
 
 const STYLE_WORDS = [
   "Motion graphics",
@@ -67,7 +67,12 @@ export function StylesGrid() {
               href={`/work?style=${c.id}`}
               className="group relative flex h-full min-h-[300px] flex-col justify-end overflow-hidden rounded-2xl border border-default"
             >
-              <MotionPoster category={c.id} className="absolute inset-0 opacity-70 transition-opacity duration-500 group-hover:opacity-100" />
+              {/* A real piece from the category when there is one, else its poster animation. */}
+              <VideoFrame
+                video={PROJECTS.find((p) => p.category === c.id && p.video)?.video ?? null}
+                category={c.id}
+                className="absolute inset-0 opacity-60 transition-opacity duration-500 group-hover:opacity-100"
+              />
               <div className="absolute inset-0 bg-gradient-to-t from-base via-base/60 to-transparent" />
               <div className="relative p-6">
                 <div className="flex items-center justify-between">

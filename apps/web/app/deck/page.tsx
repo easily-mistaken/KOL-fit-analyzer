@@ -19,13 +19,15 @@ import {
 } from "@/lib/agency/content";
 import {
   CLIENTS,
+  PROJECTS,
   PREVIEW_SLOTS,
   TEAM,
   TESTIMONIALS,
   WORK_CATEGORIES,
   categoryById,
   featuredProjects,
-  projectsWithMetrics,
+  clientNames,
+  spotlightProject,
 } from "@/lib/agency/work";
 
 // ============================================================================
@@ -49,15 +51,16 @@ const SITE = "overlapx.com";
 
 export default function DeckPage() {
   const featured = featuredProjects(4);
-  const results = projectsWithMetrics();
+  const spotlight = spotlightProject();
+  const clients = clientNames();
   const slides: ReactNode[] = [
     <CoverSlide key="cover" />,
     <WhatSlide key="what" />,
     <WhyXSlide key="why" />,
     <StylesSlide key="styles" />,
     <WorkSlide key="work" featured={featured} />,
-    CLIENTS.length > 0 ? <ClientsSlide key="clients" /> : null,
-    results.length > 0 ? <ResultsSlide key="results" results={results} /> : null,
+    CLIENTS.length > 0 || clients.length > 0 ? <ClientsSlide key="clients" names={clients} /> : null,
+    spotlight ? <ResultsSlide key="results" project={spotlight} /> : null,
     <ProcessSlide key="process" />,
     <PricingSlide key="pricing" />,
     <WhyUsSlide key="why-us" />,
@@ -207,7 +210,7 @@ function StylesSlide() {
       <div className="mt-auto grid grid-cols-5 gap-[1cqw]">
         {WORK_CATEGORIES.map((c) => (
           <div key={c.id} className="overflow-hidden rounded-[1.2cqw] border border-default bg-surface">
-            <MotionPoster category={c.id} className="aspect-[4/3]" />
+            <StylePoster category={c.id} />
             <div className="p-[1.3cqw]">
               <p className="font-mono text-[0.85cqw] uppercase tracking-[0.16em] text-accent-ink">{c.plan}</p>
               <p className="mt-[0.5cqw] text-[1.45cqw] font-semibold tracking-tight text-foreground">{c.title}</p>
@@ -220,6 +223,18 @@ function StylesSlide() {
   );
 }
 
+/** A real poster from the category when one exists, else its animation. */
+function StylePoster({ category }: { category: (typeof WORK_CATEGORIES)[number]["id"] }) {
+  const poster = PROJECTS.find((p) => p.category === category && p.video?.poster)?.video?.poster;
+  return poster ? (
+    <div className="relative aspect-[4/3]">
+      <Image src={poster} alt="" fill className="object-cover" />
+    </div>
+  ) : (
+    <MotionPoster category={category} className="aspect-[4/3]" />
+  );
+}
+
 function WorkSlide({ featured }: { featured: ReturnType<typeof featuredProjects> }) {
   const tiles =
     featured.length > 0
@@ -229,7 +244,7 @@ function WorkSlide({ featured }: { featured: ReturnType<typeof featuredProjects>
           poster: p.video?.poster,
           title: p.title,
           sub: [categoryById(p.category).label, p.client].filter(Boolean).join(" · "),
-          href: p.xUrl ?? `https://${SITE}/work/${p.slug}`,
+          href: `https://${SITE}/work/${p.slug}`,
         }))
       : PREVIEW_SLOTS.slice(0, 4).map((s) => ({
           key: s.key,
@@ -269,34 +284,51 @@ function WorkSlide({ featured }: { featured: ReturnType<typeof featuredProjects>
   );
 }
 
-function ClientsSlide() {
+function ClientsSlide({ names }: { names: string[] }) {
   return (
     <Pad>
       <Kicker>Brands we&apos;ve worked with</Kicker>
-      <Title>Trusted by teams shipping on X.</Title>
-      <div className="mt-auto grid grid-cols-5 items-center gap-[3cqw]">
-        {CLIENTS.map((c) => (
-          <Image key={c.name} src={c.logo} alt={c.name} width={200} height={60} className="h-[3cqw] w-auto opacity-80" />
-        ))}
+      <Title>Videos for teams shipping on X.</Title>
+      <div className="mt-auto flex flex-wrap items-center gap-x-[5cqw] gap-y-[2cqw]">
+        {CLIENTS.length > 0
+          ? CLIENTS.map((c) => (
+              <Image key={c.name} src={c.logo} alt={c.name} width={200} height={60} className="h-[3cqw] w-auto opacity-80" />
+            ))
+          : names.map((n) => (
+              <span key={n} className="text-[4.2cqw] font-semibold tracking-[-0.04em] text-secondary-foreground">
+                {n}
+              </span>
+            ))}
       </div>
     </Pad>
   );
 }
 
-function ResultsSlide({ results }: { results: ReturnType<typeof projectsWithMetrics> }) {
+function ResultsSlide({ project: p }: { project: NonNullable<ReturnType<typeof spotlightProject>> }) {
   return (
     <Pad>
       <Kicker>Results</Kicker>
-      <Title>Numbers from the timeline.</Title>
-      <div className="mt-auto grid grid-cols-3 gap-[1.2cqw]">
-        {results.slice(0, 3).map((p) => (
-          <div key={p.slug} className="rounded-[1.2cqw] border border-default bg-surface p-[2cqw]">
-            <p className="font-mono text-[0.9cqw] uppercase tracking-[0.16em] text-muted-foreground">{p.client ?? "Client under NDA"}</p>
-            <p className="mt-[1.4cqw] text-[4.4cqw] font-semibold leading-none tracking-[-0.04em] text-foreground">{p.metrics![0]!.value}</p>
-            <p className="mt-[0.5cqw] text-[1.2cqw] text-secondary-foreground">{p.metrics![0]!.label}</p>
-            <p className="mt-[1.4cqw] text-[1.2cqw] text-foreground">{p.title}</p>
+      <div className="mt-[1.4cqw] grid flex-1 grid-cols-[1.25fr_1fr] items-center gap-[3cqw]">
+        <a href={`https://${SITE}/work/${p.slug}`} className="relative block aspect-video overflow-hidden rounded-[1.2cqw] border border-default">
+          {p.video?.poster ? <Image src={p.video.poster} alt="" fill className="object-cover" /> : null}
+        </a>
+        <div>
+          <p className="font-mono text-[0.95cqw] uppercase tracking-[0.16em] text-muted-foreground">
+            {[p.client, categoryById(p.category).label].filter(Boolean).join(" · ")}
+          </p>
+          <p className="mt-[0.6cqw] text-[3.2cqw] font-semibold leading-none tracking-[-0.04em] text-foreground">{p.title}</p>
+          <div className="mt-[2cqw] grid grid-cols-2 gap-[1cqw]">
+            {p.metrics!.map((m, i) => (
+              <div key={m.label} className="rounded-[1cqw] border border-default bg-surface p-[1.4cqw]">
+                <p className={cn("font-semibold leading-none tracking-[-0.04em]", i === 0 ? "text-[3.6cqw] text-accent-ink" : "text-[2.4cqw] text-foreground")}>
+                  {m.value}
+                </p>
+                <p className="mt-[0.4cqw] text-[1.1cqw] text-secondary-foreground">{m.label}</p>
+              </div>
+            ))}
           </div>
-        ))}
+          {p.metricsNote ? <p className="mt-[1cqw] text-[0.9cqw] text-muted-foreground">{p.metricsNote}.</p> : null}
+        </div>
       </div>
     </Pad>
   );

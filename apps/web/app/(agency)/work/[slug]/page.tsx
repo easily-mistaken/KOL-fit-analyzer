@@ -34,7 +34,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
   const next = PROJECTS[(idx + 1) % PROJECTS.length];
 
   const facts = [
-    { label: "Client", value: project.client ?? "Under NDA" },
+    ...(project.client ? [{ label: "Client", value: project.client }] : []),
     { label: "Style", value: cat.label },
     { label: "Format", value: project.aspect },
     ...(project.durationSeconds ? [{ label: "Length", value: `${project.durationSeconds}s` }] : []),
@@ -71,14 +71,14 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
               <dd className="mt-1 text-foreground">{f.value}</dd>
             </div>
           ))}
-          {project.xUrl ? (
+          {project.post ? (
             <a
-              href={project.xUrl}
+              href={project.post.url}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 text-sm font-medium text-accent-ink hover:underline"
             >
-              View on X <ArrowUpRight className="h-4 w-4" />
+              View on {project.post.platform} <ArrowUpRight className="h-4 w-4" />
             </a>
           ) : null}
         </dl>
@@ -89,7 +89,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
           {project.metrics && project.metrics.length > 0 ? (
             <div>
               <h2 className="font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Result</h2>
-              <div className="mt-4 grid gap-4 sm:grid-cols-3">
+              <div className="mt-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
                 {project.metrics.map((m) => (
                   <div key={m.label} className="rounded-2xl border border-default bg-surface p-6">
                     <p className="text-4xl font-semibold tracking-[-0.04em] text-foreground">{m.value}</p>
@@ -97,6 +97,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                   </div>
                 ))}
               </div>
+              {project.metricsNote ? <p className="mt-3 text-xs text-muted-foreground">{project.metricsNote}.</p> : null}
             </div>
           ) : null}
         </div>

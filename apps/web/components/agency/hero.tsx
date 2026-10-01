@@ -11,6 +11,7 @@ import {
   PROJECTS,
   categoryById,
   type Aspect,
+  type ProjectVideo,
   type WorkCategory,
 } from "@/lib/agency/work";
 
@@ -18,7 +19,7 @@ interface Post {
   key: string;
   category: WorkCategory;
   aspect: Aspect;
-  video: { src: string; poster?: string } | null;
+  video: ProjectVideo | null;
   caption: string;
 }
 

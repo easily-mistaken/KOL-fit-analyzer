@@ -61,6 +61,7 @@ function ProjectCard({ project }: { project: Project }) {
           video={project.video}
           category={project.category}
           aspect="16:9"
+          fit={project.aspect === "16:9" ? "cover" : "contain"}
           className="transition-transform duration-700 group-hover:scale-[1.02]"
         />
       </div>

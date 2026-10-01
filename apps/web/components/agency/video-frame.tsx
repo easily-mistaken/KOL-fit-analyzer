@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 
 import { cn } from "@/lib/utils";
-import type { Aspect, WorkCategory } from "@/lib/agency/work";
+import type { Aspect, ProjectVideo, WorkCategory } from "@/lib/agency/work";
 import { MotionPoster } from "@/components/agency/motion-poster";
 
 const ASPECT_CLASS: Record<Aspect, string> = {
@@ -16,7 +16,9 @@ const ASPECT_CLASS: Record<Aspect, string> = {
 /**
  * A video the way the X timeline shows one: muted, looping, playing only while
  * it is on screen (so a grid of twelve never decodes twelve streams at once).
- * With no footage yet it falls back to the category's <MotionPoster>.
+ * Loops use the short preview cut when there is one; the full video (with
+ * sound and controls) plays only on the project page. With no footage yet it
+ * falls back to the category's <MotionPoster>.
  */
 export function VideoFrame({
   video,
@@ -24,13 +26,16 @@ export function VideoFrame({
   aspect = "16:9",
   className,
   controls = false,
+  fit = "cover",
 }: {
-  video: { src: string; poster?: string } | null;
+  video: ProjectVideo | null;
   category: WorkCategory;
   aspect?: Aspect;
   className?: string;
   /** Full player controls (project pages) instead of the silent loop. */
   controls?: boolean;
+  /** "contain" letterboxes footage whose own aspect differs from the frame. */
+  fit?: "cover" | "contain";
 }) {
   const ref = useRef<HTMLVideoElement>(null);
 
@@ -53,14 +58,14 @@ export function VideoFrame({
       {video ? (
         <video
           ref={ref}
-          src={video.src}
+          src={controls ? video.src : (video.preview ?? video.src)}
           poster={video.poster}
           muted={!controls}
           loop={!controls}
           playsInline
           controls={controls}
           preload="metadata"
-          className="absolute inset-0 h-full w-full object-cover"
+          className={cn("absolute inset-0 h-full w-full", fit === "contain" ? "object-contain" : "object-cover")}
         />
       ) : (
         <MotionPoster category={category} className="absolute inset-0" />
