@@ -5,7 +5,6 @@ import { WorkGrid } from "@/components/agency/work-grid";
 import {
   Faq,
   FinalCta,
-  PricingCards,
   ProcessSteps,
   PromiseBar,
   StyleMarquee,
@@ -63,15 +62,6 @@ export default function AgencyHomePage() {
       <Results />
       <Testimonials />
       <ProcessSteps />
-
-      <Section id="pricing">
-        <SectionHeading
-          eyebrow="Pricing"
-          title="Simple pricing. Zero risk."
-          lead="Two fixed-price videos to start, and custom plans for everything else."
-        />
-        <PricingCards />
-      </Section>
 
       <ToolPromo />
 

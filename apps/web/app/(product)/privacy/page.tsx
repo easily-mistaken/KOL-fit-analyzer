@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 // codebase; if the data flow changes, this page changes with it.
 
 const UPDATED = "22 July 2026";
-const CONTACT_EMAIL = "tanmayjain5114@gmail.com";
+const CONTACT_EMAIL = "tanmayjain4477@gmail.com";
 
 export default function PrivacyPage() {
   return (

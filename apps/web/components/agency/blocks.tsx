@@ -52,6 +52,11 @@ export function PromiseBar() {
   );
 }
 
+function projectCount(category: string): string {
+  const n = PROJECTS.filter((p) => p.category === category).length;
+  return n === 0 ? "New" : `${n} project${n === 1 ? "" : "s"}`;
+}
+
 export function StylesGrid() {
   return (
     <Section id="styles">
@@ -77,7 +82,9 @@ export function StylesGrid() {
               <div className="relative p-6">
                 <div className="flex items-center justify-between">
                   <span className="rounded-full border border-strong bg-base/60 px-2.5 py-1 font-mono text-[10px] uppercase tracking-[0.16em] text-secondary-foreground">
-                    {c.plan}
+                    {/* No prices on the home page (user, 2026-10-02): the tag shows
+                        how much of that style is in the portfolio instead. */}
+                    {projectCount(c.id)}
                   </span>
                   <ArrowUpRight className="h-5 w-5 text-foreground opacity-0 transition-opacity group-hover:opacity-100" />
                 </div>

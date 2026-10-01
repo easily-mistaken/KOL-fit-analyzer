@@ -17,6 +17,7 @@ alongside the site and shares its visual identity.
   - Everything else: **Custom plan** (book a call).
 - Payment: **100% after the client loves the video. Nothing upfront.** ("Try us first.")
 - Formats: **every format** included.
+- **No prices on the home page** (user, 2026-10-02). Prices live on /pricing and in the brochure only.
 - Revisions: **never state a number**. Copy says we refine until it is perfect.
 - Turnaround: **4-5 days**.
 - Contact:
