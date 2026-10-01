@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 
 import { Reveal } from "@/components/agency/reveal";
 import { Section, SectionHeading } from "@/components/agency/section";
 import { FinalCta, ProcessSteps, ToolPromo, WhyX } from "@/components/agency/blocks";
+import { Testimonials } from "@/components/agency/proof";
 import { AUDIENCES, PROMISES } from "@/lib/agency/content";
-import { TEAM } from "@/lib/agency/work";
 
 export const metadata: Metadata = {
   title: "About",
@@ -53,31 +52,7 @@ export default function AboutPage() {
       </Section>
 
       <WhyX />
-
-      {/* Team renders only once real members are added to lib/agency/work.ts. */}
-      {TEAM.length > 0 ? (
-        <Section id="team">
-          <SectionHeading eyebrow="Team" title="The people behind the cuts." />
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {TEAM.map((m, i) => (
-              <Reveal key={m.name} delay={(i % 4) * 80}>
-                <div className="aspect-[4/5] overflow-hidden rounded-2xl border border-default bg-surface">
-                  {m.photo ? (
-                    <Image src={m.photo} alt={m.name} width={480} height={600} className="h-full w-full object-cover" />
-                  ) : null}
-                </div>
-                <p className="mt-4 font-semibold text-foreground">{m.name}</p>
-                <p className="text-sm text-secondary-foreground">{m.role}</p>
-                {m.x ? (
-                  <a href={`https://x.com/${m.x}`} target="_blank" rel="noopener noreferrer" className="text-sm text-accent-ink hover:underline">
-                    @{m.x}
-                  </a>
-                ) : null}
-              </Reveal>
-            ))}
-          </div>
-        </Section>
-      ) : null}
+      <Testimonials />
 
       <ProcessSteps />
       <ToolPromo />

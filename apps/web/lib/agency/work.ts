@@ -144,6 +144,30 @@ export const PROJECTS: Project[] = [
     spotlight: true,
   },
   {
+    slug: "kunal-shah-story",
+    title: "The Kunal Shah story",
+    client: null,
+    category: "ai",
+    aspect: "16:9",
+    year: 2026,
+    durationSeconds: 123,
+    featured: true,
+    video: media("kunal-shah-story"),
+    post: { url: "https://x.com/TanmayJain5114/status/2070354874907431014", platform: "X" },
+    objective:
+      "Tell a founder's whole story in two minutes, the week the headlines only covered the ending.",
+    approach:
+      "An AI-animated short in a warm illustrated style: from a family that went bankrupt overnight in Mumbai, through FreeCharge and CRED, to running WhatsApp. Captions carry the narrative so it works on mute.",
+    metrics: [
+      { label: "views", value: "110K" },
+      { label: "likes", value: "461" },
+      { label: "reposts", value: "49" },
+      { label: "replies", value: "34" },
+    ],
+    metricsNote: "Public counts on the post, 2 Oct 2026",
+    spotlight: true,
+  },
+  {
     slug: "webacy-dd-ai",
     title: "DD AI launch",
     client: "Webacy",
@@ -252,23 +276,47 @@ export interface Client {
   logo: string;
 }
 
+/**
+ * What a client actually said, as the messages they sent. Text is verbatim
+ * from the chat screenshots the user supplied (~/overlapx-assets/testimonials),
+ * with only sentence-case capitalisation added. Never paraphrase or merge.
+ */
 export interface Testimonial {
-  quote: string;
   name: string;
-  role: string;
-  avatar?: string;
-}
-
-export interface TeamMember {
-  name: string;
-  role: string;
-  photo?: string;
-  x?: string;
+  company: string;
+  role?: string;
+  messages: string[];
+  source: "Telegram";
 }
 
 export const CLIENTS: Client[] = [];
-export const TESTIMONIALS: Testimonial[] = [];
-export const TEAM: TeamMember[] = [];
+export const TESTIMONIALS: Testimonial[] = [
+  {
+    name: "Ali",
+    company: "Avena",
+    messages: [
+      "Amazing guys, love it.",
+      "Also I will personally order one more motion video, currently preparing script and will share you guys soon.",
+    ],
+    source: "Telegram",
+  },
+  {
+    name: "Maika Isogawa",
+    company: "Webacy",
+    messages: [
+      "Thanks for the quick work!",
+      "We'll have more videos coming, we'd like to have you work on them.",
+      "Someone asked who I worked with on the video, so I gave them your TG handle, in case they reach out to you.",
+    ],
+    source: "Telegram",
+  },
+  {
+    name: "Valentin Israel",
+    company: "CashXChain",
+    messages: ["Thank you so much for the video, we posted the video today."],
+    source: "Telegram",
+  },
+];
 
 export function categoryById(id: WorkCategory) {
   return WORK_CATEGORIES.find((c) => c.id === id)!;
@@ -287,8 +335,8 @@ export function projectsWithMetrics(): Project[] {
   return PROJECTS.filter((p) => p.metrics && p.metrics.length > 0);
 }
 
-export function spotlightProject(): Project | undefined {
-  return PROJECTS.find((p) => p.spotlight && p.metrics && p.metrics.length > 0);
+export function spotlightProjects(): Project[] {
+  return PROJECTS.filter((p) => p.spotlight && p.metrics && p.metrics.length > 0);
 }
 
 /** Credited clients, in portfolio order, for the "worked with" strip. */

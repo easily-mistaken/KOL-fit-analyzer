@@ -61,6 +61,7 @@ export default function AgencyHomePage() {
         </>
       )}
       <Results />
+      <Testimonials />
       <ProcessSteps />
 
       <Section id="pricing">
@@ -72,7 +73,6 @@ export default function AgencyHomePage() {
         <PricingCards />
       </Section>
 
-      <Testimonials />
       <ToolPromo />
 
       <Section id="faq" className="grid gap-12 md:grid-cols-[1fr_1.4fr]">

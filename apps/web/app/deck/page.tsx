@@ -21,13 +21,12 @@ import {
   CLIENTS,
   PROJECTS,
   PREVIEW_SLOTS,
-  TEAM,
   TESTIMONIALS,
   WORK_CATEGORIES,
   categoryById,
   featuredProjects,
   clientNames,
-  spotlightProject,
+  spotlightProjects,
 } from "@/lib/agency/work";
 
 // ============================================================================
@@ -51,7 +50,7 @@ const SITE = "overlapx.com";
 
 export default function DeckPage() {
   const featured = featuredProjects(4);
-  const spotlight = spotlightProject();
+  const spotlights = spotlightProjects();
   const clients = clientNames();
   const slides: ReactNode[] = [
     <CoverSlide key="cover" />,
@@ -60,12 +59,11 @@ export default function DeckPage() {
     <StylesSlide key="styles" />,
     <WorkSlide key="work" featured={featured} />,
     CLIENTS.length > 0 || clients.length > 0 ? <ClientsSlide key="clients" names={clients} /> : null,
-    spotlight ? <ResultsSlide key="results" project={spotlight} /> : null,
+    ...spotlights.map((p) => <ResultsSlide key={`results-${p.slug}`} project={p} />),
     <ProcessSlide key="process" />,
     <PricingSlide key="pricing" />,
     <WhyUsSlide key="why-us" />,
     TESTIMONIALS.length > 0 ? <TestimonialsSlide key="testimonials" /> : null,
-    TEAM.length > 0 ? <TeamSlide key="team" /> : null,
     <StartSlide key="start" />,
   ].filter(Boolean);
 
@@ -304,7 +302,7 @@ function ClientsSlide({ names }: { names: string[] }) {
   );
 }
 
-function ResultsSlide({ project: p }: { project: NonNullable<ReturnType<typeof spotlightProject>> }) {
+function ResultsSlide({ project: p }: { project: ReturnType<typeof spotlightProjects>[number] }) {
   return (
     <Pad>
       <Kicker>Results</Kicker>
@@ -424,33 +422,24 @@ function TestimonialsSlide() {
   return (
     <Pad>
       <Kicker>Clients</Kicker>
-      <Title>What teams say.</Title>
-      <div className="mt-auto grid grid-cols-2 gap-[1.2cqw]">
-        {TESTIMONIALS.slice(0, 2).map((t) => (
-          <div key={t.name} className="rounded-[1.2cqw] border border-default bg-surface p-[2.2cqw]">
-            <p className="text-[1.7cqw] leading-snug tracking-tight text-foreground">&ldquo;{t.quote}&rdquo;</p>
-            <p className="mt-[1.6cqw] text-[1.1cqw] font-semibold text-foreground">{t.name}</p>
-            <p className="text-[1cqw] text-muted-foreground">{t.role}</p>
-          </div>
-        ))}
-      </div>
-    </Pad>
-  );
-}
-
-function TeamSlide() {
-  return (
-    <Pad>
-      <Kicker>Team</Kicker>
-      <Title>The people behind the cuts.</Title>
-      <div className="mt-auto grid grid-cols-4 gap-[1.6cqw]">
-        {TEAM.slice(0, 4).map((m) => (
-          <div key={m.name}>
-            <div className="relative aspect-[4/5] overflow-hidden rounded-[1.2cqw] border border-default bg-surface">
-              {m.photo ? <Image src={m.photo} alt={m.name} fill className="object-cover" /> : null}
+      <Title>Clients come back for more.</Title>
+      <div className="mt-auto grid grid-cols-3 gap-[1.2cqw]">
+        {TESTIMONIALS.slice(0, 3).map((t) => (
+          <div key={t.name} className="flex flex-col rounded-[1.4cqw] border border-default bg-surface p-[1.6cqw]">
+            <div className="flex items-center justify-between border-b border-default pb-[1cqw]">
+              <span>
+                <span className="block text-[1.2cqw] font-semibold text-foreground">{t.name}</span>
+                <span className="block text-[0.95cqw] text-muted-foreground">{t.company}</span>
+              </span>
+              <span className="font-mono text-[0.8cqw] uppercase tracking-[0.16em] text-muted-foreground">{t.source}</span>
             </div>
-            <p className="mt-[0.9cqw] text-[1.4cqw] font-semibold text-foreground">{m.name}</p>
-            <p className="text-[1.05cqw] text-secondary-foreground">{m.role}</p>
+            <div className="mt-[1cqw] flex flex-col gap-[0.6cqw]">
+              {t.messages.map((m, i) => (
+                <p key={i} className="w-fit rounded-[1cqw] rounded-bl-[0.3cqw] bg-elevated px-[1.1cqw] py-[0.7cqw] text-[1.15cqw] leading-snug text-foreground">
+                  {m}
+                </p>
+              ))}
+            </div>
           </div>
         ))}
       </div>

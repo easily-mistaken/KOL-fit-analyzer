@@ -25,7 +25,8 @@ alongside the site and shares its visual identity.
   - Telegram: tanmayjain5114
   - Email: tanmay@overlapx.com
   - Calendly (primary CTA): https://calendly.com/tanmayjain4477/quick-call
-- Team section: yes, details supplied later.
+- Team section: **no** (user, 2026-10-02). Do not add one.
+- Testimonials: real client chat messages only, verbatim (sentence-case capitalisation allowed), shown as Telegram-style threads with name and company. Source screenshots live in `~/overlapx-assets/testimonials/`.
 - Portfolio categories (the user's asset folders): AI, Motion Graphics, Hype,
   Fast Cuts, Others.
 - Brochure is required.
