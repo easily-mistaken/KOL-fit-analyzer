@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 
 import { Section, SectionHeading } from "@/components/agency/section";
-import { Faq, FinalCta, PricingCards, ProcessSteps } from "@/components/agency/blocks";
+import { Faq, FinalCta, PricingFactors, ProcessSteps } from "@/components/agency/blocks";
 import { TURNAROUND } from "@/lib/agency/content";
 
 export const metadata: Metadata = {
   title: "Pricing",
-  description: `Motion graphics and AI videos from $999, delivered in ${TURNAROUND}. Pay only when you love it.`,
+  description: `Every OverlapX video is quoted for its brief: length, style and quality level. Most ship in ${TURNAROUND}, and you pay only when you love it.`,
 };
 
 export default function PricingPage() {
@@ -15,10 +15,10 @@ export default function PricingPage() {
       <Section>
         <SectionHeading
           eyebrow="Pricing"
-          title="Simple pricing. Zero risk."
-          lead={`Two fixed-price videos to start, custom plans for everything else. Every video ships in ${TURNAROUND}, in every format, and you pay only once you love it.`}
+          title="Priced for your video, not a menu."
+          lead="Every video is different, so every quote is too. Tell us what you have in mind on a quick call and you get a clear price before any work starts."
         />
-        <PricingCards />
+        <PricingFactors />
       </Section>
       <ProcessSteps />
       <Section className="grid gap-12 md:grid-cols-[1fr_1.4fr]">

@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { BookCallButton, GhostLink } from "@/components/agency/buttons";
 import { Reveal } from "@/components/agency/reveal";
 import { Section, SectionHeading } from "@/components/agency/section";
-import { CONTACT, FAQS, PLANS, PROCESS, PROMISES, TURNAROUND, WHY_X } from "@/lib/agency/content";
+import { CONTACT, FAQS, PRICING_FACTORS, PROCESS, PROMISES, TURNAROUND, WHY_X } from "@/lib/agency/content";
 import { PROJECTS, WORK_CATEGORIES } from "@/lib/agency/work";
 import { VideoFrame } from "@/components/agency/video-frame";
 
@@ -160,56 +160,41 @@ export function ProcessSteps() {
   );
 }
 
-export function PricingCards() {
+/** How a quote is built: the factors, then what is the same on every project. */
+export function PricingFactors() {
   return (
     <>
-      <div className="grid gap-4 lg:grid-cols-3">
-        {PLANS.map((plan, i) => (
-          <Reveal key={plan.id} delay={i * 100}>
-            <div
-              className={cn(
-                "flex h-full flex-col rounded-3xl border p-8",
-                plan.highlight ? "border-accent-primary/60 bg-surface" : "border-default bg-surface"
-              )}
-            >
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold tracking-tight text-foreground">{plan.name}</h3>
-                {plan.highlight ? (
-                  <span className="rounded-full bg-accent-primary px-2.5 py-1 text-[11px] font-semibold text-accent-contrast">
-                    Start here
-                  </span>
-                ) : null}
-              </div>
-              <p className="mt-6 text-[56px] font-semibold leading-none tracking-[-0.04em] text-foreground">{plan.price}</p>
-              <p className="mt-2 font-mono text-[12px] uppercase tracking-[0.14em] text-accent-ink">{plan.unit}</p>
-              <p className="mt-5 text-sm leading-relaxed text-secondary-foreground">{plan.summary}</p>
-              <ul className="mt-6 space-y-3 border-t border-default pt-6">
-                {plan.includes.map((item) => (
-                  <li key={item} className="flex items-start gap-3 text-sm text-foreground">
-                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-accent-ink" />
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <div className="mt-auto pt-8">
-                <BookCallButton
-                  className={cn("w-full", !plan.highlight && "bg-elevated text-foreground hover:bg-inset")}
-                  label={plan.id === "custom" ? "Plan a custom project" : "Book a call"}
-                />
-              </div>
-            </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {PRICING_FACTORS.map((f, i) => (
+          <Reveal key={f.title} delay={i * 90} className="flex h-full flex-col rounded-3xl border border-default bg-surface p-7">
+            <span className="font-mono text-sm text-accent-ink">0{i + 1}</span>
+            <h3 className="mt-5 text-xl font-semibold tracking-tight text-foreground">{f.title}</h3>
+            <p className="mt-2 text-sm leading-relaxed text-secondary-foreground">{f.body}</p>
           </Reveal>
         ))}
       </div>
-      <Reveal className="mt-4 flex flex-col items-start justify-between gap-4 rounded-3xl bg-accent-primary p-8 text-accent-contrast md:flex-row md:items-center">
+      <Reveal className="mt-4 grid gap-8 rounded-3xl bg-accent-primary p-8 text-accent-contrast sm:p-10 lg:grid-cols-[1.2fr_1fr] lg:items-center">
         <div>
-          <p className="text-2xl font-semibold tracking-tight">Pay only when you love it.</p>
-          <p className="mt-1 text-sm opacity-80">
-            Nothing upfront. We refine until it&apos;s perfect, then you pay 100%.
+          <p className="font-mono text-[12px] uppercase tracking-[0.16em] opacity-70">On every project</p>
+          <p className="mt-3 text-3xl font-semibold leading-tight tracking-tight">
+            You see the quote before we start, and you pay only when you love the video.
           </p>
         </div>
-        <span className="font-mono text-[12px] uppercase tracking-[0.16em]">Try us first</span>
+        <ul className="grid gap-3 sm:grid-cols-2">
+          {PROMISES.map((p) => (
+            <li key={p.title} className="flex items-start gap-2.5 text-[15px] font-medium">
+              <Check className="mt-0.5 h-4 w-4 shrink-0" />
+              {p.title}
+            </li>
+          ))}
+        </ul>
       </Reveal>
+      <div className="mt-8 flex flex-wrap items-center gap-3">
+        <BookCallButton size="lg" label="Get a quote" />
+        <GhostLink href={CONTACT.telegram.url} size="lg" external>
+          Message on Telegram
+        </GhostLink>
+      </div>
     </>
   );
 }

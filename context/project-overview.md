@@ -4,7 +4,7 @@
 
 OverlapX is an umbrella brand on one domain:
 
-- **`/` : OverlapX, the video agency.** X-first videos (AI films, motion graphics, hype, fast cuts, product/explainers) for crypto brands, products and AI products. Pricing: $999 for a 30-second motion graphics video, $999 for a 1-minute AI video, custom plans for everything else. Payment is 100% after the client loves the video (nothing upfront), every format included, no stated revision count, 4-5 day turnaround. Primary CTA is a Calendly call. A matching brochure lives at `/deck` (PDF at `/overlapx-deck.pdf`). Full decisions: `context/specs/54-agency-site-and-creator-fit-move.md`.
+- **`/` : OverlapX, the video agency.** X-first videos (AI films, motion graphics, hype, fast cuts, product/explainers) for crypto brands, products and AI products. No public prices: every video is quoted per brief (length, style, quality level). Payment is 100% after the client loves the video (nothing upfront), every format included, no stated revision count, 4-5 day turnaround. Primary CTA is a Calendly call. A matching brochure lives at `/deck` (PDF at `/overlapx-deck.pdf`). Full decisions: `context/specs/54-agency-site-and-creator-fit-move.md`.
 - **`/creator-fit` : Creator Fit, the KOL fit tool** described in the rest of this document, unchanged in behavior. Everything below is about this tool.
 
 ## Overview

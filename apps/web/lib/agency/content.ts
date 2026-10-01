@@ -57,60 +57,28 @@ export const WHY_X = [
   },
 ] as const;
 
-export interface Plan {
-  id: string;
-  name: string;
-  price: string;
-  unit: string;
-  summary: string;
-  includes: string[];
-  highlight?: boolean;
-}
-
-export const PLANS: Plan[] = [
+/**
+ * There are no public prices (user, 2026-10-02): every video is quoted from
+ * its brief. These are the things a quote depends on, shown on /pricing.
+ */
+export const PRICING_FACTORS = [
   {
-    id: "motion-graphics",
-    name: "Motion Graphics",
-    price: "$999",
-    unit: "30-second video",
-    summary: "Clean, kinetic motion design for launches, features and announcements.",
-    includes: [
-      "Concept and script",
-      "Custom motion design",
-      "Music and sound design",
-      "Every format",
-      `Delivered in ${TURNAROUND}`,
-    ],
-    highlight: true,
+    title: "Length",
+    body: "A 15-second teaser and a two-minute story are different jobs.",
   },
   {
-    id: "ai-video",
-    name: "AI Video",
-    price: "$999",
-    unit: "1-minute video",
-    summary: "Cinematic AI-generated films that look like a far bigger budget.",
-    includes: [
-      "Concept and script",
-      "AI-generated cinematic scenes",
-      "Edit, music and sound",
-      "Every format",
-      `Delivered in ${TURNAROUND}`,
-    ],
+    title: "Style",
+    body: "Motion graphics, an AI film, a hype edit or a product walkthrough each take different craft and tools.",
   },
   {
-    id: "custom",
-    name: "Custom",
-    price: "Let's talk",
-    unit: "Built around your launch",
-    summary: "Hype edits, fast cuts, product and UI walkthroughs, explainers, event promos, longer videos and multi-video plans.",
-    includes: [
-      "Any style or length",
-      "Multiple videos and campaigns",
-      "Plan shaped to your goals",
-      "Same pay-when-you-love-it terms",
-    ],
+    title: "Quality level",
+    body: "A clean, simple cut, or a high-end piece with custom design, characters and sound.",
   },
-];
+  {
+    title: "Your brief",
+    body: "What you already have (script, footage, product access, brand assets) and how many videos you need.",
+  },
+] as const;
 
 export const PROCESS = [
   { title: "Quick call", body: "Tell us what you're launching and who it's for. One short call is enough." },
@@ -146,7 +114,11 @@ export const FAQS = [
     a: "Crypto brands, products and AI products that market themselves on X, from first launch to established teams.",
   },
   {
-    q: "What does Custom cover?",
-    a: "Hype edits, fast cuts, product and UI walkthroughs, explainers, launch and event promos, longer videos and multi-video plans. Book a call and we'll shape it around your launch.",
+    q: "How much does a video cost?",
+    a: "It depends on the length, the style, the quality level you're after and what you already have. Tell us on a quick call and you get a clear quote before any work starts.",
+  },
+  {
+    q: "Can you do more than one video?",
+    a: "Yes. Launch packs, series and ongoing work are all quoted around what you need.",
   },
 ] as const;

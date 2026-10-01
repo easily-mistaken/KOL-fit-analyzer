@@ -11,13 +11,12 @@ alongside the site and shares its visual identity.
 - Keep the current logo (`LogoMark` + `Wordmark`) and the acid-lime accent.
 - Tool route: **`/creator-fit`**. The tool keeps all functionality.
 - Target clients: crypto brands, products, AI products.
-- Pricing:
-  - Motion Graphics, 30-second video: **$999**
-  - AI Video, 1-minute video: **$999**
-  - Everything else: **Custom plan** (book a call).
+- Pricing: **no public prices anywhere** (user, 2026-10-02). Price depends on
+  length, style, quality level and the brief, so every video is quoted on a
+  call. /pricing explains those factors and ends in "Get a quote". (The
+  earlier $999 fixed prices are retired.)
 - Payment: **100% after the client loves the video. Nothing upfront.** ("Try us first.")
 - Formats: **every format** included.
-- **No prices on the home page or in the brochure** (user, 2026-10-02). Prices appear on /pricing only.
 - Revisions: **never state a number**. Copy says we refine until it is perfect.
 - Turnaround: **4-5 days**.
 - Contact:

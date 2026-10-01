@@ -17,35 +17,30 @@ export const WORK_CATEGORIES = [
     label: "AI",
     title: "AI films",
     blurb: "Cinematic AI-generated worlds, characters and product shots at a fraction of a shoot's cost.",
-    plan: "From $999",
   },
   {
     id: "motion-graphics",
     label: "Motion Graphics",
     title: "Motion graphics",
     blurb: "Kinetic type, clean shapes and product UI in motion for launches and announcements.",
-    plan: "From $999",
   },
   {
     id: "hype",
     label: "Hype",
     title: "Hype videos",
     blurb: "High-energy teasers built to make a launch, mainnet or event feel inevitable.",
-    plan: "Custom",
   },
   {
     id: "fast-cuts",
     label: "Fast Cuts",
     title: "Fast cuts",
     blurb: "Rapid, rhythm-driven edits that hold attention second by second.",
-    plan: "Custom",
   },
   {
     id: "others",
     label: "Others",
     title: "Product, explainers and more",
     blurb: "UI walkthroughs, explainers, event promos and anything else your launch needs.",
-    plan: "Custom",
   },
 ] as const;
 
