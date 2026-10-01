@@ -213,7 +213,7 @@ export function AnalysisForm() {
       const body = (await res.json()) as ApiResponse<AnalysisCreated>;
       if (body.ok) {
         // Keep loading during navigation to the status page.
-        router.push(`/analyses/${body.data.id}`);
+        router.push(`/creator-fit/analyses/${body.data.id}`);
         return;
       }
       if (
@@ -463,7 +463,7 @@ export function AnalysisForm() {
                 seconds, and your existing reports come with you.
               </p>
               <Button asChild className="mt-3">
-                <a href="/login">Sign in to continue</a>
+                <a href="/creator-fit/login">Sign in to continue</a>
               </Button>
             </div>
           )}
@@ -483,11 +483,11 @@ export function AnalysisForm() {
               <div className="mt-3 flex flex-wrap gap-2">
                 {upgradeTier && (
                   <Button asChild>
-                    <a href="/upgrade">Request {upgradeTier} analyses</a>
+                    <a href="/creator-fit/upgrade">Request {upgradeTier} analyses</a>
                   </Button>
                 )}
                 <Button asChild variant={upgradeTier ? "outline" : "default"}>
-                  <a href="/detailed">Request a curated report</a>
+                  <a href="/creator-fit/detailed">Request a curated report</a>
                 </Button>
               </div>
             </div>
@@ -495,7 +495,7 @@ export function AnalysisForm() {
 
           <p className="text-center text-xs text-muted-foreground">
             Prefer a hands-on review?{" "}
-            <a href="/detailed" className="text-accent-ink underline-offset-2 hover:underline">
+            <a href="/creator-fit/detailed" className="text-accent-ink underline-offset-2 hover:underline">
               Request a curated detailed report
             </a>
             , delivered to your Telegram by an analyst.

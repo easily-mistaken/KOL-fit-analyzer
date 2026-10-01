@@ -33,7 +33,7 @@ export function UserMenu({ user }: { user: AuthUser | null }) {
   if (!user) {
     return (
       <Link
-        href="/login"
+        href="/creator-fit/login"
         className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-secondary-foreground transition-colors hover:bg-elevated/60 hover:text-foreground sm:px-3"
       >
         <LogIn className="h-4 w-4" />

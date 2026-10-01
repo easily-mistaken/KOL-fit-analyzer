@@ -66,7 +66,27 @@ if (
   );
 }
 
+/**
+ * Unit 54: the Creator Fit tool moved from the site root to /creator-fit when
+ * the root became the OverlapX agency. Every old tool URL redirects
+ * permanently (308; query strings carry over) so shared /r/<token> links,
+ * bookmarked reports and report-email links keep working. The root "/" itself
+ * is NOT redirected: it is the agency home now.
+ */
+const MOVED_TOOL_PATHS = ["analyses", "r", "login", "upgrade", "detailed"];
+
 /** @type {import('next').NextConfig} */
-const nextConfig = {};
+const nextConfig = {
+  async redirects() {
+    return MOVED_TOOL_PATHS.flatMap((p) => [
+      { source: `/${p}`, destination: `/creator-fit/${p}`, permanent: true },
+      {
+        source: `/${p}/:rest*`,
+        destination: `/creator-fit/${p}/:rest*`,
+        permanent: true,
+      },
+    ]);
+  },
+};
 
 export default nextConfig;

@@ -531,6 +531,12 @@ Verification:
 
 ---
 
+## Phase 8: OverlapX Umbrella Brand
+
+### Unit 54: Agency Site, Creator Fit Move, Brochure
+
+Spec: `context/specs/54-agency-site-and-creator-fit-move.md`. The root becomes the OverlapX video agency; the tool moves to `/creator-fit` with permanent redirects; a brochure ships at `/deck` + PDF.
+
 ## Later Phases, Not First Build
 
 Do not build these unless a later spec explicitly adds them:

@@ -135,7 +135,7 @@ export function QueueNextAnalysis({ defaultOrg }: { defaultOrg?: string }) {
         >
           <p className="text-secondary-foreground">{error}</p>
           <Link
-            href={gate === "login_required" ? "/login" : "/detailed"}
+            href={gate === "login_required" ? "/creator-fit/login" : "/creator-fit/detailed"}
             className="mt-1.5 inline-block font-medium text-accent-ink hover:underline"
           >
             {gate === "login_required"
@@ -158,7 +158,7 @@ export function QueueNextAnalysis({ defaultOrg }: { defaultOrg?: string }) {
                 <span className="ml-2 font-normal text-success">queued</span>
               </span>
               <Link
-                href={`/analyses/${q.id}`}
+                href={`/creator-fit/analyses/${q.id}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={cn(

@@ -31,18 +31,18 @@ async function handle(req: Request): Promise<Response> {
 
   // Dev mode has no Supabase callback — send back to login.
   if (resolveAuthMode(process.env) !== "supabase") {
-    return NextResponse.redirect(`${origin}/login`);
+    return NextResponse.redirect(`${origin}/creator-fit/login`);
   }
 
   const code = new URL(req.url).searchParams.get("code");
   if (!code) {
-    return NextResponse.redirect(`${origin}/login?error=missing_code`);
+    return NextResponse.redirect(`${origin}/creator-fit/login?error=missing_code`);
   }
 
   const { exchangeSupabaseCode, mirrorUser } = await import("@/lib/auth/supabase");
   const user = await exchangeSupabaseCode(code);
   if (!user) {
-    return NextResponse.redirect(`${origin}/login?error=auth`);
+    return NextResponse.redirect(`${origin}/creator-fit/login?error=auth`);
   }
 
   // Maintain the local User mirror row once, here at login (the per-request
@@ -53,7 +53,7 @@ async function handle(req: Request): Promise<Response> {
   await claimAnonymousReports(user.id);
 
   // Land on History so the just-claimed reports are the first thing they see.
-  return NextResponse.redirect(`${origin}/analyses`);
+  return NextResponse.redirect(`${origin}/creator-fit/analyses`);
 }
 
 export async function GET(req: Request): Promise<Response> {

@@ -143,6 +143,17 @@ Rules:
 - Build app-specific components in `components/` or feature folders.
 - Keep report sections reusable.
 
+## Agency Surface (Unit 54)
+
+The agency pages (`app/(agency)`, `/deck`) share the tokens above but render **always dark** by putting `data-theme="dark"` on their wrapper. That works because the semantic mappings in `globals.css` are declared on `:root, [data-theme]`, so a themed subtree re-resolves them. The tool keeps its light default.
+
+- Same logo, wordmark, Geist type and acid lime as the tool. Lime is used as a fill (CTA buttons, the highlighted "X timeline." in the hero, the pay-later banner), `--accent-ink` for lime text.
+- Display headings are large and tight (`clamp(...)`, `tracking-[-0.035em..-0.05em]`), with Geist Mono uppercase eyebrows.
+- Video-first: `VideoFrame` plays muted, looping and only while on screen, like the X timeline. With no footage it falls back to `MotionPoster`, a CSS-only animated composition per category.
+- The hero shows an X-style timeline of posts (OverlapX avatar, video, action icons with **no** numbers).
+- Motion is CSS keyframes in `globals.css` (marquee, timeline drift, posters) plus `Reveal` (scroll fade-up). All disabled under `prefers-reduced-motion`.
+- Brochure slides size everything in `cqw`, so a slide is identical in a browser and printed at 1920x1080 (named `@page deck`).
+
 ## Layout Patterns
 
 ### App Shell

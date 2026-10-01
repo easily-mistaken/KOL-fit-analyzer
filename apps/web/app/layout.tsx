@@ -3,7 +3,6 @@ import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import { Poppins } from "next/font/google";
 
-import { AppShell } from "@/components/app-shell";
 import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
@@ -18,13 +17,13 @@ const wordmark = Poppins({
 });
 
 const DESCRIPTION =
-  "We don't measure who follows. We measure who actually listens. Audience-overlap analysis for AI and Web3 brands.";
+  "OverlapX is a video studio for brands on X. Motion graphics, AI videos and hype edits for crypto brands, products and AI companies, delivered in 4-5 days.";
 
 export const metadata = {
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
   ),
-  title: "OverlapX",
+  title: { default: "OverlapX", template: "%s · OverlapX" },
   description: DESCRIPTION,
   openGraph: {
     type: "website",
@@ -32,13 +31,13 @@ export const metadata = {
     title: "OverlapX",
     description: DESCRIPTION,
     url: "/",
-    images: ["/overlapx-og.jpg"],
   },
+  // Share images come from app/opengraph-image.tsx (agency card); the
+  // Creator Fit layout overrides them with the tool's own square image.
   twitter: {
-    card: "summary" as const,
+    card: "summary_large_image" as const,
     title: "OverlapX",
     description: DESCRIPTION,
-    images: ["/overlapx-og.jpg"],
   },
   // Google Search Console ownership proof for overlapx.com, required before
   // Google's OAuth consent screen will accept this domain as ours. Renders as
@@ -49,11 +48,6 @@ export const metadata = {
     google: "xCZovrvymXIvWE3EP2V9rU1NDfuPoA_v1iRazb9SY0c",
   },
 };
-
-// The shell nav renders per-request auth state (Unit 28), which depends on the
-// session cookie. Render the shell dynamically so the user menu is never served
-// from a stale, build-time (always-logged-out) prerender — notably on "/".
-export const dynamic = "force-dynamic";
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
@@ -71,7 +65,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <body> before hydration; suppressHydrationWarning on <html> only covers
           one level, so mirror it here to silence those extension-only mismatches. */}
       <body suppressHydrationWarning>
-        <AppShell>{children}</AppShell>
+        {children}
       </body>
     </html>
   );

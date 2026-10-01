@@ -1,5 +1,12 @@
 # OverlapX
 
+## Umbrella Brand (Unit 54, 2026-10-01)
+
+OverlapX is an umbrella brand on one domain:
+
+- **`/` : OverlapX, the video agency.** X-first videos (AI films, motion graphics, hype, fast cuts, product/explainers) for crypto brands, products and AI products. Pricing: $999 for a 30-second motion graphics video, $999 for a 1-minute AI video, custom plans for everything else. Payment is 100% after the client loves the video (nothing upfront), every format included, no stated revision count, 4-5 day turnaround. Primary CTA is a Calendly call. A matching brochure lives at `/deck` (PDF at `/overlapx-deck.pdf`). Full decisions: `context/specs/54-agency-site-and-creator-fit-move.md`.
+- **`/creator-fit` : Creator Fit, the KOL fit tool** described in the rest of this document, unchanged in behavior. Everything below is about this tool.
+
 ## Overview
 
 OverlapX is an internal-first analysis tool for crypto startups and future agency workflows. It compares a crypto organization/startup with a known Twitter/X KOL and generates a deep fit report showing whether the KOL's actual engaged audience overlaps with the organization's target audience and campaign goal. The product does not only check what a KOL posts; it checks who actually listens, who engages, how useful that audience is, and whether the KOL introduces brand, bot, farming, or paid-promo risk.

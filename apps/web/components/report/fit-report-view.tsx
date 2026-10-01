@@ -264,7 +264,7 @@ export function FitReportView({
       {mode === "owner" && (
         <div className="flex items-center justify-between gap-3">
           <Link
-            href="/analyses"
+            href="/creator-fit/analyses"
             className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -546,7 +546,7 @@ export function FitReportView({
           </p>
         </div>
         <a
-          href={`/detailed?org=${encodeURIComponent(meta.orgHandle)}&kol=${encodeURIComponent(meta.kolHandle)}&analysis=${encodeURIComponent(meta.requestId)}`}
+          href={`/creator-fit/detailed?org=${encodeURIComponent(meta.orgHandle)}&kol=${encodeURIComponent(meta.kolHandle)}&analysis=${encodeURIComponent(meta.requestId)}`}
           className="inline-flex shrink-0 items-center rounded-lg bg-accent px-3.5 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent-hover"
         >
           Request curated report

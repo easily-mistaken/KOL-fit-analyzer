@@ -89,7 +89,7 @@ export function AdminDetailedRequestsTable({
               )}
               {r.analysisRequestId && (
                 <Link
-                  href={`/analyses/${r.analysisRequestId}`}
+                  href={`/creator-fit/analyses/${r.analysisRequestId}`}
                   className="ml-2 inline-flex items-center gap-0.5 text-xs text-accent-ink hover:underline"
                 >
                   report <ArrowRight className="h-3 w-3" />

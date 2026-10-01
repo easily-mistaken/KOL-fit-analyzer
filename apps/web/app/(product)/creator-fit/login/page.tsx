@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
  * configured here).
  */
 export default async function LoginPage() {
-  if (await getCurrentUserId()) redirect("/analyses");
+  if (await getCurrentUserId()) redirect("/creator-fit/analyses");
   const mode = resolveAuthMode(process.env);
 
   return (

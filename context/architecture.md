@@ -16,6 +16,18 @@ The architecture is a TypeScript modular monolith with a separate worker process
 
 Do not run deep analysis inside Next.js request/response handlers. API routes create jobs. Workers execute jobs.
 
+## Site Routing (Unit 54)
+
+`apps/web` serves two surfaces from one Next.js app, split by route group:
+
+- `app/(agency)/` : the agency site at `/`, `/work`, `/work/[slug]`, `/pricing`, `/about`, `/contact`. Static, no DB, no auth. Always dark (`data-theme="dark"` on its subtree). Content comes from typed data in `apps/web/lib/agency/` (`content.ts` for copy/pricing/contact, `work.ts` for projects, clients, testimonials, team); no CMS.
+- `app/(product)/` : the AppShell surface (light default + toggle): the Creator Fit tool under `/creator-fit/*`, `/admin/*`, `/privacy`, `/terms`. This layout is `force-dynamic` (per-request auth in the nav).
+- `app/deck/` : the brochure, built from the same `lib/agency` data, exported to PDF by `scripts/export-deck.mjs` (headless Chrome).
+- Unchanged at the root: `/api/*`, `/auth/callback` (so the Supabase redirect allowlist did not change).
+- Old tool paths (`/analyses`, `/r`, `/login`, `/upgrade`, `/detailed`, with subpaths) 308-redirect to `/creator-fit/...` via `next.config.mjs`. Shared `/r/<token>` links therefore keep working.
+
+**Invariant:** agency social proof (clients, metrics, testimonials, team) renders only from real entries in `lib/agency/work.ts`; empty lists render nothing, and the empty portfolio shows unattributed category previews. No invented clients or numbers.
+
 ## Stack
 
 | Layer | Technology | Role |

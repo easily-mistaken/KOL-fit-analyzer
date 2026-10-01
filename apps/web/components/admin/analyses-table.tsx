@@ -113,7 +113,7 @@ export function AdminAnalysesTable({
             </td>
             <td className="px-5 py-3.5 text-right">
               <Link
-                href={`/analyses/${row.id}`}
+                href={`/creator-fit/analyses/${row.id}`}
                 className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors group-hover:text-accent-ink"
               >
                 Open <ArrowRight className="h-3.5 w-3.5" />

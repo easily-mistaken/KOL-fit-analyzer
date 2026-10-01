@@ -101,7 +101,16 @@
   /* Radius scale baseline. Controls are pills (rounded-full); this drives
      cards/inputs. */
   --radius: 0.625rem;
+}
 
+/*
+ * Semantic mappings are declared on every themed element, not only :root. A
+ * custom property that references another (var(--bg-base)) is resolved where
+ * it is declared, so a subtree with its own data-theme (the always-dark agency
+ * surface, Unit 54) must re-declare them or it would inherit the light values.
+ */
+:root,
+[data-theme] {
   /* shadcn semantic variables, mapped onto the raw palette above. */
   --background: var(--bg-base);
   --foreground: var(--text-primary);
@@ -129,7 +138,8 @@
 }
 
 /* Dark theme — raw values only; every mapping above is inherited unchanged. */
-:root[data-theme="dark"] {
+:root[data-theme="dark"],
+[data-theme="dark"] {
   color-scheme: dark;
 
   --bg-base: #0a0c10;
@@ -272,4 +282,109 @@ body {
 }
 @media (prefers-reduced-motion: reduce) {
   .tip-advance { animation: none; transform: scaleX(0); }
+}
+
+/* ==========================================================================
+ * Agency surface (Unit 54). Always dark: the subtree carries
+ * data-theme="dark", so every token above resolves to its dark value there.
+ * The canvas behind it follows, so overscroll never flashes the light paper.
+ * ========================================================================== */
+html:has([data-surface="agency"]) {
+  color-scheme: dark;
+  background-color: #0a0c10;
+}
+html:has([data-surface="agency"]) body {
+  background-color: #0a0c10;
+}
+
+/* Infinite horizontal marquee: the track holds the content twice. */
+@keyframes kf-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.marquee-track { animation: kf-marquee 38s linear infinite; }
+
+/* Hero "timeline": a column of posts drifting upward, content doubled. */
+@keyframes kf-timeline {
+  from { transform: translateY(0); }
+  to { transform: translateY(-50%); }
+}
+.timeline-track { animation: kf-timeline 32s linear infinite; }
+.timeline-track:hover { animation-play-state: paused; }
+
+/* Scroll reveal, driven by <Reveal> toggling data-shown. */
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 700ms cubic-bezier(0.2, 0.7, 0.2, 1), transform 700ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.reveal[data-shown="true"] { opacity: 1; transform: none; }
+
+/* --- Motion posters: CSS-only stand-ins until real footage is added. --- */
+@keyframes kf-orb {
+  0%, 100% { transform: translate(-10%, -6%) scale(1); }
+  50% { transform: translate(12%, 8%) scale(1.25); }
+}
+@keyframes kf-scan {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(1100%); }
+}
+@keyframes kf-spin { to { transform: rotate(360deg); } }
+@keyframes kf-slide-a {
+  0%, 100% { transform: translateX(-18%); }
+  50% { transform: translateX(18%); }
+}
+@keyframes kf-slide-b {
+  0%, 100% { transform: translateX(18%); }
+  50% { transform: translateX(-18%); }
+}
+@keyframes kf-strobe {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0.15; }
+}
+@keyframes kf-stripes { to { background-position: 64px 0; } }
+@keyframes kf-cut {
+  0%, 24% { opacity: 1; }
+  25%, 100% { opacity: 0; }
+}
+@keyframes kf-cursor {
+  0% { transform: translate(0, 0); }
+  30% { transform: translate(120%, 160%); }
+  55% { transform: translate(260%, 60%); }
+  80% { transform: translate(180%, 230%); }
+  100% { transform: translate(0, 0); }
+}
+.poster-orb { animation: kf-orb 7s ease-in-out infinite; }
+.poster-scan { animation: kf-scan 3.2s linear infinite; }
+.poster-spin { animation: kf-spin 14s linear infinite; }
+.poster-slide-a { animation: kf-slide-a 4s ease-in-out infinite; }
+.poster-slide-b { animation: kf-slide-b 4s ease-in-out infinite; }
+.poster-strobe { animation: kf-strobe 0.9s steps(1) infinite; }
+.poster-stripes { animation: kf-stripes 1.2s linear infinite; }
+.poster-cut { animation: kf-cut 1.6s steps(1) infinite; }
+.poster-cursor { animation: kf-cursor 6s ease-in-out infinite; }
+
+/* Brochure: one 16:9 slide per printed page, colours preserved. */
+/* Named page, so printing any other route keeps the browser default. */
+@page deck { size: 1920px 1080px; margin: 0; }
+.deck-slide { page: deck; }
+@media print {
+  html:has([data-surface="deck"]) { background-color: #0a0c10; }
+  [data-surface="deck"] {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .deck-slide { break-after: page; break-inside: avoid; border-radius: 0 !important; margin: 0 !important; }
+  .deck-slide:last-child { break-after: auto; }
+  .deck-chrome { display: none !important; }
+  /* Anything else in <body> (dev overlay portals, injected nodes) would print
+     as a stray default-size page after the last slide. */
+  html:has([data-surface="deck"]) body > :not([data-surface="deck"]) { display: none !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track, .timeline-track,
+  .poster-orb, .poster-scan, .poster-spin, .poster-slide-a, .poster-slide-b,
+  .poster-strobe, .poster-stripes, .poster-cut, .poster-cursor { animation: none; }
+  .reveal { opacity: 1; transform: none; transition: none; }
 }

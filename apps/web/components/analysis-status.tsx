@@ -259,7 +259,7 @@ function StatusShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="mx-auto max-w-2xl space-y-4">
       <Link
-        href="/"
+        href="/creator-fit"
         className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
@@ -746,7 +746,7 @@ function RunningExperience({ data }: { data: AnalysisStatusResponse }) {
 
         <p className="mt-6 text-xs text-muted-foreground">
           Updates live. No need to refresh. Everything is saved in your{" "}
-          <Link href="/analyses" className="text-accent-ink hover:underline">
+          <Link href="/creator-fit/analyses" className="text-accent-ink hover:underline">
             History
           </Link>
           .
@@ -866,10 +866,10 @@ function FailedBody({
           Retry analysis
         </Button>
         <Button asChild variant="outline" size="sm">
-          <Link href="/">Start a new analysis</Link>
+          <Link href="/creator-fit">Start a new analysis</Link>
         </Button>
         <Button asChild variant="ghost" size="sm">
-          <Link href="/analyses">Back to reports</Link>
+          <Link href="/creator-fit/analyses">Back to reports</Link>
         </Button>
       </div>
     </div>

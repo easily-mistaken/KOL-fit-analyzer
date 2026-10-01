@@ -76,7 +76,7 @@ async function UpgradeBody({
           with your account, so it&apos;s there on every device.
         </p>
         <Button asChild>
-          <Link href="/login">Sign in to continue</Link>
+          <Link href="/creator-fit/login">Sign in to continue</Link>
         </Button>
       </div>
     );
@@ -98,7 +98,7 @@ async function UpgradeBody({
           analyses). For a deeper, hand-curated look, request a detailed report.
         </p>
         <Button asChild variant="outline">
-          <Link href="/detailed">Request a curated report</Link>
+          <Link href="/creator-fit/detailed">Request a curated report</Link>
         </Button>
       </div>
     );

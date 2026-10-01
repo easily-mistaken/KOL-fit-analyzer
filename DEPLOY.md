@@ -217,6 +217,12 @@ Set these in the platform's env settings (not a committed file). See
 
 ## Post-deploy checklist
 
+0. **Google OAuth consent screen (once, after Unit 54 ships):** set the
+   application home page to `https://overlapx.com/creator-fit`. The root is the
+   agency site now and no longer describes the sign-in app, which Google's
+   brand verification checks. Privacy/terms URLs and the Supabase redirect
+   allowlist are unchanged.
+
 1. **Supabase → Auth → URL Configuration:** add `NEXT_PUBLIC_APP_URL` as a Site
    URL and add `<app-url>/auth/callback` to the redirect allowlist. Google
    sign-in fails without this.

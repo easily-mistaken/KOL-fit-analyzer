@@ -1,5 +1,8 @@
 import { AnalysisForm } from "@/components/analysis-form";
 
+// Since Unit 54 this page (/creator-fit) is the "application homepage" set on
+// Google's OAuth consent screen; the site root is the agency.
+//
 // The "About OverlapX" block below the form is not decoration: Google's OAuth
 // verification rejects a homepage that does not state the app's purpose, and
 // rejects an app name that does not appear on the homepage in the same form as
@@ -56,7 +59,7 @@ const APP_JSON_LD = {
   "@type": "WebApplication",
   name: "OverlapX",
   alternateName: "OverlapX Audience Intelligence",
-  url: "https://overlapx.com",
+  url: "https://overlapx.com/creator-fit",
   applicationCategory: "BusinessApplication",
   operatingSystem: "Web",
   description:
@@ -66,7 +69,7 @@ const APP_JSON_LD = {
   termsOfService: "https://overlapx.com/terms",
 };
 
-export default function HomePage() {
+export default function CreatorFitPage() {
   return (
     <section className="rounded-2xl border border-default bg-base">
       <script

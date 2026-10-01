@@ -37,7 +37,7 @@ export function ShareReport({ requestId }: { requestId: string }) {
         setError(body.error.message);
         return;
       }
-      const link = `${window.location.origin}/r/${body.data.token}`;
+      const link = `${window.location.origin}/creator-fit/r/${body.data.token}`;
       setUrl(link);
       void copyToClipboard(link);
     } catch {

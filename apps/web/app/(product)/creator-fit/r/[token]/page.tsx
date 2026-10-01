@@ -49,7 +49,7 @@ export default async function SharedReportPage({
           </span>
         </div>
         <Link
-          href="/"
+          href="/creator-fit"
           className="inline-flex shrink-0 items-center rounded-full bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent-hover"
         >
           Analyze a creator

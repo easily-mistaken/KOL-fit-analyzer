@@ -79,7 +79,7 @@ export function AnalysesList({ data }: { data: AnalysisListResponse }) {
                   className="group border-b border-default/50 transition-colors last:border-b-0 hover:bg-elevated"
                 >
                   <td className="px-5 py-3.5">
-                    <Link href={`/analyses/${item.id}`} className="flex items-center gap-3">
+                    <Link href={`/creator-fit/analyses/${item.id}`} className="flex items-center gap-3">
                       <Avatar handle={item.kolHandle} size={32} />
                       <span className="min-w-0">
                         <span className="block truncate font-medium text-foreground">
@@ -111,7 +111,7 @@ export function AnalysesList({ data }: { data: AnalysisListResponse }) {
                   </td>
                   <td className="px-5 py-3.5 text-right">
                     <Link
-                      href={`/analyses/${item.id}`}
+                      href={`/creator-fit/analyses/${item.id}`}
                       className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors group-hover:text-accent-ink"
                     >
                       Open <ArrowRight className="h-3.5 w-3.5" />
@@ -127,7 +127,7 @@ export function AnalysesList({ data }: { data: AnalysisListResponse }) {
       {data.nextCursor && (
         <div className="flex justify-center">
           <Button asChild variant="outline" size="sm">
-            <Link href={`/analyses?cursor=${data.nextCursor}`}>Load more</Link>
+            <Link href={`/creator-fit/analyses?cursor=${data.nextCursor}`}>Load more</Link>
           </Button>
         </div>
       )}
@@ -148,7 +148,7 @@ function EmptyState() {
         </p>
       </div>
       <Button asChild size="sm">
-        <Link href="/">New analysis</Link>
+        <Link href="/creator-fit">New analysis</Link>
       </Button>
     </div>
   );
