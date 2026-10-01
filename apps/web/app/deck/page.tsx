@@ -290,7 +290,7 @@ function ClientsSlide({ names }: { names: string[] }) {
       <div className="mt-auto flex flex-wrap items-center gap-x-[5cqw] gap-y-[2cqw]">
         {CLIENTS.length > 0
           ? CLIENTS.map((c) => (
-              <Image key={c.name} src={c.logo} alt={c.name} width={200} height={60} className="h-[3cqw] w-auto opacity-80" />
+              <Image key={c.name} src={c.logo} alt={c.name} width={c.width} height={c.height} style={{ height: `${2.6 * (c.scale ?? 1)}cqw` }} className="w-auto brightness-0 invert opacity-80" />
             ))
           : names.map((n) => (
               <span key={n} className="text-[4.2cqw] font-semibold tracking-[-0.04em] text-secondary-foreground">
@@ -423,8 +423,8 @@ function TestimonialsSlide() {
     <Pad>
       <Kicker>Clients</Kicker>
       <Title>Clients come back for more.</Title>
-      <div className="mt-auto grid grid-cols-3 gap-[1.2cqw]">
-        {TESTIMONIALS.slice(0, 3).map((t) => (
+      <div className="mt-auto grid grid-cols-4 gap-[1.2cqw]">
+        {TESTIMONIALS.slice(0, 4).map((t) => (
           <div key={t.name} className="flex flex-col rounded-[1.4cqw] border border-default bg-surface p-[1.6cqw]">
             <div className="flex items-center justify-between border-b border-default pb-[1cqw]">
               <span>

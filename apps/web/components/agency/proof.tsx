@@ -25,9 +25,12 @@ export function ClientStrip() {
                 key={c.name}
                 src={c.logo}
                 alt={c.name}
-                width={140}
-                height={40}
-                className="h-8 w-auto opacity-70 grayscale transition hover:opacity-100 hover:grayscale-0"
+                width={c.width}
+                height={c.height}
+                // Every logo rendered solid white, so mixed brand colours read
+                // as one row on the dark surface.
+                style={{ height: `${1.6 * (c.scale ?? 1)}rem` }}
+                className="w-auto opacity-60 brightness-0 invert transition-opacity hover:opacity-100"
               />
             ))
           : // No logo files yet: set the names as a typographic strip.
@@ -98,7 +101,7 @@ export function Testimonials() {
         title="Clients come back for more."
         lead="Straight from our Telegram chats, word for word."
       />
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {TESTIMONIALS.map((t, i) => (
           <Reveal key={t.name} delay={i * 100}>
             <ChatCard t={t} />

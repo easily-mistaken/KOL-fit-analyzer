@@ -272,14 +272,20 @@ export const PREVIEW_SLOTS: PreviewSlot[] = [
 
 export interface Client {
   name: string;
-  /** Path under /public, e.g. /clients/acme.svg. */
+  /** Path under /public, e.g. /clients/acme.svg. Rendered as solid white. */
   logo: string;
+  /** Intrinsic size, for the aspect ratio. */
+  width: number;
+  height: number;
+  /** Optical size correction for logos with built-in padding (default 1). */
+  scale?: number;
 }
 
 /**
  * What a client actually said, as the messages they sent. Text is verbatim
  * from the chat screenshots the user supplied (~/overlapx-assets/testimonials),
- * with only sentence-case capitalisation added. Never paraphrase or merge.
+ * with only sentence-case capitalisation and obvious typo fixes. Never
+ * paraphrase or merge. A sender who must stay private keeps `name` generic.
  */
 export interface Testimonial {
   name: string;
@@ -289,7 +295,17 @@ export interface Testimonial {
   source: "Telegram";
 }
 
-export const CLIENTS: Client[] = [];
+// Logos from each brand's own website (Avena's cut from the video we made for
+// them, since they have no public site yet). FailSafe and Kenomic are clients
+// whose videos cannot be shown, so they appear here and nowhere else.
+export const CLIENTS: Client[] = [
+  { name: "Outcome", logo: "/clients/outcome.svg", width: 152, height: 24 },
+  { name: "Webacy", logo: "/clients/webacy.svg", width: 989, height: 269 },
+  { name: "Avena", logo: "/clients/avena.png", width: 960, height: 240, scale: 1.2 },
+  { name: "CashXChain", logo: "/clients/cashxchain.png", width: 2750, height: 400 },
+  { name: "FailSafe", logo: "/clients/failsafe.svg", width: 592, height: 100 },
+  { name: "Kenomic", logo: "/clients/kenomic.png", width: 1383, height: 359, scale: 1.35 },
+];
 export const TESTIMONIALS: Testimonial[] = [
   {
     name: "Ali",
@@ -298,6 +314,12 @@ export const TESTIMONIALS: Testimonial[] = [
       "Amazing guys, love it.",
       "Also I will personally order one more motion video, currently preparing script and will share you guys soon.",
     ],
+    source: "Telegram",
+  },
+  {
+    name: "Private client",
+    company: "Name withheld",
+    messages: ["Happy that we have no revisions also.", "Exactly what I wanted."],
     source: "Telegram",
   },
   {
