@@ -10,7 +10,6 @@ import { MotionPoster } from "@/components/agency/motion-poster";
 import {
   AUDIENCES,
   CONTACT,
-  PLANS,
   POSITIONING,
   PROCESS,
   PROMISES,
@@ -30,8 +29,8 @@ import {
 } from "@/lib/agency/work";
 
 // ============================================================================
-// OverlapX brochure (Unit 54). Built from the same data as the site, so prices,
-// turnaround and contact can never drift between the two. Each <Slide> is a
+// OverlapX brochure (Unit 54). Built from the same data as the site, so turnaround,
+// work and contact can never drift between the two. It shows no prices. Each <Slide> is a
 // 16:9 page; sizes are in cqw (percent of slide width), so a slide looks the
 // same scaled into a browser window and printed at 1920x1080.
 //
@@ -61,7 +60,6 @@ export default function DeckPage() {
     CLIENTS.length > 0 || clients.length > 0 ? <ClientsSlide key="clients" names={clients} /> : null,
     ...spotlights.map((p) => <ResultsSlide key={`results-${p.slug}`} project={p} />),
     <ProcessSlide key="process" />,
-    <PricingSlide key="pricing" />,
     <WhyUsSlide key="why-us" />,
     TESTIMONIALS.length > 0 ? <TestimonialsSlide key="testimonials" /> : null,
     <StartSlide key="start" />,
@@ -210,7 +208,7 @@ function StylesSlide() {
           <div key={c.id} className="overflow-hidden rounded-[1.2cqw] border border-default bg-surface">
             <StylePoster category={c.id} />
             <div className="p-[1.3cqw]">
-              <p className="font-mono text-[0.85cqw] uppercase tracking-[0.16em] text-accent-ink">{c.plan}</p>
+              <p className="font-mono text-[0.85cqw] uppercase tracking-[0.16em] text-accent-ink">{projectCount(c.id)}</p>
               <p className="mt-[0.5cqw] text-[1.45cqw] font-semibold tracking-tight text-foreground">{c.title}</p>
               <p className="mt-[0.5cqw] text-[0.95cqw] leading-relaxed text-secondary-foreground">{c.blurb}</p>
             </div>
@@ -219,6 +217,12 @@ function StylesSlide() {
       </div>
     </Pad>
   );
+}
+
+/** Portfolio depth per style. The brochure shows no prices (user, 2026-10-02). */
+function projectCount(category: string): string {
+  const n = PROJECTS.filter((p) => p.category === category).length;
+  return n === 0 ? "New" : `${n} project${n === 1 ? "" : "s"}`;
 }
 
 /** A real poster from the category when one exists, else its animation. */
@@ -359,39 +363,6 @@ function ProcessSlide() {
   );
 }
 
-function PricingSlide() {
-  return (
-    <Pad>
-      <Kicker>Pricing</Kicker>
-      <Title>Simple pricing. Zero risk.</Title>
-      <div className="mt-auto grid grid-cols-3 gap-[1.2cqw]">
-        {PLANS.map((p) => (
-          <div
-            key={p.id}
-            className={cn("rounded-[1.4cqw] border bg-surface p-[2cqw]", p.highlight ? "border-accent-primary/60" : "border-default")}
-          >
-            <p className="text-[1.4cqw] font-semibold text-foreground">{p.name}</p>
-            <p className="mt-[1cqw] text-[4cqw] font-semibold leading-none tracking-[-0.04em] text-foreground">{p.price}</p>
-            <p className="mt-[0.6cqw] font-mono text-[0.95cqw] uppercase tracking-[0.14em] text-accent-ink">{p.unit}</p>
-            <ul className="mt-[1.4cqw] space-y-[0.5cqw] border-t border-default pt-[1.2cqw]">
-              {p.includes.map((i) => (
-                <li key={i} className="text-[1.1cqw] text-secondary-foreground">
-                  <span className="mr-[0.6cqw] text-accent-ink">+</span>
-                  {i}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
-      </div>
-      <div className="mt-[1.2cqw] flex items-center justify-between rounded-[1.4cqw] bg-accent-primary px-[2cqw] py-[1.3cqw] text-accent-contrast">
-        <p className="text-[1.6cqw] font-semibold tracking-tight">Pay only when you love it. Nothing upfront.</p>
-        <p className="font-mono text-[1cqw] uppercase tracking-[0.16em]">Try us first</p>
-      </div>
-    </Pad>
-  );
-}
-
 function WhyUsSlide() {
   const reasons = [
     { t: "X-native", b: "We make videos for the timeline, not for a showreel. Hook first, sound off, every format." },
@@ -402,7 +373,7 @@ function WhyUsSlide() {
   return (
     <Pad>
       <Kicker>Why brands work with us</Kicker>
-      <Title>Built for the feed. Priced for a test.</Title>
+      <Title>Built for the feed. Zero risk to try.</Title>
       <div className="mt-auto grid grid-cols-2 gap-[1.2cqw]">
         {reasons.map((r) => (
           <div key={r.t} className="flex gap-[1.6cqw] rounded-[1.2cqw] border border-default bg-surface p-[2cqw]">
