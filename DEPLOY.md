@@ -191,6 +191,12 @@ Four things that have each cost a debugging session:
 - **Watch the build log for `[next.config] … not set at build time`.** It means
   the build could not read the root `.env`, and the client bundle will ship with
   Google sign-in dead while the server still looks correctly configured.
+- **Files owned by root break the build** with `EACCES ... unlink` inside
+  `packages/db/src/generated/` (`prisma generate` cannot replace them). It
+  happens after any build or `git pull` run as root instead of `sudo -u
+  overlapx`. Fix: `chown -R overlapx:overlapx /srv/overlapx`, then rebuild.
+  Hit on the 2026-10-01 deploy; the live site was unaffected because the
+  failed build never reached the restart.
 - **Wait ~5s after `systemctl restart` before testing.** nginx has no upstream
   until Node finishes booting and returns 502 in the meantime — which looks
   exactly like a crash but isn't. `journalctl -u overlapx -n 30` distinguishes
