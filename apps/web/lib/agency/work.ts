@@ -240,6 +240,21 @@ export const PROJECTS: Project[] = [
       "Kinetic type and currency stacks around the real dashboard, with burned-in captions so the whole story lands with the sound off.",
   },
   {
+    slug: "build-station-georgia",
+    title: "Build Station Georgia",
+    client: null,
+    category: "ai",
+    aspect: "16:9",
+    year: 2026,
+    durationSeconds: 66,
+    featured: true,
+    video: media("build-station-georgia"),
+    objective:
+      "Invite builders to Build Station Georgia in Tbilisi, 5 to 13 October, where the city's character meets the world of Colosseum.",
+    approach:
+      "A one-minute AI film that reimagines old Tbilisi as a city of makers: an invitation changes hands, workshops fill with blueprints and prototypes, and the story cuts to the real Build Station crowd. Captions carry the narration so it works on mute.",
+  },
+  {
     slug: "world-teaser",
     title: "09.09.26 teaser",
     client: "Bart",
