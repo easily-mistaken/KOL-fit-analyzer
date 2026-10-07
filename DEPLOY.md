@@ -185,6 +185,13 @@ location @app {
 - **A replaced video, poster or logo must get a new filename.** Browsers (and
   any CDN in front) keep the old copy for 30 days otherwise.
 
+Since 2026-10-07 the domain sits behind Cloudflare (free plan; nameservers
+moved from Hostinger). Site records are Proxied, mail records are DNS only,
+and the SSL mode must stay **Full (strict)**: "Flexible" loops against the
+HTTP to HTTPS redirect above. Cloudflare caches the static files and media by
+their `Cache-Control`; HTML is not cached. Let's Encrypt renewal still works
+through the proxy (`certbot renew --dry-run` verified).
+
 Apply changes with `nginx -t && systemctl reload nginx` — `-t` validates the
 config first, so a typo can't take the site down.
 
