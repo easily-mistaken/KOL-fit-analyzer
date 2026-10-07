@@ -153,6 +153,38 @@ location / {
 }
 ```
 
+Two more pieces keep the agency pages fast for visitors far from the box
+(added 2026-10-07; a round trip from India is ~340 ms, so every extra
+connection and every revalidation is visible):
+
+```nginx
+# HTTP/2, so all assets share one connection instead of queueing behind six.
+listen 443 ssl http2;
+
+# Portfolio media and logos are plain files: serve them from disk with a long
+# cache instead of streaming them through Node. Next sends public/ files with
+# max-age=0, so every repeat visit revalidated each one.
+location ~ ^/(work-media|work/posters|clients)/ {
+    root /srv/overlapx/apps/web/public;
+    try_files $uri @app;
+    add_header Cache-Control "public, max-age=2592000";
+}
+
+location @app {
+    proxy_pass http://127.0.0.1:3000;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+```
+
+- nginx (`www-data`) must be able to traverse into the checkout:
+  `chmod o+x /srv/overlapx`. Traverse only, so the directory still cannot be
+  listed and `.env` stays `600`.
+- **A replaced video, poster or logo must get a new filename.** Browsers (and
+  any CDN in front) keep the old copy for 30 days otherwise.
+
 Apply changes with `nginx -t && systemctl reload nginx` — `-t` validates the
 config first, so a typo can't take the site down.
 

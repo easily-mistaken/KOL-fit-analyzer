@@ -72,7 +72,10 @@ export function VideoFrame({
           loop={!controls}
           playsInline
           controls={controls}
-          preload="metadata"
+          // Loops fetch nothing until the observer above calls play(); the
+          // poster holds the frame. A page of them would otherwise open one
+          // request each at load and starve the scripts and fonts.
+          preload={controls ? "metadata" : "none"}
           className={cn("absolute inset-0 h-full w-full", fit === "contain" ? "object-contain" : "object-cover")}
         />
       ) : (
