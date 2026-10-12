@@ -310,7 +310,11 @@ html:has([data-surface="agency"]) body {
   to { transform: translateY(-50%); }
 }
 .timeline-track { animation: kf-timeline 32s linear infinite; }
-.timeline-track:hover { animation-play-state: paused; }
+/* Hover-capable pointers only: on touch, :hover sticks after a tap and would
+   freeze the timeline until the reader taps elsewhere. */
+@media (hover: hover) {
+  .timeline-track:hover { animation-play-state: paused; }
+}
 
 /* Scroll reveal, driven by <Reveal> toggling data-shown. */
 .reveal {

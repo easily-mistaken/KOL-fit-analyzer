@@ -21,6 +21,8 @@ interface Post {
   aspect: Aspect;
   video: ProjectVideo | null;
   caption: string;
+  /** Case page for a real project; preview slots have nowhere to go. */
+  href: string | null;
 }
 
 function timelinePosts(): Post[] {
@@ -31,6 +33,7 @@ function timelinePosts(): Post[] {
       aspect: p.aspect === "9:16" ? "4:5" : p.aspect,
       video: p.video,
       caption: p.client ? `${p.client}: ${p.title}` : p.title,
+      href: `/work/${p.slug}`,
     }));
   }
   return PREVIEW_SLOTS.slice(0, 4).map((s) => ({
@@ -39,6 +42,7 @@ function timelinePosts(): Post[] {
     aspect: s.aspect,
     video: null,
     caption: `${categoryById(s.category).title}, cut for the timeline.`,
+    href: null,
   }));
 }
 
@@ -89,7 +93,7 @@ export function Hero() {
             {[0, 1].map((copy) => (
               <div key={copy} aria-hidden={copy === 1}>
                 {posts.map((post) => (
-                  <TimelinePost key={`${copy}-${post.key}`} post={post} />
+                  <TimelinePost key={`${copy}-${post.key}`} post={post} duplicate={copy === 1} />
                 ))}
               </div>
             ))}
@@ -100,9 +104,28 @@ export function Hero() {
   );
 }
 
-function TimelinePost({ post }: { post: Post }) {
+// A post taps through to its case page, the way a post on X opens. The second
+// copy of the track is aria-hidden, so its links stay out of the tab order.
+function TimelinePost({ post, duplicate }: { post: Post; duplicate: boolean }) {
+  const body = <TimelinePostBody post={post} />;
+  const cls = "flex gap-3 border-b border-default px-4 py-4";
+  return post.href ? (
+    <Link
+      href={post.href}
+      tabIndex={duplicate ? -1 : undefined}
+      aria-label={`${post.caption}: view project`}
+      className={`${cls} transition-colors hover:bg-elevated/60 active:bg-elevated`}
+    >
+      {body}
+    </Link>
+  ) : (
+    <article className={cls}>{body}</article>
+  );
+}
+
+function TimelinePostBody({ post }: { post: Post }) {
   return (
-    <article className="flex gap-3 border-b border-default px-4 py-4">
+    <>
       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-elevated">
         <LogoMark className="h-5 w-5" />
       </span>
@@ -125,6 +148,6 @@ function TimelinePost({ post }: { post: Post }) {
           <ChartBar className="h-4 w-4" />
         </div>
       </div>
-    </article>
+    </>
   );
 }

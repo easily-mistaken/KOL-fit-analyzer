@@ -44,7 +44,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
   return (
     <>
       <Section className="pb-8 sm:pb-10">
-        <Link href="/work" className="inline-flex items-center gap-2 text-sm text-secondary-foreground hover:text-foreground">
+        <Link href="/work" className="-my-3 inline-flex min-h-11 items-center gap-2 text-sm text-secondary-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" /> All work
         </Link>
         <p className="mt-8 font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">{cat.title}</p>
@@ -80,7 +80,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
               href={project.post.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-accent-ink hover:underline"
+              className="-my-3 inline-flex min-h-11 items-center gap-1.5 text-sm font-medium text-accent-ink hover:underline"
             >
               View on {project.post.platform} <ArrowUpRight className="h-4 w-4" />
             </a>

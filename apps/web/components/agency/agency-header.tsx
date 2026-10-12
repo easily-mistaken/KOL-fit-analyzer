@@ -45,8 +45,9 @@ export function AgencyHeader() {
       )}
     >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-8">
-        <Link href="/" className="flex items-center gap-2" aria-label="OverlapX home">
-          <LogoMark className="h-7 w-7" />
+        {/* min-h-11: the mark is 28px tall but the tap target is a full 44px. */}
+        <Link href="/" className="flex min-h-11 shrink-0 items-center gap-2" aria-label="OverlapX home">
+          <LogoMark className="h-7 w-7 shrink-0" />
           <Wordmark className="text-[18px] text-foreground" />
         </Link>
 
@@ -79,7 +80,7 @@ export function AgencyHeader() {
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-strong text-foreground md:hidden"
+          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-strong text-foreground md:hidden"
           aria-expanded={open}
           aria-label={open ? "Close menu" : "Open menu"}
         >
@@ -88,7 +89,9 @@ export function AgencyHeader() {
       </div>
 
       {open ? (
-        <div className="border-t border-default px-4 pb-6 pt-2 md:hidden">
+        // Capped to the screen below the bar and scrollable, so the last link
+        // and the CTA stay reachable on short or landscape phones.
+        <div className="max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain border-t border-default px-4 pb-6 pt-2 md:hidden">
           <nav className="flex flex-col">
             {[...LINKS, { href: "/creator-fit", label: "Creator Fit (free tool)" }].map((l) => (
               <Link

@@ -205,7 +205,7 @@ export function Faq() {
     <div className="divide-y divide-default border-y border-default">
       {FAQS.map((f) => (
         <details key={f.q} className="group py-6">
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-6 text-lg font-medium tracking-tight text-foreground [&::-webkit-details-marker]:hidden">
+          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-6 text-lg font-medium tracking-tight text-foreground [&::-webkit-details-marker]:hidden">
             {f.q}
             <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-strong text-xl leading-none transition-transform group-open:rotate-45">
               +

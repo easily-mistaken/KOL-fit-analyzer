@@ -62,7 +62,7 @@ function FilterChip({
       href={href}
       scroll={false}
       className={cn(
-        "rounded-full border px-4 py-2 text-sm transition-colors",
+        "inline-flex min-h-11 items-center rounded-full border px-4 text-sm transition-colors",
         active
           ? "border-accent-primary bg-accent-primary text-accent-contrast"
           : "border-strong text-secondary-foreground hover:text-foreground"

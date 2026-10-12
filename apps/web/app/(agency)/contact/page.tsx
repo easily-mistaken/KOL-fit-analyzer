@@ -26,7 +26,7 @@ export default function ContactPage() {
         lead={`Book a quick call and tell us what you're launching. Your video ships in ${TURNAROUND}, and you pay only when you love it.`}
       />
       <div className="grid gap-8 lg:grid-cols-[1.5fr_1fr]">
-        <Reveal className="overflow-hidden rounded-3xl border border-default bg-surface">
+        <Reveal className="min-w-0 overflow-hidden rounded-3xl border border-default bg-surface">
           {/* Calendly's free plan ignores colour params and renders white, so
               a dark header frames it as part of the page. */}
           <div className="flex items-center justify-between gap-4 border-b border-default px-6 py-4">
@@ -40,7 +40,7 @@ export default function ContactPage() {
             loading="lazy"
           />
         </Reveal>
-        <div className="space-y-3">
+        <div className="min-w-0 space-y-3">
           <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Or message us directly</p>
           {CHANNELS.map((c, i) => (
             <Reveal key={c.label} delay={i * 70}>

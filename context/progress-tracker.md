@@ -221,6 +221,17 @@ at `context/specs/19-caching-and-cost-controls.md` as the design record.
   that list: KOL shortlisting/ranking, ROI/cost framing, cross-KOL audience
   overlap, promo track record, engagement trend.
 
+- Mobile pass (2026-10-12): "logo per mobile specifications" was read as a
+  44px tap target plus an iOS touch icon; no logo spec document exists. If a
+  specific size/lockup was meant, it is still to be supplied.
+- Mobile pass (2026-10-12): `/privacy` and `/terms` are linked from the agency
+  footer but render in the tool's light shell (`top-nav.tsx`), so a phone
+  reader jumps from dark to light. Decide whether they move under the agency
+  layout.
+- Mobile pass (2026-10-12): Creator Fit (`top-nav.tsx`, form inputs) still has
+  sub-44px controls on phones (28 to 36px). Left alone as out of scope for the
+  agency link; decide whether the tool gets the same pass.
+
 ### Recently resolved (kept briefly for traceability)
 
 - ~~Scoring v2 calibration pairs~~ — moot: Unit 29E (the calibration harness the
@@ -1000,3 +1011,31 @@ at `context/specs/19-caching-and-cost-controls.md` as the design record.
   the socket-health options for both roles and that `query_timeout` reclaims a
   fully-leaked pool faster than the watchdog's exit window. No new env vars, no
   schema change. Deployed to prod; the stuck job drained on restart.
+
+- 2026-10-12 (Agency site mobile pass): Brief was three lines: mobile first,
+  logo per mobile specs, first-screen elements clickable. Audited every agency
+  route in headless Chrome at 375px and 320px (touch emulation, hit-testing
+  each interactive element) before changing anything. The layout was already
+  sound: no horizontal overflow, nothing covered. The real gaps were touch
+  targets and the hero. **Changed:** (1) hero timeline posts are now links to
+  their `/work/[slug]` case page (they were plain `<article>`s, so the most
+  prominent thing on the first phone screen did nothing when tapped); preview
+  slots stay unlinked; the aria-hidden duplicate track is `tabIndex=-1`.
+  (2) `.timeline-track:hover` pause is gated behind `@media (hover: hover)`,
+  since on touch `:hover` sticks after a tap and froze the timeline. (3) 44px
+  minimum tap targets: header logo link (was 28px tall), menu button (40 ->
+  44), FAQ rows (32 -> 44), `/work` filter chips (38 -> 44), footer links and
+  Privacy/Terms (18px text links -> 44px rows below `md`, unchanged above).
+  (4) Mobile menu sheet is capped at `100dvh - 4rem` and scrolls, so the CTA
+  is reachable on short/landscape phones. (5) `app/apple-icon.tsx` added: iOS
+  ignores the SVG favicon, so bookmarks and home-screen shortcuts had no logo.
+  (6) Agency layout exports `viewport` (`themeColor #0a0c10`, dark colour
+  scheme) and uses `min-h-dvh`. (7) `/contact` grid children got `min-w-0`
+  (layout viewport grew to 325px on a 320px phone). **Verified:** re-audit
+  clean at 375/320; simulated touch taps navigate for a hero post, the logo,
+  "See the work" and menu > About; `pnpm --filter web build` green. Not
+  deployed. No copy changed, so the brochure PDF is untouched. Second pass
+  the same day (375/320/1280, all agency routes plus /privacy, /terms, /deck):
+  desktop unchanged; the only new agency finds were the project page's
+  "All work" and "View on X" links (20px -> 44px tap target, layout unchanged
+  via `-my-3`). Committed and deployed to prod.
