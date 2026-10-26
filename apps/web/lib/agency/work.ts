@@ -82,9 +82,6 @@ export interface Project {
   title: string;
   /** null when no client is credited (NDA, white-label, or our own piece). */
   client: string | null;
-  /** The client is an individual creator, not a brand: credited on the
-   *  project, but left out of the brand-name strip. */
-  personalClient?: boolean;
   category: WorkCategory;
   aspect: Aspect;
   year?: number;
@@ -202,8 +199,7 @@ export const PROJECTS: Project[] = [
   {
     slug: "superteam-map",
     title: "The map keeps growing",
-    client: "Bart",
-    personalClient: true,
+    client: null,
     category: "fast-cuts",
     aspect: "1:1",
     year: 2026,
@@ -272,8 +268,7 @@ export const PROJECTS: Project[] = [
   {
     slug: "world-teaser",
     title: "09.09.26 teaser",
-    client: "Bart",
-    personalClient: true,
+    client: null,
     category: "ai",
     aspect: "1:1",
     year: 2026,
@@ -391,11 +386,7 @@ export function spotlightProjects(): Project[] {
 /** Credited clients, in portfolio order, for the "worked with" strip. */
 export function clientNames(): string[] {
   return [
-    ...new Set(
-      PROJECTS.filter((p) => !p.personalClient)
-        .map((p) => p.client)
-        .filter((c): c is string => Boolean(c))
-    ),
+    ...new Set(PROJECTS.map((p) => p.client).filter((c): c is string => Boolean(c))),
   ];
 }
 
