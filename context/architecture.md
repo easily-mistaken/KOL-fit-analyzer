@@ -402,8 +402,9 @@ denial-of-wallet exposure without new infrastructure (no Redis; matches the
   owners (default 200 = `MAX_ANALYSES_PER_DAY`). The per-IP cap exists because
   the owner cookie is client-controlled: a script that drops it gets a fresh
   owner per request. The IP comes from nginx's `X-Real-IP` (realip over
-  Cloudflare's ranges, so it cannot be spoofed) and only an HMAC of it
-  (`APP_SECRET`) is stored, on `AnalysisRequest.clientIpHash`
+  Cloudflare's ranges, so it cannot be spoofed; IPv6 is counted per /64, the
+  block one home or phone controls) and only an HMAC of it (`APP_SECRET`) is
+  stored, on `AnalysisRequest.clientIpHash`
   (`apps/web/lib/client-ip.ts`); with no header (local dev) the cap is skipped. At/over either cap the route returns **HTTP 429**
   `rate_limited` with a safe message; the check is two `count()` reads (not
   analysis work), kept inside the route `try` so DB errors fall to the generic

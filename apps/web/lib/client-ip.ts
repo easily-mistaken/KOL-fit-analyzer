@@ -14,6 +14,29 @@ import { createHmac } from "node:crypto";
 // per-IP cap.
 
 /**
+ * The unit one client controls. IPv4: the address. IPv6: the /64 prefix, since
+ * ISPs hand each home or phone a /64 (or larger) and any address inside it can
+ * be used, so counting full addresses would let one client rotate past the cap.
+ */
+export function ipRateKey(ip: string): string {
+  const mapped = /^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i.exec(ip);
+  if (mapped) return mapped[1];
+  if (!ip.includes(":")) return ip;
+  const [head, tail] = ip.toLowerCase().split("%")[0].split("::");
+  const headParts = head ? head.split(":") : [];
+  const tailParts = tail !== undefined && tail !== "" ? tail.split(":") : [];
+  const missing = Math.max(0, 8 - headParts.length - tailParts.length);
+  const full =
+    tail === undefined
+      ? headParts
+      : [...headParts, ...new Array<string>(missing).fill("0"), ...tailParts];
+  return `${full
+    .slice(0, 4)
+    .map((h) => (parseInt(h, 16) || 0).toString(16))
+    .join(":")}::/64`;
+}
+
+/**
  * Keyed hash of the client IP, or null when no trusted proxy header is present.
  * Only the hash is stored: an unkeyed hash of an IPv4 address is reversible by
  * brute force, so it is an HMAC under APP_SECRET.
@@ -23,7 +46,7 @@ export async function getClientIpHash(): Promise<string | null> {
   if (!ip) return null;
   const secret = process.env.APP_SECRET?.trim() || "overlapx-dev-ip-key";
   return createHmac("sha256", secret)
-    .update(`client-ip:v1:${ip}`)
+    .update(`client-ip:v1:${ipRateKey(ip)}`)
     .digest("hex")
     .slice(0, 32);
 }
