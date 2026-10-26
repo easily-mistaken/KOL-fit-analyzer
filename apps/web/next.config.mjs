@@ -19,10 +19,8 @@ import { fileURLToPath } from "node:url";
 // EnvironmentFile and one-off shell overrides keep their precedence.
 // ============================================================================
 
-const rootEnvPath = resolve(
-  dirname(fileURLToPath(import.meta.url)),
-  "../../.env"
-);
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
+const rootEnvPath = resolve(repoRoot, ".env");
 
 /** Strip one layer of matching surrounding quotes, if present. */
 function unquote(value) {
@@ -77,6 +75,12 @@ const MOVED_TOOL_PATHS = ["analyses", "r", "login", "upgrade", "detailed"];
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Pin the monorepo root. Next infers it by walking up for a lockfile, but
+  // 16.4 stops that walk at $HOME, and on the VPS the app user's home IS the
+  // repo root (/srv/overlapx). It then settles on apps/web, cannot see the
+  // hoisted node_modules, and fails with "Could not find the Next.js package".
+  turbopack: { root: repoRoot },
+  outputFileTracingRoot: repoRoot,
   async redirects() {
     return MOVED_TOOL_PATHS.flatMap((p) => [
       { source: `/${p}`, destination: `/creator-fit/${p}`, permanent: true },

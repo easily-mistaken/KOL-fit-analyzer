@@ -212,11 +212,15 @@ sudo ufw enable
 cd /srv/overlapx
 sudo -u overlapx git pull
 sudo -u overlapx pnpm install --frozen-lockfile
-sudo -u overlapx pnpm -r build
-sudo systemctl restart overlapx
+sudo -u overlapx pnpm -r build && sudo systemctl restart overlapx
 ```
 
-Four things that have each cost a debugging session:
+Keep the `&&`. A failed build leaves `apps/web/.next` half written, and
+restarting onto it takes the site down (2026-10-26: about 6 minutes of 502s).
+If the build fails, roll back with `git checkout <last good sha>`, reinstall,
+rebuild, and restart only once that build succeeds.
+
+Five things that have each cost a debugging session:
 
 - **`git` as root in a repo owned by `overlapx` fails** with `detected dubious
   ownership` — and only that step fails, so the build and restart still run and
@@ -240,6 +244,12 @@ Four things that have each cost a debugging session:
   until Node finishes booting and returns 502 in the meantime — which looks
   exactly like a crash but isn't. `journalctl -u overlapx -n 30` distinguishes
   them: a real crash shows a non-zero `NRestarts`.
+- **`Could not find the Next.js package (next/package.json)`** with
+  `Filesystem root used for resolution: /srv/overlapx/apps/web`. Next 16.4 stops
+  its monorepo-root search at `$HOME`, and the `overlapx` user's home is
+  `/srv/overlapx` itself. `next.config.mjs` pins `turbopack.root` to the repo
+  root for this reason; do not remove it. The same build passes in any other
+  directory, so it only shows up on the VPS.
 
 ## Required environment variables
 
