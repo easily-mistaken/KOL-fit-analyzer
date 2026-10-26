@@ -20,11 +20,19 @@ const DESCRIPTION =
   "OverlapX is a video studio for brands on X. Motion graphics, AI videos and hype edits for crypto brands, products and AI companies, delivered in 4-5 days.";
 
 export const metadata = {
+  // Falls back to the real domain, not localhost: this base builds every
+  // canonical URL, so a build missing NEXT_PUBLIC_APP_URL must still tell
+  // Google the right host.
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
+    process.env.NEXT_PUBLIC_APP_URL ?? "https://overlapx.com"
   ),
   title: { default: "OverlapX", template: "%s · OverlapX" },
   description: DESCRIPTION,
+  // Every page names its own non-www URL as canonical ("./" resolves to the
+  // page's path against metadataBase). www.overlapx.com also 301s here in
+  // nginx; without both, Google treated the two hosts as duplicates and
+  // indexed www instead of the real home page.
+  alternates: { canonical: "./" },
   openGraph: {
     type: "website",
     siteName: "OverlapX",

@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { resolveAuthMode } from "@kol-fit/auth";
 
@@ -8,6 +9,11 @@ import { BackButton } from "@/components/back-button";
 // Reads env + cookies; never prerender or cache an auth surface.
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+// A sign-in screen has nothing to rank for; keep it out of search results.
+export const metadata: Metadata = {
+  robots: { index: false, follow: true },
+};
 
 /**
  * Login page (Unit 28, Google-only). Already signed in → straight to the reports
