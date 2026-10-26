@@ -244,6 +244,14 @@ Five things that have each cost a debugging session:
   until Node finishes booting and returns 502 in the meantime — which looks
   exactly like a crash but isn't. `journalctl -u overlapx -n 30` distinguishes
   them: a real crash shows a non-zero `NRestarts`.
+- **The per-IP analysis cap needs nginx to pass the real client IP.** The app
+  reads `X-Real-IP`, which nginx sets from `$remote_addr` after its realip
+  module swaps in `CF-Connecting-IP` for connections from Cloudflare's ranges
+  (`/etc/nginx/conf.d/cloudflare-realip.conf`, generated from
+  https://www.cloudflare.com/ips-v4 and ips-v6, plus
+  `proxy_set_header X-Real-IP $remote_addr;` in both proxy locations). If
+  Cloudflare publishes new ranges, regenerate that file; until then requests
+  from the new ranges are counted under Cloudflare's IP rather than the user's.
 - **`Could not find the Next.js package (next/package.json)`** with
   `Filesystem root used for resolution: /srv/overlapx/apps/web`. Next 16.4 stops
   its monorepo-root search at `$HOME`, and the `overlapx` user's home is
@@ -266,6 +274,7 @@ Set these in the platform's env settings (not a committed file). See
 | `TWITTER_PROVIDER=twitterapi` + `TWITTERAPI_IO_KEY` | live X data |
 | `LLM_PROVIDER=openai` + `OPENAI_API_KEY` | live analysis |
 | `ADMIN_PASSWORD` | optional; leave empty to keep the admin panel disabled |
+| `APP_SECRET` | server-only random hex; signs admin sessions and keys the client-IP hashes |
 | `MAX_DAILY_SPEND_USD`, `MAX_ANALYSES_PER_*` | cost/abuse caps |
 | `TELEGRAM_BOT_TOKEN` + `TELEGRAM_ADMIN_CHAT_ID` | **private** bot that DMs *you* when a lead lands; never shown to users |
 | `NEXT_PUBLIC_CONTACT_TELEGRAM`, `NEXT_PUBLIC_CONTACT_X` | your handles, shown on finished reports |

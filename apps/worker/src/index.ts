@@ -7,6 +7,7 @@ import { getBoss, stopBoss, QUEUE_NAMES } from "@kol-fit/queue";
 import { APP_NAME } from "@kol-fit/shared";
 
 import { processAnalysisRun } from "./handlers/analysis-run.js";
+import { startStaleJobSweep } from "./stale-jobs.js";
 
 async function main(): Promise<void> {
   console.log(`${APP_NAME} worker booted`);
@@ -60,6 +61,7 @@ async function main(): Promise<void> {
   console.log(`[worker] listening on ${QUEUE_NAMES.ANALYSIS_RUN}`);
 
   startQueueWatchdog(boss);
+  startStaleJobSweep();
 }
 
 // Queue liveness watchdog (2026-09-12 incident). pg-boss reports connection

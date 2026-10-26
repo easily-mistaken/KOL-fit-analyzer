@@ -34,7 +34,11 @@ export function LoginForm() {
         router.refresh();
         return;
       }
-      setError("Incorrect password.");
+      setError(
+        res.status === 429
+          ? "Too many incorrect attempts. Try again in 15 minutes."
+          : "Incorrect password."
+      );
     } catch {
       setError("Something went wrong. Please try again.");
     } finally {

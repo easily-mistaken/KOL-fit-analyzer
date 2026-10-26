@@ -105,6 +105,10 @@ model AnalysisRequest {
   // Anonymous per-browser owner (Unit 25). Set from a private cookie; scopes
   // report visibility to the browser that created the analysis (pre-auth).
   ownerId     String?
+  // Keyed hash of the client IP (lib/client-ip.ts), never the raw address.
+  // Backs the per-IP daily cap, which a script dropping the owner cookie
+  // cannot reset. Null for rows created before it existed or without a proxy.
+  clientIpHash String?
 
   orgHandle String
   kolHandle String
@@ -129,6 +133,7 @@ model AnalysisRequest {
 
   @@index([workspaceId, createdAt])
   @@index([ownerId, createdAt])
+  @@index([clientIpHash, createdAt])
   @@index([orgHandle])
   @@index([kolHandle])
   @@index([createdAt])

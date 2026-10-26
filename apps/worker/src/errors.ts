@@ -16,6 +16,7 @@ export type AnalysisErrorCode =
   | "llm_timeout"
   | "llm_config"
   | "llm_unavailable"
+  | "analysis_stalled"
   | "analysis_failed";
 
 // Fixed, safe, user-friendly copy per code. We never surface raw provider or
@@ -44,8 +45,15 @@ const MESSAGES: Record<AnalysisErrorCode, string> = {
     "The analysis model is not configured correctly. An operator needs to check the model settings.",
   llm_unavailable:
     "The analysis model provider is temporarily unavailable. Please try again shortly.",
+  analysis_stalled:
+    "The analysis stopped responding before it finished. Please try again.",
   analysis_failed: "The analysis couldn't be completed. Please try again.",
 };
+
+/** The fixed, user-safe copy for a code. */
+export function analysisErrorMessage(code: AnalysisErrorCode): string {
+  return MESSAGES[code];
+}
 
 const TWITTER_CODE_MAP: Record<string, AnalysisErrorCode> = {
   auth_error: "twitter_auth",

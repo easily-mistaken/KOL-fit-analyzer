@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { createHash, timingSafeEqual } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import { redirect } from "next/navigation";
 
 // Admin session (Unit 27). A single shared password from the environment gates
@@ -12,7 +12,6 @@ import { redirect } from "next/navigation";
 
 const COOKIE = "kolfit_admin";
 const MAX_AGE = 60 * 60 * 12; // 12h
-const TOKEN_PREFIX = "kolfit-admin-v1:";
 
 /** The configured password, or null when the panel is disabled. */
 function adminPassword(): string | null {
@@ -26,13 +25,30 @@ export function isAdminConfigured(): boolean {
 }
 
 /**
- * The cookie value for the configured password. Derived from the password, so
- * rotating ADMIN_PASSWORD invalidates every existing session.
+ * Session token: `<expiresAtSeconds>.<hmac>`. The server checks the expiry, so
+ * a copied cookie dies after MAX_AGE instead of living until the password
+ * changes. The HMAC key mixes APP_SECRET with the password: rotating either
+ * invalidates every session, and a leaked cookie cannot be brute-forced offline
+ * back to the password without the server-only secret.
  */
-function expectedToken(password: string): string {
-  return createHash("sha256")
-    .update(TOKEN_PREFIX + password)
+function signature(password: string, expiresAt: number): string {
+  const secret = process.env.APP_SECRET?.trim() ?? "";
+  return createHmac("sha256", `${secret}\0${password}`)
+    .update(`kolfit-admin-v2:${expiresAt}`)
     .digest("hex");
+}
+
+function issueToken(password: string): string {
+  const expiresAt = Math.floor(Date.now() / 1000) + MAX_AGE;
+  return `${expiresAt}.${signature(password, expiresAt)}`;
+}
+
+function tokenIsValid(token: string, password: string): boolean {
+  const match = /^(\d{1,12})\.([0-9a-f]{64})$/.exec(token);
+  if (!match) return false;
+  const expiresAt = Number(match[1]);
+  if (expiresAt <= Math.floor(Date.now() / 1000)) return false;
+  return safeEqual(match[2], signature(password, expiresAt));
 }
 
 /** Constant-time compare of two strings of arbitrary length. */
@@ -56,7 +72,7 @@ export async function isAdminRequest(): Promise<boolean> {
   if (!password) return false;
   const token = (await cookies()).get(COOKIE)?.value;
   if (!token) return false;
-  return safeEqual(token, expectedToken(password));
+  return tokenIsValid(token, password);
 }
 
 /**
@@ -71,7 +87,7 @@ export async function requireAdmin(): Promise<void> {
 export async function setAdminSession(): Promise<void> {
   const password = adminPassword();
   if (!password) return;
-  (await cookies()).set(COOKIE, expectedToken(password), {
+  (await cookies()).set(COOKIE, issueToken(password), {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",

@@ -64,18 +64,36 @@ export async function processAnalysisRun(
     return;
   }
 
+  // Built inside the try (construction can throw on bad config) but read by
+  // the catch, so a failed run's provider spend is still logged.
+  let providers: ReturnType<typeof buildProviders> | null = null;
+  let usageLogged = false;
+
   try {
-    // QUEUED -> RUNNING (increment attempts as retry metadata). Capture the
-    // incremented value onto the in-memory job so the retry decision below sees
-    // the post-increment count (first run = 1), not the stale loaded value.
-    const running = await prisma.analysisJob.update({
-      where: { id: jobId },
+    // QUEUED -> RUNNING, claimed atomically. QUEUED is the normal case; RUNNING
+    // means a previous process died mid-run and pg-boss redelivered, so resume.
+    // FAILED means this delivery is a stale duplicate (two retries enqueued, or
+    // the stale-job sweep already gave up on it): skip it rather than run the
+    // paid pipeline again. Attempts increment as retry metadata; the re-read
+    // gives the retry decision below the post-increment count (first run = 1).
+    const claimed = await prisma.analysisJob.updateMany({
+      where: { id: jobId, status: { in: ["QUEUED", "RUNNING"] } },
       data: {
         status: "RUNNING",
         startedAt: new Date(),
         attempts: { increment: 1 },
         progress: Prisma.DbNull, // clear any stale progress from a prior attempt
       },
+    });
+    if (claimed.count === 0) {
+      console.log(
+        `[worker] AnalysisJob ${jobId} is no longer QUEUED (already finished or failed); skipping duplicate delivery.`
+      );
+      return;
+    }
+    const running = await prisma.analysisJob.findUniqueOrThrow({
+      where: { id: jobId },
+      select: { attempts: true },
     });
     job.attempts = running.attempts;
 
@@ -121,7 +139,8 @@ export async function processAnalysisRun(
     };
     // Build cached Twitter provider + LLM provider (caching/usage logging live
     // worker-side; the pipeline stays pure). Caps honor ANALYSIS_* env overrides.
-    const { twitter, llm } = buildProviders();
+    providers = buildProviders();
+    const { twitter, llm } = providers;
     const caps = resolveCaps();
     const { report, scores, evidence, llmModel } = await runAnalysis(
       requestData,
@@ -166,7 +185,8 @@ export async function processAnalysisRun(
       update: reportFields,
     });
 
-    // Record provider usage (best-effort; mock providers report nothing).
+    // Record provider usage (best-effort; mock providers report nothing). A
+    // failed run logs its partial spend from the catch below instead.
     await logProviderUsage({
       requestId,
       reportId: savedReport.id,
@@ -174,6 +194,7 @@ export async function processAnalysisRun(
       twitter,
       llm,
     });
+    usageLogged = true;
 
     // RUNNING -> COMPLETED. Clear any error left by a failed earlier attempt:
     // the retry path stamps errorCode/errorMessage when it re-queues, so
@@ -202,6 +223,19 @@ export async function processAnalysisRun(
       `[worker] processing failed for request ${requestId} (job ${jobId}): ${code}:`,
       error instanceof Error ? error.message : String(error)
     );
+
+    // A failed run has usually already paid for Twitter fetches and some LLM
+    // calls. Log them so MAX_DAILY_SPEND_USD and the admin spend numbers see
+    // real cost; otherwise a run that keeps failing late spends without limit.
+    if (providers && !usageLogged) {
+      await logProviderUsage({
+        requestId,
+        reportId: null,
+        workspaceId: job.request.workspaceId,
+        twitter: providers.twitter,
+        llm: providers.llm,
+      });
+    }
 
     // Transient-failure retry (Unit 26). job.attempts was already incremented at
     // the QUEUED->RUNNING transition (first run = 1). For a retryable code with

@@ -27,26 +27,31 @@ const ck = (n, c) => {
 // Defaults when env is empty.
 const def = resolveAbuseLimits({});
 ck(`default perOwnerPerDay = 10 (got ${def.perOwnerPerDay})`, def.perOwnerPerDay === 10);
+ck(`default perIpPerDay = 20 (got ${def.perIpPerDay})`, def.perIpPerDay === 20);
 ck(`default globalPerDay = 200 (got ${def.globalPerDay})`, def.globalPerDay === 200);
 ck(`default maxDailySpendUsd = 0 (got ${def.maxDailySpendUsd})`, def.maxDailySpendUsd === 0);
 
 // Env overrides applied.
 const ov = resolveAbuseLimits({
   MAX_ANALYSES_PER_OWNER_PER_DAY: "3",
+  MAX_ANALYSES_PER_IP_PER_DAY: "7",
   MAX_ANALYSES_PER_DAY: "50",
   MAX_DAILY_SPEND_USD: "25.5",
 });
 ck(`override perOwnerPerDay -> 3 (got ${ov.perOwnerPerDay})`, ov.perOwnerPerDay === 3);
+ck(`override perIpPerDay -> 7 (got ${ov.perIpPerDay})`, ov.perIpPerDay === 7);
 ck(`override globalPerDay -> 50 (got ${ov.globalPerDay})`, ov.globalPerDay === 50);
 ck(`override maxDailySpendUsd -> 25.5 (got ${ov.maxDailySpendUsd})`, ov.maxDailySpendUsd === 25.5);
 
 // Invalid / negative count env -> default.
 const bad = resolveAbuseLimits({
   MAX_ANALYSES_PER_OWNER_PER_DAY: "0",
+  MAX_ANALYSES_PER_IP_PER_DAY: "0",
   MAX_ANALYSES_PER_DAY: "-5",
   MAX_DAILY_SPEND_USD: "-1",
 });
 ck(`count env 0 -> default 10 (got ${bad.perOwnerPerDay})`, bad.perOwnerPerDay === 10);
+ck(`ip env 0 -> default 20 (got ${bad.perIpPerDay})`, bad.perIpPerDay === 20);
 ck(`count env -5 -> default 200 (got ${bad.globalPerDay})`, bad.globalPerDay === 200);
 ck(`spend env -1 -> default 0 (got ${bad.maxDailySpendUsd})`, bad.maxDailySpendUsd === 0);
 

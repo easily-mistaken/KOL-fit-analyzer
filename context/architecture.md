@@ -272,9 +272,12 @@ Even though auth is skipped initially, the database schema must not block adding
 analyses across **all** owners, captured email/Telegram leads, provider spend).
 It is gated by a **single shared password** read from `ADMIN_PASSWORD`, not by a
 user system: `POST /api/admin/session` verifies the password in constant time and
-sets an httpOnly `kolfit_admin` cookie holding
-`sha256("kolfit-admin-v1:" + ADMIN_PASSWORD)`; every admin page/route re-derives
-and compares that token (`apps/web/lib/admin/auth.ts`). **Fail-closed:** with
+sets an httpOnly `kolfit_admin` cookie holding `<expiresAt>.<hmac>`, an HMAC
+keyed by `APP_SECRET` + the password over the expiry; every admin page/route
+checks the signature and that the 12h expiry has not passed
+(`apps/web/lib/admin/auth.ts`). Login attempts are throttled per client IP: 5
+wrong passwords in 15 minutes lock that IP out for 15 minutes (in memory,
+`apps/web/lib/admin/login-throttle.ts`; the site is one Next.js process). **Fail-closed:** with
 `ADMIN_PASSWORD` unset the panel is disabled entirely (pages render a "not
 configured" notice, the session route 404s), so it is never open by default;
 rotating the password invalidates all sessions. A valid admin session is the one
@@ -391,17 +394,24 @@ paid TwitterAPI.io + OpenAI spend. Two DB-backed caps bound worst-case
 denial-of-wallet exposure without new infrastructure (no Redis; matches the
 "database-backed first" principle):
 
-- **Per-owner cap** and **global (spend-ceiling) cap** — before creating an
-  analysis, `checkAnalysisRateLimit(ownerId)` (`apps/web/lib/rate-limit.ts`)
-  counts `AnalysisRequest`s over a rolling 24h window: per `ownerId` cookie
-  (default 10 = `MAX_ANALYSES_PER_OWNER_PER_DAY`) and across all owners (default
-  200 = `MAX_ANALYSES_PER_DAY`). At/over either cap the route returns **HTTP 429**
+- **Per-owner, per-IP and global (spend-ceiling) caps** — before creating an
+  analysis, `checkAnalysisRateLimit(ownerId, clientIpHash)`
+  (`apps/web/lib/rate-limit.ts`) counts `AnalysisRequest`s over a rolling 24h
+  window: per `ownerId` cookie (default 10 = `MAX_ANALYSES_PER_OWNER_PER_DAY`),
+  per client IP (default 20 = `MAX_ANALYSES_PER_IP_PER_DAY`) and across all
+  owners (default 200 = `MAX_ANALYSES_PER_DAY`). The per-IP cap exists because
+  the owner cookie is client-controlled: a script that drops it gets a fresh
+  owner per request. The IP comes from nginx's `X-Real-IP` (realip over
+  Cloudflare's ranges, so it cannot be spoofed) and only an HMAC of it
+  (`APP_SECRET`) is stored, on `AnalysisRequest.clientIpHash`
+  (`apps/web/lib/client-ip.ts`); with no header (local dev) the cap is skipped. At/over either cap the route returns **HTTP 429**
   `rate_limited` with a safe message; the check is two `count()` reads (not
   analysis work), kept inside the route `try` so DB errors fall to the generic
   500 path. Limits resolve from env via `resolveAbuseLimits` (`packages/shared`).
 - **Optional spend cap** — when `MAX_DAILY_SPEND_USD > 0` (default 0 = disabled),
   the check also sums `ProviderUsageLog.costUsd` over the same window and refuses
-  once it reaches the budget.
+  once it reaches the budget. Failed runs log their partial provider usage too
+  (`reportId` null), so a run that keeps failing late still counts.
 - **Transient-failure retry** — the worker now retries transient provider
   failures (rate-limit/timeout/outage: `RETRYABLE_CODES` in
   `apps/worker/src/errors.ts`; auth/config/not_found/invalid_output/analysis_failed
@@ -413,12 +423,22 @@ denial-of-wallet exposure without new infrastructure (no Redis; matches the
   the pg-boss batch, so per-job isolation and idempotency (COMPLETED
   short-circuits; upsert-by-`requestId`) are preserved. Exhausted/non-retryable/
   re-enqueue-failed cases mark the job FAILED as before.
+- **Atomic job claims** — the retry route moves FAILED to QUEUED with a
+  conditional `updateMany`, so concurrent retries enqueue once. The worker claims
+  QUEUED (or RUNNING, i.e. a crashed run being redelivered) to RUNNING the same
+  way and skips any other status, so a stale duplicate delivery never re-runs a
+  FAILED job.
+- **Stale-job sweep** — every 5 minutes (and at boot) the worker marks RUNNING
+  jobs that started over 30 minutes ago FAILED with `analysis_stalled`
+  (`apps/worker/src/stale-jobs.ts`), so a run orphaned by a crash or a lost
+  FAILED write gets a retry button instead of polling forever. QUEUED jobs are
+  never swept: they can legitimately wait behind others.
 - **Provider-safety signposting** — the worker logs a one-line startup warning
   when LIVE providers (`TWITTER_PROVIDER=twitterapi` / `LLM_PROVIDER=openai`) are
   active; `.env.example` documents all caps with a public-endpoint warning.
 
-Real per-user auth (not per-browser-cookie) and per-IP limiting remain the future
-fix; `ownerId` maps onto a real user id then.
+Signed-in users' `ownerId` is their user id (Unit 28); anonymous use still keys
+on the cookie, backed by the per-IP cap.
 
 ### Report Delivery (removed)
 

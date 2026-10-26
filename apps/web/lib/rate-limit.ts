@@ -12,13 +12,15 @@ export type LimitDecision =
 
 /**
  * Decides whether `ownerId` may create another analysis right now, over a
- * rolling 24h window. Order: per-owner cap, then the global spend-ceiling cap,
- * then (if enabled) the summed provider-spend cap. Limits come from
+ * rolling 24h window. Order: per-owner cap, per-IP cap (when the IP is known),
+ * the global spend-ceiling cap, then (if enabled) the summed provider-spend
+ * cap. Limits come from
  * resolveAbuseLimits(process.env). Throws on DB errors so the caller's try/catch
  * can fall through to a generic 500 (no leak).
  */
 export async function checkAnalysisRateLimit(
-  ownerId: string
+  ownerId: string,
+  clientIpHash: string | null = null
 ): Promise<LimitDecision> {
   const limits = resolveAbuseLimits(process.env);
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -32,6 +34,22 @@ export async function checkAnalysisRateLimit(
       message:
         "You've reached the daily limit for new analyses from this browser. Please try again later.",
     };
+  }
+
+  // Per-IP cap: the owner cookie above is client-controlled, so a script that
+  // drops it gets a fresh owner (and quota) per request. Skipped when there is
+  // no trusted IP (local dev, no nginx in front).
+  if (clientIpHash) {
+    const perIp = await prisma.analysisRequest.count({
+      where: { clientIpHash, createdAt: { gte: since } },
+    });
+    if (perIp >= limits.perIpPerDay) {
+      return {
+        allowed: false,
+        message:
+          "You've reached the daily limit for new analyses from this network. Please try again later.",
+      };
+    }
   }
 
   const global = await prisma.analysisRequest.count({

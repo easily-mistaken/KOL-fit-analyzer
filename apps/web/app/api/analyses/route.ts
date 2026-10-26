@@ -19,6 +19,7 @@ import {
 import { getCurrentUser } from "@/lib/auth";
 import { buildFirstRunNotification, notifyOperator } from "@/lib/notify";
 import { ensureOwnerId, getOwnerId } from "@/lib/owner";
+import { getClientIpHash } from "@/lib/client-ip";
 import { checkAnalysisRateLimit } from "@/lib/rate-limit";
 import { checkTierGate } from "@/lib/tier-gate";
 
@@ -192,7 +193,8 @@ export async function POST(req: Request): Promise<Response> {
     // Abuse & cost controls (Unit 26): refuse over-limit creations before doing
     // any work. Two count() reads (+ optional spend sum) against saved records —
     // not analysis work. Kept inside the try so DB errors fall to the 500 path.
-    const decision = await checkAnalysisRateLimit(ownerId);
+    const clientIpHash = await getClientIpHash();
+    const decision = await checkAnalysisRateLimit(ownerId, clientIpHash);
     if (!decision.allowed) {
       return json(err("rate_limited", decision.message), 429);
     }
@@ -200,6 +202,7 @@ export async function POST(req: Request): Promise<Response> {
     const created = await prisma.analysisRequest.create({
       data: {
         ownerId,
+        clientIpHash,
         orgHandle: input.orgHandle,
         kolHandle: input.kolHandle,
         websiteUrl: input.websiteUrl ?? null,

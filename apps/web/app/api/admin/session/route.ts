@@ -6,6 +6,12 @@ import {
   setAdminSession,
   verifyAdminPassword,
 } from "@/lib/admin/auth";
+import {
+  clearLoginFailures,
+  loginRetryAfterSeconds,
+  recordLoginFailure,
+} from "@/lib/admin/login-throttle";
+import { getClientIpHash } from "@/lib/client-ip";
 
 // The admin session cookie is set/cleared with node:crypto + next/headers.
 export const runtime = "nodejs";
@@ -49,10 +55,26 @@ export async function POST(req: Request): Promise<Response> {
   }
 
   try {
+    // Throttle before comparing, so a locked-out client learns nothing even
+    // when it guesses right.
+    const throttleKey = (await getClientIpHash()) ?? "no-client-ip";
+    const retryAfter = loginRetryAfterSeconds(throttleKey);
+    if (retryAfter > 0) {
+      return Response.json(
+        err(
+          "rate_limited",
+          `Too many incorrect attempts. Try again in ${Math.ceil(retryAfter / 60)} minutes.`
+        ),
+        { status: 429, headers: { "Retry-After": String(retryAfter) } }
+      );
+    }
+
     if (!verifyAdminPassword(password)) {
+      recordLoginFailure(throttleKey);
       return json(err("unauthorized", "Incorrect password."), 401);
     }
 
+    clearLoginFailures(throttleKey);
     await setAdminSession();
     return json(ok({ ok: true }), 200);
   } catch (error) {

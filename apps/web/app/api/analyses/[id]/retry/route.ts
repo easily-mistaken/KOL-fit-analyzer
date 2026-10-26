@@ -57,8 +57,11 @@ export async function POST(
       }
     }
 
-    await prisma.analysisJob.update({
-      where: { id: request.job.id },
+    // Claim the FAILED -> QUEUED transition atomically. The status check above
+    // is a separate read, so a double-click (or two tabs) could both pass it
+    // and enqueue two paid runs; only one conditional update can match.
+    const claimed = await prisma.analysisJob.updateMany({
+      where: { id: request.job.id, status: "FAILED" },
       data: {
         status: "QUEUED",
         errorCode: null,
@@ -68,6 +71,9 @@ export async function POST(
         failedAt: null,
       },
     });
+    if (claimed.count === 0) {
+      return json(err("conflict", "Only failed analyses can be retried."), 409);
+    }
 
     try {
       const pgBossJobId = await enqueueAnalysisRun({
