@@ -1,6 +1,8 @@
 import { cookies } from "next/headers";
 import { randomUUID } from "node:crypto";
 
+import { prisma } from "@kol-fit/db";
+
 import { getCurrentUserId } from "./auth/current-user";
 
 // Report ownership (Unit 25 anonymous cookie → Unit 28 real accounts). The
@@ -45,4 +47,23 @@ export async function ensureOwnerId(): Promise<string> {
     maxAge: MAX_AGE,
   });
   return id;
+}
+
+/**
+ * `analysisRequestId` if that analysis belongs to `ownerId`, else null. Forms
+ * that link a submission to "the report I was reading" take the id from the
+ * client; without this check anyone could attach their lead or request to
+ * someone else's analysis. Callers drop an unowned link rather than failing,
+ * so a real person's request is never lost over it.
+ */
+export async function ownedAnalysisId(
+  analysisRequestId: string | null | undefined,
+  ownerId: string
+): Promise<string | null> {
+  if (!analysisRequestId) return null;
+  const owned = await prisma.analysisRequest.findFirst({
+    where: { id: analysisRequestId, ownerId },
+    select: { id: true },
+  });
+  return owned?.id ?? null;
 }

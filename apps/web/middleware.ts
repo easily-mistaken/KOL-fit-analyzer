@@ -62,11 +62,16 @@ export async function middleware(request: NextRequest): Promise<NextResponse> {
 }
 
 export const config = {
+  // Only the surfaces that read the session. The agency site (/, /work,
+  // /about, /pricing, /contact, /deck) never does, and most visitors come for
+  // the portfolio, so it must not pay for the Creator Fit session refresh (a
+  // Supabase round trip for anyone carrying a sign-in cookie).
   matcher: [
-    /*
-     * Match all request paths except static assets and image files:
-     * - _next/static, _next/image, favicon.ico, common image extensions.
-     */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/creator-fit/:path*",
+    "/admin/:path*",
+    "/api/:path*",
+    "/auth/:path*",
+    "/privacy",
+    "/terms",
   ],
 };

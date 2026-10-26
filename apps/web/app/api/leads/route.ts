@@ -11,7 +11,7 @@ import { prisma } from "@kol-fit/db";
 
 import { getCurrentUser } from "@/lib/auth";
 import { buildLeadNotification, notifyOperator } from "@/lib/notify";
-import { ensureOwnerId } from "@/lib/owner";
+import { ensureOwnerId, ownedAnalysisId } from "@/lib/owner";
 
 // Lightweight email capture (Unit 44). Public and deliberately low-friction:
 // one field, no account, at the moment a reader has just been handed value.
@@ -62,7 +62,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     });
     const existing = await prisma.lead.findUnique({
       where: { email },
-      select: { id: true },
+      select: { id: true, updatedAt: true },
     });
     if (!existing && recent >= dailyCap()) {
       return json(
@@ -71,24 +71,27 @@ export async function POST(request: Request): Promise<NextResponse> {
       );
     }
 
+    const analysisRequestId = await ownedAnalysisId(input.analysisRequestId, ownerId);
+
     // Upsert: one row per person. A returning capture refreshes the hook
     // (what they were looking at) without duplicating them in the outreach
-    // list, and never overwrites `firstSource` — where someone was FIRST
-    // caught is the durable intent signal.
+    // list, and never overwrites `firstSource` (where someone was FIRST caught
+    // is the durable intent signal) or `ownerId`: the email is typed by the
+    // client, so overwriting the owner would let anyone who knows an address
+    // move that person's analyses to their own browser in /admin/people.
     await prisma.lead.upsert({
       where: { email },
       create: {
         email,
         ownerId,
         firstSource: input.source,
-        analysisRequestId: input.analysisRequestId ?? null,
+        analysisRequestId,
         orgHandle: input.orgHandle ?? null,
         kolHandle: input.kolHandle ?? null,
         note: input.note ?? null,
       },
       update: {
-        ownerId,
-        analysisRequestId: input.analysisRequestId ?? undefined,
+        analysisRequestId: analysisRequestId ?? undefined,
         orgHandle: input.orgHandle ?? undefined,
         kolHandle: input.kolHandle ?? undefined,
         note: input.note ?? undefined,
@@ -97,16 +100,24 @@ export async function POST(request: Request): Promise<NextResponse> {
       },
     });
 
-    // Best-effort operator ping; never fails the user's request.
-    void notifyOperator(
-      buildLeadNotification({
-        email,
-        source: LEAD_SOURCE_LABELS[input.source] ?? input.source,
-        orgHandle: input.orgHandle,
-        kolHandle: input.kolHandle,
-        returning: Boolean(existing),
-      })
-    );
+    // Best-effort operator ping; never fails the user's request. A returning
+    // email skips the daily cap above (so nobody is locked out of their own
+    // capture), which would also make it an unlimited Telegram trigger; ping
+    // for it at most once a day.
+    const pingedRecently =
+      existing !== null &&
+      Date.now() - existing.updatedAt.getTime() < 24 * 60 * 60 * 1000;
+    if (!pingedRecently) {
+      void notifyOperator(
+        buildLeadNotification({
+          email,
+          source: LEAD_SOURCE_LABELS[input.source] ?? input.source,
+          orgHandle: input.orgHandle,
+          kolHandle: input.kolHandle,
+          returning: Boolean(existing),
+        })
+      );
+    }
 
     return json(ok({ captured: true }), 201);
   } catch {

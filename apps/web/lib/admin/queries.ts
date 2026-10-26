@@ -143,20 +143,15 @@ export async function getAdminOverview(): Promise<AdminOverview> {
     Promise.all([
       prisma.analysisJob.groupBy({ by: ["status"], _count: { status: true } }),
 
-      // Distinct browsers. groupBy collapses to one row per owner, so the row
-      // count is the distinct count. Null owners are pre-cookie rows, not people.
-      prisma.analysisRequest.groupBy({
-        by: ["ownerId"],
-        where: { ownerId: { not: null }, ...in24h },
-      }),
-      prisma.analysisRequest.groupBy({
-        by: ["ownerId"],
-        where: { ownerId: { not: null }, ...in7d },
-      }),
-      prisma.analysisRequest.groupBy({
-        by: ["ownerId"],
-        where: { ownerId: { not: null } },
-      }),
+      // Distinct browsers, counted in Postgres. COUNT(DISTINCT) skips NULL
+      // owners (pre-cookie rows, not people). One row back, instead of one row
+      // per owner pulled into Node for each window.
+      prisma.$queryRaw<{ last24h: number; last7d: number; allTime: number }[]>`
+        SELECT
+          COUNT(DISTINCT "ownerId") FILTER (WHERE "createdAt" >= ${last24h})::int AS "last24h",
+          COUNT(DISTINCT "ownerId") FILTER (WHERE "createdAt" >= ${last7d})::int AS "last7d",
+          COUNT(DISTINCT "ownerId")::int AS "allTime"
+        FROM "AnalysisRequest"`,
 
       prisma.report.groupBy({
         by: ["verdict"],
@@ -191,9 +186,7 @@ export async function getAdminOverview(): Promise<AdminOverview> {
 
   const [
     jobGroups,
-    owners24h,
-    owners7d,
-    ownersAll,
+    [owners],
     verdictGroups,
     topKolGroups,
     topOrgGroups,
@@ -245,9 +238,9 @@ export async function getAdminOverview(): Promise<AdminOverview> {
     },
     jobs,
     owners: {
-      last24h: owners24h.length,
-      last7d: owners7d.length,
-      allTime: ownersAll.length,
+      last24h: owners.last24h,
+      last7d: owners.last7d,
+      allTime: owners.allTime,
     },
     spend: {
       costUsd,

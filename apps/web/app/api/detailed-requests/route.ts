@@ -10,7 +10,7 @@ import { prisma } from "@kol-fit/db";
 
 import { getCurrentUser } from "@/lib/auth";
 import { buildDetailedRequestNotification, notifyOperator } from "@/lib/notify";
-import { ensureOwnerId } from "@/lib/owner";
+import { ensureOwnerId, ownedAnalysisId } from "@/lib/owner";
 
 // Detailed-report concierge requests (Unit 35). Public: anyone may raise a
 // request at any time (this is the alternative path to the self-serve run).
@@ -80,7 +80,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       data: {
         ownerId,
         userId: user?.id ?? null,
-        analysisRequestId: input.analysisRequestId ?? null,
+        analysisRequestId: await ownedAnalysisId(input.analysisRequestId, ownerId),
         orgHandle: input.orgHandle ?? null,
         kolHandle: input.kolHandle ?? null,
         telegram: input.telegram,
