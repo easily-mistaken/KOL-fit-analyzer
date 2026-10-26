@@ -153,6 +153,14 @@ location / {
 }
 ```
 
+**One canonical host.** `overlapx.com` is the site; `www.overlapx.com` has its
+own `listen 443 ssl` server block (same certificate) that does nothing but
+`return 301 https://overlapx.com$request_uri;`, and the port-80 block sends
+www straight there too. Never put both names back in one `server_name` that
+serves the app: Google then sees two copies of the site, and on 2026-10-26 it
+had dropped the real home page in favour of www. Every page also emits a
+`<link rel="canonical">` (root `layout.tsx`, `alternates.canonical`).
+
 Two more pieces keep the agency pages fast for visitors far from the box
 (added 2026-10-07; a round trip from India is ~340 ms, so every extra
 connection and every revalidation is visible):
