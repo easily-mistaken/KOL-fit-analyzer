@@ -163,6 +163,21 @@ export const PROJECTS: Project[] = [
     spotlight: true,
   },
   {
+    slug: "nosana-gpu-rental",
+    title: "Out of GPU memory",
+    client: "Nosana",
+    category: "ai",
+    aspect: "16:9",
+    year: 2026,
+    durationSeconds: 50,
+    featured: true,
+    video: media("nosana-gpu-rental"),
+    objective:
+      "Show AI developers what to do when their own GPU runs out of memory mid-training: rent one on Nosana and keep going.",
+    approach:
+      "A 50-second AI film cut with motion-graphics UI. A late-night training run crashes out of GPU memory, the developer searches for GPU rental, picks an RTX 4090 by the hour on Nosana's marketplace, and the job runs to completion before landing on the Nosana mark.",
+  },
+  {
     slug: "webacy-dd-ai",
     title: "DD AI launch",
     client: "Webacy",
@@ -305,14 +320,16 @@ export interface Testimonial {
   source: "Telegram";
 }
 
-// Logos from each brand's own website (Avena's cut from the video we made for
-// them, since they have no public site yet). FailSafe and Kenomic are clients
-// whose videos cannot be shown, so they appear here and nowhere else.
+// Logos from each brand's own website (Nosana's from nosana.com/brand-assets).
+// Avena's is cut from the video we made for them, since they have no public
+// site yet. FailSafe and Kenomic are clients whose videos cannot be shown, so
+// they appear here and nowhere else.
 export const CLIENTS: Client[] = [
   { name: "Outcome", logo: "/clients/outcome.svg", width: 152, height: 24 },
   { name: "Webacy", logo: "/clients/webacy.svg", width: 989, height: 269 },
   { name: "Avena", logo: "/clients/avena.png", width: 960, height: 240, scale: 1.2 },
   { name: "CashXChain", logo: "/clients/cashxchain.png", width: 2750, height: 400 },
+  { name: "Nosana", logo: "/clients/nosana.svg", width: 166, height: 30 },
   { name: "FailSafe", logo: "/clients/failsafe.svg", width: 592, height: 100 },
   { name: "Kenomic", logo: "/clients/kenomic.png", width: 1383, height: 359, scale: 1.35 },
 ];

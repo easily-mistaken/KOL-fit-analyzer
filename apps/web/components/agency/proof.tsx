@@ -18,7 +18,7 @@ export function ClientStrip() {
       <p className="text-center font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
         Videos for teams shipping on X
       </p>
-      <div className="mt-8 flex flex-wrap items-center justify-center gap-x-12 gap-y-6">
+      <div className="mt-8 flex flex-wrap items-center justify-center gap-x-12 gap-y-6 xl:gap-x-8">
         {CLIENTS.length > 0
           ? CLIENTS.map((c) => (
               <Image

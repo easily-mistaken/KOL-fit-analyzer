@@ -290,7 +290,7 @@ function ClientsSlide({ names }: { names: string[] }) {
     <Pad>
       <Kicker>Brands we&apos;ve worked with</Kicker>
       <Title>Videos for teams shipping on X.</Title>
-      <div className="my-auto grid grid-cols-3 items-center justify-items-center gap-x-[4cqw] gap-y-[4cqw]">
+      <div className="my-auto flex flex-wrap items-center justify-center gap-x-[5cqw] gap-y-[4cqw]">
         {CLIENTS.length > 0
           ? CLIENTS.map((c) => (
               <Image key={c.name} src={c.logo} alt={c.name} width={c.width} height={c.height} style={{ height: `${2.6 * (c.scale ?? 1)}cqw` }} className="w-auto brightness-0 invert opacity-80" />
