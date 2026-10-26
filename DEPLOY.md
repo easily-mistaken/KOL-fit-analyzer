@@ -212,8 +212,19 @@ sudo ufw enable
 cd /srv/overlapx
 sudo -u overlapx git pull
 sudo -u overlapx pnpm install --frozen-lockfile
-sudo -u overlapx pnpm -r build && sudo systemctl restart overlapx
+sudo -u overlapx pnpm -r build && sudo systemctl restart overlapx && sudo bash scripts/purge-edge-cache.sh
 ```
+
+**Always purge after a restart.** Cloudflare caches the agency pages' HTML for a
+day (a Cache Rule on the zone: `/`, `/work`, `/work/*`, `/about`, `/pricing`,
+`/contact`, `/deck`, clean URLs only, never requests carrying the `RSC` or
+`Next-Router-Prefetch` header). A rebuild deletes the old `/_next/static`
+chunks, so cached HTML from before the deploy would point at missing files.
+`scripts/purge-edge-cache.sh` purges the whole zone (purge-by-URL reports
+success but leaves these pages cached); its token lives only in
+`/root/.cloudflare-overlapx-token` (root-only, Zone Read + Cache Rules Edit +
+Cache Purge, overlapx.com only). Without the token file the purge fails loudly
+and the deploy must not be called done.
 
 Keep the `&&`. A failed build leaves `apps/web/.next` half written, and
 restarting onto it takes the site down (2026-10-26: about 6 minutes of 502s).
