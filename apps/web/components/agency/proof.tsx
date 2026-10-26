@@ -63,7 +63,7 @@ export function Results() {
 function SpotlightCard({ project: p }: { project: Project }) {
   return (
     <Reveal className="grid items-center gap-8 rounded-3xl border border-default bg-surface p-5 sm:p-8 lg:grid-cols-[1.3fr_1fr]">
-      <Link href={`/work/${p.slug}`} className="block overflow-hidden rounded-2xl border border-default">
+      <Link href={`/work/${p.slug}`} aria-label={`Watch ${p.title}`} className="block overflow-hidden rounded-2xl border border-default">
         <VideoFrame video={p.video} category={p.category} aspect={p.aspect} />
       </Link>
       <div>

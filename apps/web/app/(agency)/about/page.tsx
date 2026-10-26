@@ -1,21 +1,23 @@
-import type { Metadata } from "next";
-
 import { Reveal } from "@/components/agency/reveal";
 import { Section, SectionHeading } from "@/components/agency/section";
 import { FinalCta, ProcessSteps, ToolPromo, WhyX } from "@/components/agency/blocks";
 import { Testimonials } from "@/components/agency/proof";
 import { PROMISES } from "@/lib/agency/content";
+import { pageMetadata } from "@/lib/agency/seo";
 
-export const metadata: Metadata = {
-  title: "About",
-  description: "OverlapX is a video studio built for brands that market on X: crypto brands, products and AI products.",
-};
+export const metadata = pageMetadata({
+  title: "About OverlapX: a video studio built for X",
+  description:
+    "OverlapX is a video studio built for brands that market on X: crypto brands, products and AI products. Every video is made for a fast, muted timeline.",
+  path: "/about",
+});
 
 export default function AboutPage() {
   return (
     <>
       <Section>
         <SectionHeading
+          as="h1"
           eyebrow="About OverlapX"
           title={
             <>

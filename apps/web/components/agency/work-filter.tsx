@@ -33,7 +33,7 @@ export function WorkFilterNav() {
 
 export function FilteredWorkGrid({ projects }: { projects: Project[] }) {
   return (
-    <Suspense fallback={<WorkGrid projects={projects} />}>
+    <Suspense fallback={<WorkGrid projects={projects} priority />}>
       <GridFromUrl projects={projects} />
     </Suspense>
   );
@@ -44,7 +44,7 @@ function FilterNavFromUrl() {
 }
 
 function GridFromUrl({ projects }: { projects: Project[] }) {
-  return <WorkGrid projects={projects} category={useActiveStyle()} />;
+  return <WorkGrid projects={projects} category={useActiveStyle()} priority />;
 }
 
 function FilterNav({ active }: { active: WorkCategory | undefined }) {

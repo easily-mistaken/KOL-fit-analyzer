@@ -81,6 +81,10 @@ const nextConfig = {
   // hoisted node_modules, and fails with "Could not find the Next.js package".
   turbopack: { root: repoRoot },
   outputFileTracingRoot: repoRoot,
+  // Ship the (small, ~16 KB compressed) stylesheet inside the HTML instead of
+  // as a separate request. On a phone that request blocked the first paint by
+  // ~0.6 s; inlined, the page can paint from the HTML alone.
+  experimental: { inlineCss: true },
   async redirects() {
     return MOVED_TOOL_PATHS.flatMap((p) => [
       { source: `/${p}`, destination: `/creator-fit/${p}`, permanent: true },

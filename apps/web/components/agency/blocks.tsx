@@ -141,19 +141,17 @@ export function ProcessSteps() {
       />
       <ol className="grid gap-4 md:grid-cols-5">
         {PROCESS.map((s, i) => (
-          <Reveal key={s.title} delay={i * 90}>
-            <li className="flex h-full flex-col rounded-2xl border border-default bg-surface p-6">
-              <span
-                className={cn(
-                  "flex h-9 w-9 items-center justify-center rounded-full font-mono text-sm",
-                  i === PROCESS.length - 1 ? "bg-accent-primary text-accent-contrast" : "bg-elevated text-foreground"
-                )}
-              >
-                {i + 1}
-              </span>
-              <h3 className="mt-6 text-lg font-semibold tracking-tight text-foreground">{s.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-secondary-foreground">{s.body}</p>
-            </li>
+          <Reveal as="li" key={s.title} delay={i * 90} className="flex h-full flex-col rounded-2xl border border-default bg-surface p-6">
+            <span
+              className={cn(
+                "flex h-9 w-9 items-center justify-center rounded-full font-mono text-sm",
+                i === PROCESS.length - 1 ? "bg-accent-primary text-accent-contrast" : "bg-elevated text-foreground"
+              )}
+            >
+              {i + 1}
+            </span>
+            <h3 className="mt-6 text-lg font-semibold tracking-tight text-foreground">{s.title}</h3>
+            <p className="mt-2 text-sm leading-relaxed text-secondary-foreground">{s.body}</p>
           </Reveal>
         ))}
       </ol>
@@ -169,7 +167,8 @@ export function PricingFactors() {
         {PRICING_FACTORS.map((f, i) => (
           <Reveal key={f.title} delay={i * 90} className="flex h-full flex-col rounded-3xl border border-default bg-surface p-7">
             <span className="font-mono text-sm text-accent-ink">0{i + 1}</span>
-            <h3 className="mt-5 text-xl font-semibold tracking-tight text-foreground">{f.title}</h3>
+            {/* h2: on /pricing these cards sit directly under the page h1. */}
+            <h2 className="mt-5 text-xl font-semibold tracking-tight text-foreground">{f.title}</h2>
             <p className="mt-2 text-sm leading-relaxed text-secondary-foreground">{f.body}</p>
           </Reveal>
         ))}

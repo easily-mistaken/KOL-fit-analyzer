@@ -316,13 +316,21 @@ html:has([data-surface="agency"]) body {
   .timeline-track:hover { animation-play-state: paused; }
 }
 
-/* Scroll reveal, driven by <Reveal> toggling data-shown. */
-.reveal {
-  opacity: 0;
-  transform: translateY(18px);
-  transition: opacity 700ms cubic-bezier(0.2, 0.7, 0.2, 1), transform 700ms cubic-bezier(0.2, 0.7, 0.2, 1);
+/* Scroll reveal (<Reveal>): a scroll-driven animation, no JavaScript. Content
+   already on screen at load is past its entry range, so it paints fully
+   visible; anything below fades up as it enters. Without support it just
+   shows. --reveal-shift staggers siblings that enter together. */
+@keyframes kf-reveal {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: none; }
 }
-.reveal[data-shown="true"] { opacity: 1; transform: none; }
+@supports (animation-timeline: view()) {
+  .reveal {
+    animation: kf-reveal linear both;
+    animation-timeline: view();
+    animation-range: entry var(--reveal-shift, 0%) entry calc(60% + var(--reveal-shift, 0%));
+  }
+}
 
 /* --- Motion posters: CSS-only stand-ins until real footage is added. --- */
 @keyframes kf-orb {
@@ -390,5 +398,5 @@ html:has([data-surface="agency"]) body {
   .marquee-track, .timeline-track,
   .poster-orb, .poster-scan, .poster-spin, .poster-slide-a, .poster-slide-b,
   .poster-strobe, .poster-stripes, .poster-cut, .poster-cursor { animation: none; }
-  .reveal { opacity: 1; transform: none; transition: none; }
+  .reveal { animation: none; }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { preload } from "react-dom";
 
 import { cn } from "@/lib/utils";
 import type { Aspect, ProjectVideo, WorkCategory } from "@/lib/agency/work";
@@ -28,6 +29,7 @@ export function VideoFrame({
   controls = false,
   fit = "cover",
   fill = false,
+  priority = false,
 }: {
   video: ProjectVideo | null;
   category: WorkCategory;
@@ -40,8 +42,15 @@ export function VideoFrame({
   fit?: "cover" | "contain";
   /** Fill the parent (which must be positioned) instead of keeping an aspect. */
   fill?: boolean;
+  /** The page's first visible video: fetch its poster first, since that
+   *  poster is what phones paint as the page's main content (LCP). */
+  priority?: boolean;
 }) {
   const ref = useRef<HTMLVideoElement>(null);
+  // Loops are small on screen, so they get the small poster; the project
+  // page player keeps the full-size one.
+  const poster = controls ? video?.poster : (video?.posterSmall ?? video?.poster);
+  if (priority && poster) preload(poster, { as: "image", fetchPriority: "high" });
 
   useEffect(() => {
     const el = ref.current;
@@ -59,15 +68,16 @@ export function VideoFrame({
 
   return (
     <div className={cn("overflow-hidden bg-base", fill ? "absolute inset-0" : cn("relative", ASPECT_CLASS[aspect]), className)}>
-      {video && fit === "contain" && video.poster ? (
+      {video && fit === "contain" && poster ? (
+        // Decorative backdrop; lazy so it never competes with the real poster.
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={video.poster} alt="" aria-hidden className="absolute inset-0 h-full w-full scale-110 object-cover opacity-50 blur-2xl" />
+        <img src={poster} alt="" aria-hidden loading="lazy" decoding="async" className="absolute inset-0 h-full w-full scale-110 object-cover opacity-50 blur-2xl" />
       ) : null}
       {video ? (
         <video
           ref={ref}
           src={controls ? video.src : (video.preview ?? video.src)}
-          poster={video.poster}
+          poster={poster}
           muted={!controls}
           loop={!controls}
           playsInline

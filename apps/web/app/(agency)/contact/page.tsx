@@ -1,14 +1,15 @@
-import type { Metadata } from "next";
 import { ArrowUpRight, AtSign, Briefcase, Mail, Send } from "lucide-react";
 
 import { Reveal } from "@/components/agency/reveal";
 import { Section, SectionHeading } from "@/components/agency/section";
 import { CONTACT, TURNAROUND } from "@/lib/agency/content";
+import { pageMetadata } from "@/lib/agency/seo";
 
-export const metadata: Metadata = {
-  title: "Contact",
-  description: "Book a quick call with OverlapX, or reach us on X, Telegram, LinkedIn or email.",
-};
+export const metadata = pageMetadata({
+  title: "Contact OverlapX: book a 15-minute call",
+  description: `Book a 15-minute call with OverlapX to plan your next video, or reach us on X, Telegram, LinkedIn or email. Videos ship in ${TURNAROUND}.`,
+  path: "/contact",
+});
 
 const CHANNELS = [
   { label: "X", value: `@${CONTACT.x.handle}`, href: CONTACT.x.url, icon: AtSign },
@@ -21,6 +22,7 @@ export default function ContactPage() {
   return (
     <Section>
       <SectionHeading
+        as="h1"
         eyebrow="Contact"
         title="Let's make your next video."
         lead={`Book a quick call and tell us what you're launching. Your video ships in ${TURNAROUND}, and you pay only when you love it.`}

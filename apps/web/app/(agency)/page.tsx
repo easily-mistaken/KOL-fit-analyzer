@@ -13,26 +13,20 @@ import {
   WhyX,
 } from "@/components/agency/blocks";
 import { ClientStrip, Results, Testimonials } from "@/components/agency/proof";
-import { CONTACT, POSITIONING } from "@/lib/agency/content";
 import { PROJECTS, featuredProjects } from "@/lib/agency/work";
+import { homeJsonLd, jsonLdHtml, pageMetadata } from "@/lib/agency/seo";
 
-// Machine-readable identity for the agency (the tool carries its own
-// WebApplication JSON-LD on /creator-fit).
-const ORG_JSON_LD = {
-  "@context": "https://schema.org",
-  "@type": "ProfessionalService",
-  name: "OverlapX",
-  url: "https://overlapx.com",
-  description: POSITIONING.sub,
-  email: CONTACT.email,
-  sameAs: [CONTACT.x.url, CONTACT.linkedin, CONTACT.telegram.url],
-  priceRange: "$$",
-};
+export const metadata = pageMetadata({
+  title: "OverlapX: AI films and motion graphics for brands on X",
+  description:
+    "OverlapX is a video studio for brands on X. Motion graphics, AI videos and hype edits for crypto brands, products and AI companies, delivered in 4-5 days.",
+  path: "/",
+});
 
 export default function AgencyHomePage() {
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(ORG_JSON_LD) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdHtml(homeJsonLd()) }} />
       <Hero />
       <PromiseBar />
       <ClientStrip />

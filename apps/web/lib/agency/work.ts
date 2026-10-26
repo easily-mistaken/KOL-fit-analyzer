@@ -14,30 +14,36 @@
 export const WORK_CATEGORIES = [
   {
     id: "ai",
+    /** One piece of this style, for titles: "an AI film for Nosana". */
+    noun: "AI film",
     label: "AI",
     title: "AI films",
     blurb: "Cinematic AI-generated worlds, characters and product shots at a fraction of a shoot's cost.",
   },
   {
     id: "motion-graphics",
+    noun: "motion graphics video",
     label: "Motion Graphics",
     title: "Motion graphics",
     blurb: "Kinetic type, clean shapes and product UI in motion for launches and announcements.",
   },
   {
     id: "hype",
+    noun: "hype video",
     label: "Hype",
     title: "Hype videos",
     blurb: "High-energy teasers built to make a launch, mainnet or event feel inevitable.",
   },
   {
     id: "fast-cuts",
+    noun: "fast-cut edit",
     label: "Fast Cuts",
     title: "Fast cuts",
     blurb: "Rapid, rhythm-driven edits that hold attention second by second.",
   },
   {
     id: "others",
+    noun: "product video",
     label: "Others",
     title: "Product, explainers and more",
     blurb: "UI walkthroughs, explainers, event promos and anything else your launch needs.",
@@ -65,7 +71,10 @@ export interface ProjectVideo {
   src: string;
   /** Short silent loop for grids and the hero timeline. */
   preview?: string;
+  /** Full-size still: the project page player and share cards. */
   poster?: string;
+  /** 768px WebP of the same still, for the silent loops in grids and the hero. */
+  posterSmall?: string;
 }
 
 /** Builds the media URLs for a project from its slug (see MEDIA_BASE). */
@@ -74,6 +83,7 @@ function media(slug: string): ProjectVideo {
     src: `${MEDIA_BASE}/${slug}.mp4`,
     preview: `${MEDIA_BASE}/${slug}-preview.mp4`,
     poster: `/work/posters/${slug}.jpg`,
+    posterSmall: `/work/posters/sm/${slug}.webp`,
   };
 }
 
@@ -85,6 +95,12 @@ export interface Project {
   category: WorkCategory;
   aspect: Aspect;
   year?: number;
+  /**
+   * When the video first went public (YYYY-MM-DD): the date of its X post,
+   * read from the post id, or the day it went up here if it has no post.
+   * Google needs it for video results; it is also the sitemap lastmod.
+   */
+  published: string;
   durationSeconds?: number;
   featured?: boolean;
   video: ProjectVideo | null;
@@ -118,6 +134,7 @@ export const PROJECTS: Project[] = [
     category: "hype",
     aspect: "16:9",
     year: 2026,
+    published: "2026-09-04",
     durationSeconds: 19,
     featured: true,
     video: media("outcome-sports-markets"),
@@ -142,6 +159,7 @@ export const PROJECTS: Project[] = [
     category: "ai",
     aspect: "16:9",
     year: 2026,
+    published: "2026-06-26",
     durationSeconds: 123,
     featured: true,
     video: media("kunal-shah-story"),
@@ -166,6 +184,7 @@ export const PROJECTS: Project[] = [
     category: "ai",
     aspect: "16:9",
     year: 2026,
+    published: "2026-10-26",
     durationSeconds: 50,
     featured: true,
     video: media("nosana-gpu-rental"),
@@ -181,6 +200,7 @@ export const PROJECTS: Project[] = [
     category: "motion-graphics",
     aspect: "16:9",
     year: 2026,
+    published: "2026-09-21",
     durationSeconds: 24,
     featured: true,
     video: media("webacy-dd-ai"),
@@ -203,6 +223,7 @@ export const PROJECTS: Project[] = [
     category: "fast-cuts",
     aspect: "1:1",
     year: 2026,
+    published: "2026-09-20",
     durationSeconds: 9,
     featured: true,
     video: media("superteam-map"),
@@ -225,6 +246,7 @@ export const PROJECTS: Project[] = [
     category: "others",
     aspect: "16:9",
     year: 2026,
+    published: "2026-10-01",
     durationSeconds: 30,
     featured: true,
     video: media("avena-esim"),
@@ -239,6 +261,7 @@ export const PROJECTS: Project[] = [
     category: "motion-graphics",
     aspect: "16:9",
     year: 2026,
+    published: "2026-10-01",
     durationSeconds: 30,
     featured: true,
     video: media("cashxchain-launch"),
@@ -257,6 +280,7 @@ export const PROJECTS: Project[] = [
     category: "ai",
     aspect: "16:9",
     year: 2026,
+    published: "2026-10-07",
     durationSeconds: 66,
     featured: true,
     video: media("build-station-georgia"),
@@ -272,6 +296,7 @@ export const PROJECTS: Project[] = [
     category: "ai",
     aspect: "1:1",
     year: 2026,
+    published: "2026-09-08",
     durationSeconds: 11,
     featured: true,
     video: media("world-teaser"),

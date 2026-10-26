@@ -151,7 +151,7 @@ The agency pages (`app/(agency)`, `/deck`) share the tokens above but render **a
 - Display headings are large and tight (`clamp(...)`, `tracking-[-0.035em..-0.05em]`), with Geist Mono uppercase eyebrows.
 - Video-first: `VideoFrame` plays muted, looping and only while on screen, like the X timeline. With no footage it falls back to `MotionPoster`, a CSS-only animated composition per category.
 - The hero shows an X-style timeline of posts (OverlapX avatar, video, action icons with **no** numbers).
-- Motion is CSS keyframes in `globals.css` (marquee, timeline drift, posters) plus `Reveal` (scroll fade-up). All disabled under `prefers-reduced-motion`.
+- Motion is CSS keyframes in `globals.css` (marquee, timeline drift, posters) plus `Reveal` (scroll fade-up, a CSS scroll-driven animation with no JavaScript, so content is visible from first paint and browsers without support just show it). All disabled under `prefers-reduced-motion`. Never hide above-the-fold content until JS runs: it delays mobile LCP by seconds.
 - Mobile first: phones are the primary audience. Every tappable thing is at least 44px tall below `md` (`min-h-11`), including text links in the footer. Anything that looks like a post or a card must link somewhere. Hover-only behaviour goes behind `@media (hover: hover)`.
 - Brochure slides size everything in `cqw`, so a slide is identical in a browser and printed at 1920x1080 (named `@page deck`).
 

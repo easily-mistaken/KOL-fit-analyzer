@@ -27,12 +27,15 @@ export function SectionHeading({
   lead,
   className,
   action,
+  as: Heading = "h2",
 }: {
   eyebrow: string;
   title: ReactNode;
   lead?: ReactNode;
   className?: string;
   action?: ReactNode;
+  /** "h1" when this is the page's own title (one per page, for search). */
+  as?: "h1" | "h2";
 }) {
   // In a two-column section the heading column must hug the top, not the
   // bottom; callers pass "md:sticky md:top-24 self-start" for that.
@@ -40,9 +43,9 @@ export function SectionHeading({
     <Reveal className={cn("mb-12 flex flex-col gap-6 sm:mb-16 md:flex-row md:items-end md:justify-between", className)}>
       <div className="max-w-3xl">
         <Eyebrow>{eyebrow}</Eyebrow>
-        <h2 className="mt-4 text-[clamp(34px,5.2vw,68px)] font-semibold leading-[0.98] tracking-[-0.035em] text-balance text-foreground">
+        <Heading className="mt-4 text-[clamp(34px,5.2vw,68px)] font-semibold leading-[0.98] tracking-[-0.035em] text-balance text-foreground">
           {title}
-        </h2>
+        </Heading>
         {lead ? (
           <p className="mt-5 max-w-xl text-base leading-relaxed text-pretty text-secondary-foreground sm:text-lg">{lead}</p>
         ) : null}

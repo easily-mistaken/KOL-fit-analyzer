@@ -7,6 +7,7 @@ import { Section } from "@/components/agency/section";
 import { VideoFrame } from "@/components/agency/video-frame";
 import { FinalCta } from "@/components/agency/blocks";
 import { PROJECTS, categoryById, projectBySlug } from "@/lib/agency/work";
+import { jsonLdHtml, pageMetadata, projectHeadline, projectJsonLd } from "@/lib/agency/seo";
 
 export function generateStaticParams() {
   return PROJECTS.map((p) => ({ slug: p.slug }));
@@ -17,11 +18,12 @@ export const dynamicParams = false;
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const project = projectBySlug((await params).slug);
   if (!project) return {};
-  return {
-    title: project.client ? `${project.title} for ${project.client}` : project.title,
-    description: project.objective,
-    openGraph: project.video?.poster ? { images: [project.video.poster] } : undefined,
-  };
+  return pageMetadata({
+    title: `${projectHeadline(project)} · OverlapX`,
+    description: project.objective ?? project.approach ?? projectHeadline(project),
+    path: `/work/${project.slug}`,
+    images: project.video?.poster ? [project.video.poster] : undefined,
+  });
 }
 
 /** One case study: Client, Objective, Video, Result. */
@@ -43,6 +45,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
 
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdHtml(projectJsonLd(project)) }} />
       <Section className="pb-8 sm:pb-10">
         <Link href="/work" className="-my-3 inline-flex min-h-11 items-center gap-2 text-sm text-secondary-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" /> All work
@@ -59,6 +62,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
           category={project.category}
           aspect={project.aspect}
           controls
+          priority
           className={
             project.aspect === "16:9"
               ? "rounded-3xl border border-default"

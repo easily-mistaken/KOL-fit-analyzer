@@ -22,11 +22,14 @@ export function WorkGrid({
   category,
   limit,
   className,
+  priority = false,
 }: {
   projects: Project[];
   category?: WorkCategory;
   limit?: number;
   className?: string;
+  /** The grid is the top of the page (/work): prioritise the first poster. */
+  priority?: boolean;
 }) {
   const shown = category ? projects.filter((p) => p.category === category) : projects;
   const slots = PREVIEW_SLOTS.filter((s) => !category || s.category === category);
@@ -36,7 +39,7 @@ export function WorkGrid({
       {projects.length > 0
         ? shown.slice(0, limit).map((p, i) => (
             <Reveal key={p.slug} delay={(i % 2) * 120}>
-              <ProjectCard project={p} />
+              <ProjectCard project={p} priority={priority && i === 0} />
             </Reveal>
           ))
         : slots.slice(0, limit).map((s, i) => (
@@ -51,7 +54,7 @@ export function WorkGrid({
   );
 }
 
-function ProjectCard({ project }: { project: Project }) {
+function ProjectCard({ project, priority }: { project: Project; priority: boolean }) {
   const cat = categoryById(project.category);
   const headline = project.metrics?.[0];
   return (
@@ -62,6 +65,7 @@ function ProjectCard({ project }: { project: Project }) {
           category={project.category}
           aspect="16:9"
           fit={project.aspect === "16:9" ? "cover" : "contain"}
+          priority={priority}
           className="transition-transform duration-700 group-hover:scale-[1.02]"
         />
       </div>

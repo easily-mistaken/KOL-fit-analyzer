@@ -12,7 +12,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-export const metadata: Metadata = { title: "Request a curated report" };
+export const metadata: Metadata = {
+  title: "Request a curated report",
+  description:
+    "Get a hand-curated Creator Fit report: an analyst reviews a creator's audience, content and risks for your brand and sends the verdict on Telegram within a day.",
+};
 
 // Detailed-report concierge page (Unit 35). Reachable at any time — from the
 // nav-level CTAs, a completed report ("get this one curated", which prefills
