@@ -35,13 +35,13 @@ export async function AppShell({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-4">
             <Link
               href="/privacy"
-              className="transition-colors hover:text-foreground"
+              className="-my-3 inline-block py-3 transition-colors hover:text-foreground"
             >
               Privacy
             </Link>
             <Link
               href="/terms"
-              className="transition-colors hover:text-foreground"
+              className="-my-3 inline-block py-3 transition-colors hover:text-foreground"
             >
               Terms
             </Link>
