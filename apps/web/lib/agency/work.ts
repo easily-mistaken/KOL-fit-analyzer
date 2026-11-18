@@ -153,6 +153,22 @@ export const PROJECTS: Project[] = [
     spotlight: true,
   },
   {
+    slug: "r8-pick-a-side",
+    title: "Pick a side",
+    client: "R8",
+    category: "motion-graphics",
+    aspect: "16:9",
+    year: 2026,
+    published: "2026-11-18",
+    durationSeconds: 60,
+    featured: true,
+    video: media("r8-pick-a-side"),
+    objective:
+      "Introduce R8, perpetual opinion markets on Solana, where every coin launches with its opposite and the crowd decides which side wins.",
+    approach:
+      "A 60-second brand film that opens on a cinematic AI scene everyone knows, the \"as a friend\" answer, and turns it into the pitch: new coins only give you a Buy button, R8 gives you a side. Kinetic type and product UI then walk through the mechanic (love it or hate it, one shared pool, no end date, the crowd sets the price) and land on the R8 mark and Pick a side. A voiceover drives it, with the key lines on screen so it still lands on mute.",
+  },
+  {
     slug: "kunal-shah-story",
     title: "The Kunal Shah story",
     client: null,
@@ -340,7 +356,8 @@ export interface Testimonial {
   source: "Telegram";
 }
 
-// Logos from each brand's own website (Nosana's from nosana.com/brand-assets).
+// Logos from each brand's own website (Nosana's from nosana.com/brand-assets;
+// R8's is the mark from r8rate.com cut off its teal square).
 // Avena's is cut from the video we made for them, since they have no public
 // site yet. FailSafe and Kenomic are clients whose videos cannot be shown, so
 // they appear here and nowhere else.
@@ -350,6 +367,7 @@ export const CLIENTS: Client[] = [
   { name: "Avena", logo: "/clients/avena.png", width: 960, height: 240, scale: 1.2 },
   { name: "CashXChain", logo: "/clients/cashxchain.png", width: 2750, height: 400 },
   { name: "Nosana", logo: "/clients/nosana.svg", width: 166, height: 30 },
+  { name: "R8", logo: "/clients/r8.png", width: 336, height: 228, scale: 1.2 },
   { name: "FailSafe", logo: "/clients/failsafe.svg", width: 592, height: 100 },
   { name: "Kenomic", logo: "/clients/kenomic.png", width: 1383, height: 359, scale: 1.35 },
 ];
