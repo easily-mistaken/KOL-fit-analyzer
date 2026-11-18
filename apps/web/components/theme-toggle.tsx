@@ -42,7 +42,7 @@ export function ThemeToggle() {
       onClick={toggle}
       aria-label={mounted ? `Switch to ${theme === "dark" ? "light" : "dark"} theme` : "Switch theme"}
       title={mounted ? `Switch to ${theme === "dark" ? "light" : "dark"} theme` : undefined}
-      className="flex h-8 w-8 items-center justify-center rounded-full text-secondary-foreground transition-colors hover:bg-elevated hover:text-foreground"
+      className="flex h-10 w-10 items-center justify-center rounded-full text-secondary-foreground sm:h-8 sm:w-8 transition-colors hover:bg-elevated hover:text-foreground"
     >
       {mounted ? (
         theme === "dark" ? (

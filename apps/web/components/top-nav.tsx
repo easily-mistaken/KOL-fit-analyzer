@@ -75,7 +75,7 @@ function NavLink({
     <Link
       href={href}
       className={cn(
-        "flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm transition-colors sm:px-3",
+        "flex min-h-10 min-w-10 items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm transition-colors sm:min-h-0 sm:min-w-0 sm:px-3",
         active
           ? "bg-elevated text-foreground"
           : "text-secondary-foreground hover:bg-elevated/60 hover:text-foreground"

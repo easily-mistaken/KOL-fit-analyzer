@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 // and users spend real money on the strength of them.
 
 const UPDATED = "22 July 2026";
-const CONTACT_EMAIL = "tanmayjain4477@gmail.com";
+const CONTACT_EMAIL = "tanmay@overlapx.com";
 
 export default function TermsPage() {
   return (

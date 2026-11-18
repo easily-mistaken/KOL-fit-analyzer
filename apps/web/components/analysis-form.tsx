@@ -287,7 +287,8 @@ export function AnalysisForm() {
               showOptional && "border-accent/50 bg-elevated"
             )}
           >
-            <div className="flex items-center justify-between gap-3">
+            {/* Stacked on phones so the copy gets the full card width. */}
+            <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex min-w-0 items-start gap-2.5">
                 <span className="mt-1.5 h-2 w-2 shrink-0 rounded-[2px] bg-accent-primary" />
                 <div className="min-w-0">
@@ -303,7 +304,7 @@ export function AnalysisForm() {
               </div>
               <span
                 className={cn(
-                  "inline-flex shrink-0 items-center gap-1 rounded-lg border border-accent/50 px-2.5 py-1.5 text-xs font-medium text-accent-ink transition-colors",
+                  "ml-[1.125rem] inline-flex shrink-0 items-center gap-1 rounded-lg border border-accent/50 px-2.5 py-1.5 text-xs font-medium text-accent-ink transition-colors sm:ml-0",
                   "group-hover:bg-accent group-hover:text-accent-foreground group-hover:border-accent"
                 )}
               >

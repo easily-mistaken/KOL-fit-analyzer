@@ -34,7 +34,7 @@ export function UserMenu({ user }: { user: AuthUser | null }) {
     return (
       <Link
         href="/creator-fit/login"
-        className="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-secondary-foreground transition-colors hover:bg-elevated/60 hover:text-foreground sm:px-3"
+        className="flex min-h-10 min-w-10 items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm text-secondary-foreground transition-colors hover:bg-elevated/60 hover:text-foreground sm:min-h-0 sm:min-w-0 sm:px-3"
       >
         <LogIn className="h-4 w-4" />
         <span className="sr-only sm:not-sr-only">Sign in</span>
@@ -55,7 +55,7 @@ export function UserMenu({ user }: { user: AuthUser | null }) {
         onClick={signOut}
         disabled={loading}
         className={cn(
-          "flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm transition-colors sm:px-3",
+          "flex min-h-10 min-w-10 items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm transition-colors sm:min-h-0 sm:min-w-0 sm:px-3",
           "text-secondary-foreground hover:bg-elevated/60 hover:text-foreground",
           loading && "opacity-60"
         )}
