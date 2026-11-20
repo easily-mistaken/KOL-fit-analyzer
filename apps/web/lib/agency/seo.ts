@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { alt as shareCardAlt, size as shareCardSize } from "@/app/opengraph-image";
 import { CONTACT, FAQS, POSITIONING } from "@/lib/agency/content";
 import { PROJECTS, categoryById, type Project } from "@/lib/agency/work";
+import type { Service } from "@/lib/agency/services";
 
 // Search and share metadata for the agency pages. A page's own `openGraph` or
 // `twitter` replaces the root layout's whole object (Next merges metadata one
@@ -96,6 +97,46 @@ export function homeJsonLd() {
         "@type": "FAQPage",
         "@id": `${SITE_URL}/#faq`,
         mainEntity: FAQS.map((f) => ({
+          "@type": "Question",
+          name: f.q,
+          acceptedAnswer: { "@type": "Answer", text: f.a },
+        })),
+      },
+    ],
+  };
+}
+
+/**
+ * Service landing page: the service OverlapX offers, the Home > service trail,
+ * and the page's own FAQ (verbatim from what the page shows).
+ */
+export function serviceJsonLd(service: Service) {
+  const url = absoluteUrl(`/${service.slug}`);
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Service",
+        "@id": `${url}#service`,
+        name: service.label,
+        serviceType: service.serviceType,
+        description: service.metaDescription,
+        url,
+        // Inlined: Google does not resolve an @id that only the home page defines.
+        provider: { "@type": "ProfessionalService", "@id": ORG_ID, name: "OverlapX", url: `${SITE_URL}/` },
+        areaServed: "Worldwide",
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_URL}/` },
+          { "@type": "ListItem", position: 2, name: service.label, item: url },
+        ],
+      },
+      {
+        "@type": "FAQPage",
+        "@id": `${url}#faq`,
+        mainEntity: service.faqs.map((f) => ({
           "@type": "Question",
           name: f.q,
           acceptedAnswer: { "@type": "Answer", text: f.a },

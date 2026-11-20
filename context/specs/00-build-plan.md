@@ -537,6 +537,10 @@ Verification:
 
 Spec: `context/specs/54-agency-site-and-creator-fit-move.md`. The root becomes the OverlapX video agency; the tool moves to `/creator-fit` with permanent redirects; a brochure ships at `/deck` + PDF.
 
+### Unit 55: Search, AI Answer Engines and Speed
+
+Spec: `context/specs/55-seo-service-pages-and-speed.md`. Service landing pages for the searches buyers make, structured data, `/llms.txt`, IndexNow, Launch Gallery references, and font/image weight cuts on the agency pages.
+
 ## Later Phases, Not First Build
 
 Do not build these unless a later spec explicitly adds them:

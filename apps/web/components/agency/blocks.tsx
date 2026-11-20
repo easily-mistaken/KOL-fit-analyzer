@@ -208,10 +208,10 @@ export function PricingFactors() {
   );
 }
 
-export function Faq() {
+export function Faq({ items = FAQS }: { items?: readonly { q: string; a: string }[] }) {
   return (
     <div className="divide-y divide-default border-y border-default">
-      {FAQS.map((f) => (
+      {items.map((f) => (
         <details key={f.q} className="group py-6">
           <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-6 text-lg font-medium tracking-tight text-foreground [&::-webkit-details-marker]:hidden">
             {f.q}

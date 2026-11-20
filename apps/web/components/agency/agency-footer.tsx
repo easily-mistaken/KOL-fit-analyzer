@@ -3,6 +3,7 @@ import Link from "next/link";
 import { LogoMark } from "@/components/logo-mark";
 import { Wordmark } from "@/components/wordmark";
 import { CONTACT, LAUNCH_GALLERY, POSITIONING } from "@/lib/agency/content";
+import { SERVICES } from "@/lib/agency/services";
 
 const COLUMNS = [
   {
@@ -13,6 +14,10 @@ const COLUMNS = [
       { href: "/about", label: "About" },
       { href: "/contact", label: "Contact" },
     ],
+  },
+  {
+    title: "Services",
+    links: SERVICES.map((s) => ({ href: `/${s.slug}`, label: s.label })),
   },
   {
     title: "Resources",
@@ -41,7 +46,7 @@ const LINK_CLASS =
 export function AgencyFooter() {
   return (
     <footer className="border-t border-default">
-      <div className="mx-auto grid max-w-7xl gap-12 px-4 py-16 sm:px-8 md:grid-cols-[1.4fr_repeat(3,1fr)]">
+      <div className="mx-auto grid max-w-7xl gap-12 px-4 py-16 sm:px-8 md:grid-cols-[1.4fr_repeat(4,1fr)]">
         <div className="max-w-xs">
           <Link href="/" className="inline-flex min-h-11 items-center gap-2" aria-label="OverlapX home">
             <LogoMark className="h-7 w-7 shrink-0" />

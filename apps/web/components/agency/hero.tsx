@@ -15,6 +15,12 @@ import {
   type WorkCategory,
 } from "@/lib/agency/work";
 
+const AUDIENCE_PAGES: Record<(typeof AUDIENCES)[number], string> = {
+  "Crypto brands": "/crypto-video-production",
+  Products: "/launch-videos",
+  "AI products": "/ai-video-production",
+};
+
 interface Post {
   key: string;
   category: WorkCategory;
@@ -78,10 +84,17 @@ export function Hero() {
               See the work
             </Link>
           </div>
-          <p className="mt-10 font-mono text-[11px] uppercase leading-relaxed tracking-[0.18em] text-muted-foreground">
+          {/* Each audience links to its service page: crawlable, in-content
+              links from the strongest page on the site. 44px tall tap rows. */}
+          <p className="mt-8 font-mono text-[11px] uppercase leading-relaxed tracking-[0.18em] text-muted-foreground">
             For {AUDIENCES.map((a, i) => (
               <span key={a} className="whitespace-nowrap">
-                {a}
+                <Link
+                  href={AUDIENCE_PAGES[a]}
+                  className="inline-flex min-h-11 items-center underline decoration-strong underline-offset-4 transition-colors hover:text-foreground hover:decoration-accent-primary"
+                >
+                  {a}
+                </Link>
                 {i < AUDIENCES.length - 1 ? " · " : ""}
               </span>
             ))}

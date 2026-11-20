@@ -2,6 +2,11 @@ import type { MetadataRoute } from "next";
 
 import { PROJECTS, categoryById } from "@/lib/agency/work";
 import { SITE_URL, absoluteUrl, latestPublished, projectHeadline } from "@/lib/agency/seo";
+import { SERVICES } from "@/lib/agency/services";
+
+// When the service pages' copy last changed. Bump it by hand with the copy
+// (same rule as below: never a build-time "now").
+const SERVICES_UPDATED = "2026-11-21";
 
 // Public, stable pages only: the agency, its case studies, the Creator Fit
 // tool's home and concierge page, and the two legal pages Google's consent
@@ -37,6 +42,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
           }
         : {}),
     })),
+    ...SERVICES.map((s) => ({ url: absoluteUrl(`/${s.slug}`), lastModified: SERVICES_UPDATED, priority: 0.9 })),
     { url: `${SITE_URL}/pricing`, priority: 0.8 },
     { url: `${SITE_URL}/about`, priority: 0.6 },
     { url: `${SITE_URL}/contact`, priority: 0.7 },

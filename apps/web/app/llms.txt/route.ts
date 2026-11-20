@@ -1,5 +1,6 @@
 import { CONTACT, FAQS, LAUNCH_GALLERY, POSITIONING, PROMISES } from "@/lib/agency/content";
 import { PROJECTS, WORK_CATEGORIES } from "@/lib/agency/work";
+import { SERVICES } from "@/lib/agency/services";
 import { absoluteUrl, projectHeadline } from "@/lib/agency/seo";
 
 // /llms.txt (llmstxt.org): a plain Markdown summary of the studio for AI
@@ -32,6 +33,7 @@ export function GET() {
     "## Pages",
     "",
     `- [Home](${absoluteUrl("/")}): what OverlapX does and for whom`,
+    ...SERVICES.map((s) => `- [${s.label}](${absoluteUrl(`/${s.slug}`)}): ${s.metaDescription}`),
     `- [Work](${absoluteUrl("/work")}): every project with its brief, video and results`,
     `- [Pricing](${absoluteUrl("/pricing")}): how a quote is built`,
     `- [About](${absoluteUrl("/about")}): the studio`,
