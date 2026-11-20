@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { alt as shareCardAlt, size as shareCardSize } from "@/app/opengraph-image";
-import { CONTACT, POSITIONING } from "@/lib/agency/content";
+import { CONTACT, FAQS, POSITIONING } from "@/lib/agency/content";
 import { PROJECTS, categoryById, type Project } from "@/lib/agency/work";
 
 // Search and share metadata for the agency pages. A page's own `openGraph` or
@@ -75,7 +75,31 @@ export function homeJsonLd() {
         email: CONTACT.email,
         sameAs: [CONTACT.x.url, CONTACT.linkedin, CONTACT.telegram.url],
         priceRange: "$$",
-        knowsAbout: ["Motion graphics", "AI video", "Hype videos", "Video editing", "X (Twitter) marketing"],
+        areaServed: "Worldwide",
+        // The phrases buyers (and AI assistants answering them) actually use.
+        knowsAbout: [
+          "Product launch videos",
+          "Startup launch videos",
+          "Crypto and Web3 video production",
+          "AI product launch videos",
+          "Motion graphics",
+          "AI video production",
+          "Hype videos",
+          "Explainer videos",
+          "Video editing",
+          "X (Twitter) video marketing",
+        ],
+      },
+      {
+        // The visible FAQ, verbatim. Search engines and AI answer engines both
+        // read this to answer "how much / how fast / do I pay upfront".
+        "@type": "FAQPage",
+        "@id": `${SITE_URL}/#faq`,
+        mainEntity: FAQS.map((f) => ({
+          "@type": "Question",
+          name: f.q,
+          acceptedAnswer: { "@type": "Answer", text: f.a },
+        })),
       },
     ],
   };

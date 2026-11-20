@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { LogoMark } from "@/components/logo-mark";
 import { Wordmark } from "@/components/wordmark";
-import { CONTACT, POSITIONING } from "@/lib/agency/content";
+import { CONTACT, LAUNCH_GALLERY, POSITIONING } from "@/lib/agency/content";
 
 const COLUMNS = [
   {
@@ -15,8 +15,12 @@ const COLUMNS = [
     ],
   },
   {
-    title: "Tools",
-    links: [{ href: "/creator-fit", label: "Creator Fit" }],
+    title: "Resources",
+    links: [
+      { href: "/creator-fit", label: "Creator Fit" },
+      // Followed link that keeps the Referer: see LAUNCH_GALLERY.
+      { href: LAUNCH_GALLERY.url, label: "Launch videos gallery", external: true, referrer: true },
+    ],
   },
   {
     title: "Connect",
@@ -55,7 +59,7 @@ export function AgencyFooter() {
                     <a
                       href={l.href}
                       target={l.href.startsWith("mailto:") ? undefined : "_blank"}
-                      rel="noopener noreferrer"
+                      rel={"referrer" in l && l.referrer ? "noopener" : "noopener noreferrer"}
                       className={LINK_CLASS}
                     >
                       {l.label}

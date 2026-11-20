@@ -21,6 +21,18 @@ export const CONTACT = {
 
 export const TURNAROUND = "4-5 days";
 
+/**
+ * Launch Gallery is the founder's own hand-picked library of launch videos
+ * (user, 2026-11-21). Linked as the place clients find references before a
+ * brief. The links stay followed (no rel="nofollow") and keep the Referer
+ * (no "noreferrer"), so the gallery gets both the search credit and the
+ * referral in its analytics.
+ */
+export const LAUNCH_GALLERY = {
+  name: "Launch Gallery",
+  url: "https://launchgallery.video/",
+} as const;
+
 export const POSITIONING = {
   eyebrow: "Video studio for brands on X",
   headline: "Videos made for the X timeline.",
@@ -111,7 +123,7 @@ export const FAQS = [
   },
   {
     q: "Who do you work with?",
-    a: "Crypto brands, products and AI products that market themselves on X, from first launch to established teams.",
+    a: "Crypto and Web3 projects, AI products and startups that market themselves on X, from their first launch video to established teams.",
   },
   {
     q: "How much does a video cost?",

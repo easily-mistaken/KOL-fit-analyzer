@@ -5,6 +5,7 @@ import { WorkGrid } from "@/components/agency/work-grid";
 import {
   Faq,
   FinalCta,
+  LaunchGalleryPromo,
   ProcessSteps,
   PromiseBar,
   StyleMarquee,
@@ -17,9 +18,11 @@ import { PROJECTS, featuredProjects } from "@/lib/agency/work";
 import { homeJsonLd, jsonLdHtml, pageMetadata } from "@/lib/agency/seo";
 
 export const metadata = pageMetadata({
-  title: "OverlapX: AI films and motion graphics for brands on X",
+  // Leads with "launch video agency", the phrase buyers search, then the three
+  // niches. Keep under ~60 characters so Google shows it whole.
+  title: "OverlapX: Launch video agency for crypto, AI and startups",
   description:
-    "OverlapX is a video studio for brands on X. Motion graphics, AI videos and hype edits for crypto brands, products and AI companies, delivered in 4-5 days.",
+    "Launch videos, motion graphics and AI films for crypto, AI and startup brands on X. Delivered in 4-5 days, and you pay only once you love it.",
   path: "/",
 });
 
@@ -56,6 +59,7 @@ export default function AgencyHomePage() {
       <Results />
       <Testimonials />
       <ProcessSteps />
+      <LaunchGalleryPromo />
 
       <ToolPromo />
 

@@ -4,8 +4,17 @@ import { ArrowRight, ArrowUpRight, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BookCallButton, GhostLink } from "@/components/agency/buttons";
 import { Reveal } from "@/components/agency/reveal";
-import { Section, SectionHeading } from "@/components/agency/section";
-import { CONTACT, FAQS, PRICING_FACTORS, PROCESS, PROMISES, TURNAROUND, WHY_X } from "@/lib/agency/content";
+import { Eyebrow, Section, SectionHeading } from "@/components/agency/section";
+import {
+  CONTACT,
+  FAQS,
+  LAUNCH_GALLERY,
+  PRICING_FACTORS,
+  PROCESS,
+  PROMISES,
+  TURNAROUND,
+  WHY_X,
+} from "@/lib/agency/content";
 import { PROJECTS, WORK_CATEGORIES } from "@/lib/agency/work";
 import { VideoFrame } from "@/components/agency/video-frame";
 
@@ -214,6 +223,50 @@ export function Faq() {
         </details>
       ))}
     </div>
+  );
+}
+
+/**
+ * Points clients at Launch Gallery for references. A light outlined strip, not
+ * a filled card, so it doesn't read as a second ToolPromo on the home page.
+ * rel is "noopener" only: see LAUNCH_GALLERY for why it keeps the Referer.
+ */
+export function LaunchGalleryPromo() {
+  return (
+    <Section className="py-8 sm:py-12">
+      <Reveal className="flex flex-col gap-6 rounded-3xl border border-default p-6 sm:p-10 md:flex-row md:items-center md:justify-between md:gap-10">
+        <div className="max-w-2xl">
+          <Eyebrow>Need references?</Eyebrow>
+          <h2 className="mt-3 text-[clamp(24px,3vw,36px)] font-semibold leading-[1.05] tracking-[-0.03em] text-balance text-foreground">
+            See which launch videos actually perform.
+          </h2>
+          <p className="mt-3 leading-relaxed text-pretty text-secondary-foreground">
+            <a
+              href={LAUNCH_GALLERY.url}
+              target="_blank"
+              rel="noopener"
+              className="text-foreground underline decoration-accent-primary underline-offset-4 hover:text-accent-ink"
+            >
+              {LAUNCH_GALLERY.name}
+              <span className="sr-only"> (opens in a new tab)</span>
+            </a>{" "}
+            is a hand-picked library of the best startup, AI and crypto launch videos from X and YouTube, with the
+            views each one got, updated daily. Save the ones you like and bring them to the call: it is the fastest
+            way to show us the style you want.
+          </p>
+        </div>
+        <a
+          href={LAUNCH_GALLERY.url}
+          target="_blank"
+          rel="noopener"
+          className="inline-flex h-12 shrink-0 items-center justify-center gap-2 self-start rounded-full border border-strong px-6 text-sm font-medium text-foreground transition-colors hover:bg-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-base md:self-center"
+        >
+          Browse launch videos
+          <span className="sr-only"> on {LAUNCH_GALLERY.name} (opens in a new tab)</span>
+          <ArrowUpRight className="h-4 w-4" aria-hidden />
+        </a>
+      </Reveal>
+    </Section>
   );
 }
 

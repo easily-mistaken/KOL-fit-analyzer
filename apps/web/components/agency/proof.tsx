@@ -30,6 +30,10 @@ export function ClientStrip() {
                 // Every logo rendered solid white, so mixed brand colours read
                 // as one row on the dark surface.
                 style={{ height: `${1.6 * (c.scale ?? 1)}rem` }}
+                // The rendered width (height x aspect). Without it next/image
+                // sizes the srcset from the intrinsic width and phones pulled
+                // a 3840px PNG for a logo about 180px wide.
+                sizes={`${Math.ceil((25.6 * (c.scale ?? 1) * c.width) / c.height)}px`}
                 className="w-auto opacity-60 brightness-0 invert transition-opacity hover:opacity-100"
               />
             ))
