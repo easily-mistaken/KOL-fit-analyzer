@@ -14,6 +14,7 @@ import {
   WhyX,
 } from "@/components/agency/blocks";
 import { ClientStrip, Results, Testimonials } from "@/components/agency/proof";
+import { FreeIdeaSection } from "@/components/agency/free-idea-section";
 import { PROJECTS, featuredProjects } from "@/lib/agency/work";
 import { homeJsonLd, jsonLdHtml, pageMetadata } from "@/lib/agency/seo";
 
@@ -59,6 +60,7 @@ export default function AgencyHomePage() {
       <Results />
       <Testimonials />
       <ProcessSteps />
+      <FreeIdeaSection source="home" />
       <LaunchGalleryPromo />
 
       <ToolPromo />

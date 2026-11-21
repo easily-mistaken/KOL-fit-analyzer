@@ -130,6 +130,10 @@ export const FAQS = [
     a: "It depends on the length, the style, the quality level you're after and what you already have. Tell us on a quick call and you get a clear quote before any work starts.",
   },
   {
+    q: "Is OverlapX an app?",
+    a: "No. OverlapX is a video studio: brands hire us to make their videos. Creator Fit, on this site, is a separate free tool we built to check whether an X creator's audience matches your buyers.",
+  },
+  {
     q: "Can you do more than one video?",
     a: "Yes. Launch packs, series and ongoing work are all quoted around what you need.",
   },

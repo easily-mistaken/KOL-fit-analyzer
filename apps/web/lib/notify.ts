@@ -150,3 +150,27 @@ export function buildFirstRunNotification(input: {
   }
   return lines.join("\n");
 }
+
+/** Compact operator-facing summary of a "free video idea" request (Unit 57). */
+export function buildVideoIdeaNotification(input: {
+  brief: string;
+  budget: string;
+  style: string | null;
+  contact: string;
+  productUrl: string | null;
+  referenceUrl: string | null;
+  source: string;
+}): string {
+  const lines = [
+    "💡 Free video idea request",
+    `Launching: ${input.brief}`,
+    `Budget: ${input.budget}${input.style ? ` | Style: ${input.style}` : ""}`,
+    `Send to: ${input.contact}`,
+  ];
+  if (input.productUrl) lines.push(`Product: ${input.productUrl}`);
+  if (input.referenceUrl) lines.push(`Reference: ${input.referenceUrl}`);
+  lines.push(`From: ${input.source}`);
+  const base = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (base) lines.push(`${base.replace(/\/+$/, "")}/admin/video-ideas`);
+  return lines.join("\n");
+}

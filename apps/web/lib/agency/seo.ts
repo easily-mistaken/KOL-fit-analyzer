@@ -4,6 +4,7 @@ import { alt as shareCardAlt, size as shareCardSize } from "@/app/opengraph-imag
 import { CONTACT, FAQS, POSITIONING } from "@/lib/agency/content";
 import { PROJECTS, categoryById, type Project } from "@/lib/agency/work";
 import type { Service } from "@/lib/agency/services";
+import { plainText, type Guide } from "@/lib/agency/guides";
 
 // Search and share metadata for the agency pages. A page's own `openGraph` or
 // `twitter` replaces the root layout's whole object (Next merges metadata one
@@ -22,6 +23,7 @@ export function pageMetadata({
   description,
   path,
   images,
+  article,
 }: {
   /** The full <title>, used as-is (no " · OverlapX" template). */
   title: string;
@@ -29,12 +31,16 @@ export function pageMetadata({
   path: string;
   /** Leave out for the agency share card (app/opengraph-image.tsx). */
   images?: string[];
+  /** Marks the page as an article (og:type=article) with its dates. */
+  article?: { publishedTime: string; modifiedTime: string };
 }): Metadata {
   const shareImages = images ?? [{ url: "/opengraph-image", ...shareCardSize, alt: shareCardAlt }];
   return {
     title: { absolute: title },
     description,
-    openGraph: { type: "website", siteName: "OverlapX", title, description, url: path, images: shareImages },
+    openGraph: article
+      ? { type: "article", ...article, siteName: "OverlapX", title, description, url: path, images: shareImages }
+      : { type: "website", siteName: "OverlapX", title, description, url: path, images: shareImages },
     twitter: { card: "summary_large_image", title, description, images: shareImages },
   };
 }
@@ -52,6 +58,10 @@ function isoDuration(seconds: number): string {
 }
 
 const ORG_ID = `${SITE_URL}/#organization`;
+
+// Inlined wherever another page names us: Google does not resolve an @id that
+// only the home page defines.
+const PROVIDER = () => ({ "@type": "ProfessionalService", "@id": ORG_ID, name: "OverlapX", url: `${SITE_URL}/` });
 
 /** Home page: who OverlapX is, and the site name Google shows in results. */
 export function homeJsonLd() {
@@ -73,6 +83,10 @@ export function homeJsonLd() {
         logo: absoluteUrl("/icon.svg"),
         image: absoluteUrl("/opengraph-image"),
         description: POSITIONING.sub,
+        // "OverlapX" alone collides with similarly named video software in
+        // answer engines; this says plainly what kind of thing we are.
+        disambiguatingDescription:
+          "OverlapX is a video production studio that brands hire to make launch videos, motion graphics and AI films for X (Twitter). It is a service, not a video editing or clipping app.",
         email: CONTACT.email,
         sameAs: [CONTACT.x.url, CONTACT.linkedin, CONTACT.telegram.url],
         priceRange: "$$",
@@ -87,7 +101,7 @@ export function homeJsonLd() {
           "AI video production",
           "Hype videos",
           "Explainer videos",
-          "Video editing",
+          "Video production",
           "X (Twitter) video marketing",
         ],
       },
@@ -122,8 +136,7 @@ export function serviceJsonLd(service: Service) {
         serviceType: service.serviceType,
         description: service.metaDescription,
         url,
-        // Inlined: Google does not resolve an @id that only the home page defines.
-        provider: { "@type": "ProfessionalService", "@id": ORG_ID, name: "OverlapX", url: `${SITE_URL}/` },
+        provider: PROVIDER(),
         areaServed: "Worldwide",
       },
       {
@@ -141,6 +154,81 @@ export function serviceJsonLd(service: Service) {
           name: f.q,
           acceptedAnswer: { "@type": "Answer", text: f.a },
         })),
+      },
+    ],
+  };
+}
+
+/** Guide page: the article, the Home > Guides > guide trail and its FAQ. */
+export function guideJsonLd(guide: Guide) {
+  const url = absoluteUrl(`/guides/${guide.slug}`);
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Article",
+        "@id": `${url}#article`,
+        headline: guide.title,
+        description: guide.metaDescription,
+        abstract: plainText(guide.summary),
+        url,
+        mainEntityOfPage: url,
+        image: absoluteUrl("/opengraph-image"),
+        datePublished: guide.published,
+        dateModified: guide.updated,
+        inLanguage: "en",
+        author: PROVIDER(),
+        publisher: { ...PROVIDER(), logo: absoluteUrl("/icon.svg") },
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_URL}/` },
+          { "@type": "ListItem", position: 2, name: "Guides", item: absoluteUrl("/guides") },
+          { "@type": "ListItem", position: 3, name: guide.title, item: url },
+        ],
+      },
+      {
+        "@type": "FAQPage",
+        "@id": `${url}#faq`,
+        mainEntity: guide.faqs.map((f) => ({
+          "@type": "Question",
+          name: f.q,
+          acceptedAnswer: { "@type": "Answer", text: f.a },
+        })),
+      },
+    ],
+  };
+}
+
+/** /guides: the list of guides and the Home > Guides trail. */
+export function guidesIndexJsonLd(guides: Guide[]) {
+  const url = absoluteUrl("/guides");
+  return {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "CollectionPage",
+        "@id": `${url}#page`,
+        name: "Launch video guides",
+        url,
+        publisher: PROVIDER(),
+        mainEntity: {
+          "@type": "ItemList",
+          itemListElement: guides.map((g, i) => ({
+            "@type": "ListItem",
+            position: i + 1,
+            url: absoluteUrl(`/guides/${g.slug}`),
+            name: g.title,
+          })),
+        },
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_URL}/` },
+          { "@type": "ListItem", position: 2, name: "Guides", item: url },
+        ],
       },
     ],
   };

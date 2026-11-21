@@ -236,9 +236,9 @@ export function LaunchGalleryPromo() {
     <Section className="py-8 sm:py-12">
       <Reveal className="flex flex-col gap-6 rounded-3xl border border-default p-6 sm:p-10 md:flex-row md:items-center md:justify-between md:gap-10">
         <div className="max-w-2xl">
-          <Eyebrow>Need references?</Eyebrow>
+          <Eyebrow>Need inspiration?</Eyebrow>
           <h2 className="mt-3 text-[clamp(24px,3vw,36px)] font-semibold leading-[1.05] tracking-[-0.03em] text-balance text-foreground">
-            See which launch videos actually perform.
+            Find inspiration in launch videos that performed.
           </h2>
           <p className="mt-3 leading-relaxed text-pretty text-secondary-foreground">
             <a
@@ -261,7 +261,7 @@ export function LaunchGalleryPromo() {
           rel="noopener"
           className="inline-flex h-12 shrink-0 items-center justify-center gap-2 self-start rounded-full border border-strong px-6 text-sm font-medium text-foreground transition-colors hover:bg-elevated focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-base md:self-center"
         >
-          Browse launch videos
+          Find inspiration
           <span className="sr-only"> on {LAUNCH_GALLERY.name} (opens in a new tab)</span>
           <ArrowUpRight className="h-4 w-4" aria-hidden />
         </a>
@@ -320,7 +320,96 @@ export function FinalCta() {
             Telegram
           </GhostLink>
         </div>
+        <p className="relative mt-6 text-secondary-foreground">
+          Not ready for a call?{" "}
+          <Link
+            href="/free-video-idea"
+            className="inline-flex min-h-11 items-center text-foreground underline decoration-accent-primary underline-offset-4 hover:text-accent-ink"
+          >
+            Get a free video idea
+          </Link>
+        </p>
       </Reveal>
+    </Section>
+  );
+}
+
+const RESOURCES = {
+  idea: {
+    href: "/free-video-idea",
+    external: false,
+    eyebrow: "Free",
+    title: "Get a free video idea",
+    body: "Tell us what you're launching and your budget. We send you an idea for your launch video, no call needed.",
+    cta: "Get my idea",
+  },
+  gallery: {
+    href: LAUNCH_GALLERY.url,
+    external: true,
+    eyebrow: "Inspiration",
+    title: `Find inspiration on ${LAUNCH_GALLERY.name}`,
+    body: "Hand-picked startup, AI and crypto launch videos from X and YouTube, with the views each one got, updated daily.",
+    cta: "Browse launch videos",
+  },
+  creatorFit: {
+    href: "/creator-fit",
+    external: false,
+    eyebrow: "Free tool",
+    title: "Check if a creator is a good fit",
+    body: "Before you pay an X creator to post your video, Creator Fit checks whether the people who engage with them are your buyers.",
+    cta: "Try Creator Fit",
+  },
+} as const;
+
+export type ResourceKey = keyof typeof RESOURCES;
+
+/**
+ * The free things a visitor can do before booking a call (Unit 57): a free
+ * video idea, inspiration on Launch Gallery (the founder's own site, linked
+ * followed with the Referer kept) and Creator Fit.
+ */
+export function FreeResources({
+  items = ["gallery", "idea", "creatorFit"],
+  title = "Start free.",
+}: {
+  items?: ResourceKey[];
+  title?: string;
+}) {
+  return (
+    <Section className="py-12 sm:py-16">
+      <SectionHeading eyebrow="Before you book" title={title} className="mb-8 sm:mb-10" />
+      <ul className={cn("grid gap-4", items.length === 2 ? "md:grid-cols-2" : "md:grid-cols-3")}>
+        {items.map((key, i) => {
+          const r = RESOURCES[key];
+          const inner = (
+            <>
+              <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-accent-ink">{r.eyebrow}</span>
+              <span className="mt-4 block text-xl font-semibold tracking-tight text-balance text-foreground">{r.title}</span>
+              <span className="mt-2 block text-sm leading-relaxed text-secondary-foreground">{r.body}</span>
+              <span className="mt-auto inline-flex items-center gap-2 pt-6 text-sm font-medium text-foreground">
+                {r.cta}
+                {r.external ? <ArrowUpRight className="h-4 w-4" aria-hidden /> : <ArrowRight className="h-4 w-4" aria-hidden />}
+              </span>
+            </>
+          );
+          const cls =
+            "flex h-full flex-col rounded-3xl border border-default bg-surface p-7 transition-colors hover:bg-elevated";
+          return (
+            <Reveal as="li" key={key} delay={i * 90}>
+              {r.external ? (
+                <a href={r.href} target="_blank" rel="noopener" className={cls}>
+                  {inner}
+                  <span className="sr-only"> (opens in a new tab)</span>
+                </a>
+              ) : (
+                <Link href={r.href} className={cls}>
+                  {inner}
+                </Link>
+              )}
+            </Reveal>
+          );
+        })}
+      </ul>
     </Section>
   );
 }

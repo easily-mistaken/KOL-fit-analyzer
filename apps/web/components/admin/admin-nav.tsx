@@ -7,6 +7,7 @@ import {
   Coins,
   FileText,
   LayoutDashboard,
+  Lightbulb,
   LogOut,
   Mail,
   ShieldCheck,
@@ -23,6 +24,7 @@ const LINKS = [
   { href: "/admin/people", label: "People", icon: <Users className="h-4 w-4" /> },
   { href: "/admin/leads", label: "Leads", icon: <Mail className="h-4 w-4" /> },
   { href: "/admin/upgrades", label: "Upgrades", icon: <TrendingUp className="h-4 w-4" /> },
+  { href: "/admin/video-ideas", label: "Video ideas", icon: <Lightbulb className="h-4 w-4" /> },
   { href: "/admin/usage", label: "Usage", icon: <Coins className="h-4 w-4" /> },
 ];
 
@@ -38,6 +40,7 @@ export function AdminNav() {
   // allowance-raise requests (Unit 47).
   const [newLeads, setNewLeads] = React.useState(0);
   const [newUpgrades, setNewUpgrades] = React.useState(0);
+  const [newIdeas, setNewIdeas] = React.useState(0);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -53,6 +56,7 @@ export function AdminNav() {
     const load = () => {
       void count("/api/admin/detailed-requests", setNewLeads);
       void count("/api/admin/limit-requests", setNewUpgrades);
+      void count("/api/admin/video-ideas", setNewIdeas);
     };
     load();
     const timer = setInterval(load, 60_000);
@@ -65,6 +69,7 @@ export function AdminNav() {
   const badgeFor: Record<string, number> = {
     "/admin/leads": newLeads,
     "/admin/upgrades": newUpgrades,
+    "/admin/video-ideas": newIdeas,
   };
 
   async function logout() {

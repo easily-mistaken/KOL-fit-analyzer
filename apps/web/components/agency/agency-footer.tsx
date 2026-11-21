@@ -22,6 +22,8 @@ const COLUMNS = [
   {
     title: "Resources",
     links: [
+      { href: "/free-video-idea", label: "Free video idea" },
+      { href: "/guides", label: "Guides" },
       { href: "/creator-fit", label: "Creator Fit" },
       // Followed link that keeps the Referer: see LAUNCH_GALLERY.
       { href: LAUNCH_GALLERY.url, label: "Launch videos gallery", external: true, referrer: true },

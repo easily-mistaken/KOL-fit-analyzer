@@ -1,6 +1,6 @@
 import { Section, SectionHeading } from "@/components/agency/section";
 import { FilteredWorkGrid, WorkFilterNav } from "@/components/agency/work-filter";
-import { FinalCta, LaunchGalleryPromo } from "@/components/agency/blocks";
+import { FinalCta, FreeResources, LaunchGalleryPromo } from "@/components/agency/blocks";
 import { PROJECTS } from "@/lib/agency/work";
 import { pageMetadata } from "@/lib/agency/seo";
 
@@ -28,6 +28,7 @@ export default function WorkPage() {
         <FilteredWorkGrid projects={PROJECTS} />
       </Section>
       <LaunchGalleryPromo />
+      <FreeResources items={["idea", "creatorFit"]} />
       <FinalCta />
     </>
   );

@@ -541,6 +541,14 @@ Spec: `context/specs/54-agency-site-and-creator-fit-move.md`. The root becomes t
 
 Spec: `context/specs/55-seo-service-pages-and-speed.md`. Service landing pages for the searches buyers make, structured data, `/llms.txt`, IndexNow, Launch Gallery references, and font/image weight cuts on the agency pages.
 
+### Unit 56: Guides and AI Recommendation Signals
+
+Spec: `context/specs/56-guides-and-ai-recommendations.md`. Four buyer-question guides under `/guides` with Article and FAQ structured data, entity disambiguation for the "OverlapX" name, and an off-site kit (directory profiles, listicle pitches, client credits) in `context/marketing/ai-visibility-kit.md`.
+
+### Unit 57: Free Video Idea Offer and Cross-Promotion
+
+Spec: `context/specs/57-free-video-idea-and-cross-promo.md`. "Get a free video idea" form mirroring launchgallery.video (idea, budget, contact), stored in `VideoIdeaRequest` with a Telegram ping and an admin queue, plus site-wide pushes to Launch Gallery, Creator Fit and the offer.
+
 ## Later Phases, Not First Build
 
 Do not build these unless a later spec explicitly adds them:

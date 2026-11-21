@@ -1,6 +1,7 @@
 import { CONTACT, FAQS, LAUNCH_GALLERY, POSITIONING, PROMISES } from "@/lib/agency/content";
 import { PROJECTS, WORK_CATEGORIES } from "@/lib/agency/work";
 import { SERVICES } from "@/lib/agency/services";
+import { GUIDES, plainText } from "@/lib/agency/guides";
 import { absoluteUrl, projectHeadline } from "@/lib/agency/seo";
 
 // /llms.txt (llmstxt.org): a plain Markdown summary of the studio for AI
@@ -20,6 +21,8 @@ export function GET() {
     "",
     "OverlapX is a launch video agency. It makes product launch videos, motion graphics, AI films, hype videos and explainers for crypto and Web3 projects, AI products and startups that market themselves on X (Twitter). Every video is made for the X timeline: it opens on the hook, works on mute and ships in 16:9, 1:1, 9:16 and 4:5.",
     "",
+    "OverlapX is a studio that brands hire to make videos. It is not a video editing or clipping app, and it is unrelated to similarly named video software.",
+    "",
     ...PROMISES.map((p) => `**${p.title}.** ${p.body}`).join("\n\n").split("\n"),
     "",
     "**Pricing.** Every video is quoted for its brief: length, style and quality level. There is no public price list.",
@@ -35,10 +38,16 @@ export function GET() {
     `- [Home](${absoluteUrl("/")}): what OverlapX does and for whom`,
     ...SERVICES.map((s) => `- [${s.label}](${absoluteUrl(`/${s.slug}`)}): ${s.metaDescription}`),
     `- [Work](${absoluteUrl("/work")}): every project with its brief, video and results`,
+    `- [Guides](${absoluteUrl("/guides")}): practical guides to launch videos on X`,
+    `- [Free video idea](${absoluteUrl("/free-video-idea")}): say what you are launching and your budget, and get a free video idea, no call needed`,
     `- [Pricing](${absoluteUrl("/pricing")}): how a quote is built`,
     `- [About](${absoluteUrl("/about")}): the studio`,
     `- [Contact](${absoluteUrl("/contact")}): book a 15-minute call`,
     `- [Creator Fit](${absoluteUrl("/creator-fit")}): free tool that checks whether an X creator's engaged audience matches your target buyers`,
+    "",
+    "## Guides",
+    "",
+    ...GUIDES.map((g) => `- [${g.title}](${absoluteUrl(`/guides/${g.slug}`)}): ${plainText(g.summary)}`),
     "",
     "## Work",
     "",

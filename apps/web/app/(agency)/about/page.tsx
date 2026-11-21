@@ -1,6 +1,6 @@
 import { Reveal } from "@/components/agency/reveal";
 import { Section, SectionHeading } from "@/components/agency/section";
-import { FinalCta, ProcessSteps, ToolPromo, WhyX } from "@/components/agency/blocks";
+import { FinalCta, FreeResources, ProcessSteps, ToolPromo, WhyX } from "@/components/agency/blocks";
 import { Testimonials } from "@/components/agency/proof";
 import { PROMISES } from "@/lib/agency/content";
 import { pageMetadata } from "@/lib/agency/seo";
@@ -41,6 +41,10 @@ export default function AboutPage() {
               the people actually paying attention overlap. Our videos are built for that overlap. Every cut is judged
               by one question: would the right person stop scrolling for this?
             </p>
+            <p className="mt-4 leading-relaxed text-secondary-foreground">
+              OverlapX is a studio you hire, not an app: we make the videos. Creator Fit is a separate free tool on this
+              site.
+            </p>
           </Reveal>
         </div>
         <div className="mt-16 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -58,6 +62,7 @@ export default function AboutPage() {
 
       <ProcessSteps />
       <ToolPromo />
+      <FreeResources items={["idea", "gallery"]} />
       <FinalCta />
     </>
   );

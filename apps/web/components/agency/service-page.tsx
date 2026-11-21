@@ -2,11 +2,12 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
 import { BookCallButton, GhostLink } from "@/components/agency/buttons";
-import { Faq, FinalCta, LaunchGalleryPromo, ProcessSteps } from "@/components/agency/blocks";
+import { Faq, FinalCta, FreeResources, ProcessSteps } from "@/components/agency/blocks";
 import { Reveal } from "@/components/agency/reveal";
 import { Section, SectionHeading } from "@/components/agency/section";
 import { WorkGrid } from "@/components/agency/work-grid";
 import { SERVICES, serviceProjects, type Service } from "@/lib/agency/services";
+import { guidesForService } from "@/lib/agency/guides";
 import { jsonLdHtml, serviceJsonLd } from "@/lib/agency/seo";
 
 /**
@@ -16,6 +17,7 @@ import { jsonLdHtml, serviceJsonLd } from "@/lib/agency/seo";
  */
 export function ServicePage({ service }: { service: Service }) {
   const others = SERVICES.filter((s) => s.slug !== service.slug);
+  const guides = guidesForService(service.slug);
 
   return (
     <>
@@ -66,7 +68,7 @@ export function ServicePage({ service }: { service: Service }) {
         </div>
       </Section>
 
-      {service.references ? <LaunchGalleryPromo /> : null}
+      <FreeResources />
 
       <ProcessSteps />
 
@@ -74,6 +76,25 @@ export function ServicePage({ service }: { service: Service }) {
         <SectionHeading eyebrow="FAQ" title="Questions, answered." className="mb-0 self-start sm:mb-0 md:sticky md:top-24" />
         <Faq items={service.faqs} />
       </Section>
+
+      {guides.length > 0 ? (
+        <Section className="pb-0 pt-8 sm:pb-0 sm:pt-12">
+          <h2 className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Guides</h2>
+          <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+            {guides.map((g) => (
+              <li key={g.slug}>
+                <Link
+                  href={`/guides/${g.slug}`}
+                  className="flex min-h-14 items-center justify-between gap-4 rounded-2xl border border-default px-5 py-4 text-foreground transition-colors hover:bg-elevated"
+                >
+                  <span className="font-medium">{g.title}</span>
+                  <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      ) : null}
 
       <Section className="py-8 sm:py-12">
         <h2 className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">Also from OverlapX</h2>

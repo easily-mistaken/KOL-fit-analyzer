@@ -410,3 +410,32 @@ model LimitRaiseRequest {
   @@index([status, createdAt])
   @@index([ownerId, createdAt])
 }
+
+// "Get a free video idea" requests from the agency site (Unit 57), mirroring
+// the form on launchgallery.video. Fulfilment is manual: the operator sends
+// the idea on the channel the visitor picked. Option keys (budget, style,
+// channel, source) are defined in @kol-fit/shared video-idea.ts.
+model VideoIdeaRequest {
+  id             String  @id @default(cuid())
+  ownerId        String?
+  brief          String
+  budget         String
+  style          String?
+  contactChannel String
+  contactValue   String
+  productUrl     String?
+  referenceUrl   String?
+  source         String
+  // Keyed hash of the client IP (lib/client-ip.ts), for the per-IP cap: the
+  // owner cookie alone is dropped by any script.
+  ipHash         String?
+
+  createdAt DateTime  @default(now()) @db.Timestamptz
+  // Chat-style read state for the admin nav badge, as on the other queues.
+  seenAt    DateTime? @db.Timestamptz
+
+  @@index([createdAt])
+  @@index([seenAt])
+  @@index([ownerId, createdAt])
+  @@index([ipHash, createdAt])
+}

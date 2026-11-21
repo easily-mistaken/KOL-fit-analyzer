@@ -84,9 +84,18 @@ export function Hero() {
               See the work
             </Link>
           </div>
+          <p className="mt-4 text-sm text-secondary-foreground">
+            Not ready for a call?{" "}
+            <Link
+              href="/free-video-idea"
+              className="inline-flex min-h-11 items-center text-foreground underline decoration-accent-primary underline-offset-4 hover:text-accent-ink"
+            >
+              Get a free video idea
+            </Link>
+          </p>
           {/* Each audience links to its service page: crawlable, in-content
               links from the strongest page on the site. 44px tall tap rows. */}
-          <p className="mt-8 font-mono text-[11px] uppercase leading-relaxed tracking-[0.18em] text-muted-foreground">
+          <p className="mt-4 font-mono text-[11px] uppercase leading-relaxed tracking-[0.18em] text-muted-foreground">
             For {AUDIENCES.map((a, i) => (
               <span key={a} className="whitespace-nowrap">
                 <Link

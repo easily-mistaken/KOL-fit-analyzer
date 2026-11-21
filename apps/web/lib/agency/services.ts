@@ -31,8 +31,6 @@ export interface Service {
   /** Project slugs from work.ts, in display order. */
   projectSlugs: string[];
   faqs: { q: string; a: string }[];
-  /** Show the Launch Gallery references strip on this page. */
-  references?: boolean;
 }
 
 const faq = (q: string) => {
@@ -116,7 +114,6 @@ export const SERVICES: Service[] = [
       faq("How much does a video cost?"),
       faq("Do I pay anything upfront?"),
     ],
-    references: true,
   },
   {
     slug: "crypto-video-production",

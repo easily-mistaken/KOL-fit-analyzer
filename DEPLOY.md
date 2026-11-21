@@ -337,6 +337,19 @@ filenames and set `NEXT_PUBLIC_WORK_MEDIA_BASE` to its URL, then rebuild.
    against `DIRECT_URL` when the schema changed. (The `db:deploy` script in
    `packages/db/package.json` exists but is unused until a baseline migration
    is generated.)
+
+   **Then, every time a push adds a table, turn on row-level security:**
+
+   ```bash
+   cd packages/db && node scripts/enable-rls.mjs     # --check to report only
+   ```
+
+   Supabase serves the `public` schema over its REST API, and the anon key in
+   every browser is granted SELECT on new tables there. Until 2026-11-21 no
+   table had RLS, so that key could read `User`, `Lead` and the rest. RLS with
+   no policies blocks those roles; the app is unaffected because Prisma
+   connects as the table owner (`postgres`, BYPASSRLS) and no code reads
+   tables through supabase-js.
 4. **Fresh production data:** the production database is the existing Supabase
    project, which still holds dev/test rows. Purge them before going live —
    otherwise `/admin/leads` shows fake leads and the daily cost/abuse counters

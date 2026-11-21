@@ -66,6 +66,12 @@ export function AgencyHeader() {
           ))}
           <span className="mx-2 h-4 w-px bg-strong" />
           <Link
+            href="/free-video-idea"
+            className="hidden rounded-full px-3.5 py-2 text-sm text-secondary-foreground transition-colors hover:text-foreground lg:inline-flex"
+          >
+            Free video idea
+          </Link>
+          <Link
             href="/creator-fit"
             className="rounded-full px-3.5 py-2 text-sm text-secondary-foreground transition-colors hover:text-foreground"
           >
@@ -93,7 +99,11 @@ export function AgencyHeader() {
         // and the CTA stay reachable on short or landscape phones.
         <div className="max-h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain border-t border-default px-4 pb-6 pt-2 md:hidden">
           <nav className="flex flex-col">
-            {[...LINKS, { href: "/creator-fit", label: "Creator Fit (free tool)" }].map((l) => (
+            {[
+              ...LINKS,
+              { href: "/free-video-idea", label: "Free video idea" },
+              { href: "/creator-fit", label: "Creator Fit (free tool)" },
+            ].map((l) => (
               <Link
                 key={l.href}
                 href={l.href}

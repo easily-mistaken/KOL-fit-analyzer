@@ -3,6 +3,7 @@ import type { MetadataRoute } from "next";
 import { PROJECTS, categoryById } from "@/lib/agency/work";
 import { SITE_URL, absoluteUrl, latestPublished, projectHeadline } from "@/lib/agency/seo";
 import { SERVICES } from "@/lib/agency/services";
+import { GUIDES, guidesUpdated } from "@/lib/agency/guides";
 
 // When the service pages' copy last changed. Bump it by hand with the copy
 // (same rule as below: never a build-time "now").
@@ -43,6 +44,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
         : {}),
     })),
     ...SERVICES.map((s) => ({ url: absoluteUrl(`/${s.slug}`), lastModified: SERVICES_UPDATED, priority: 0.9 })),
+    { url: `${SITE_URL}/guides`, lastModified: guidesUpdated(), priority: 0.7 },
+    ...GUIDES.map((g) => ({ url: absoluteUrl(`/guides/${g.slug}`), lastModified: g.updated, priority: 0.7 })),
+    { url: `${SITE_URL}/free-video-idea`, priority: 0.8 },
     { url: `${SITE_URL}/pricing`, priority: 0.8 },
     { url: `${SITE_URL}/about`, priority: 0.6 },
     { url: `${SITE_URL}/contact`, priority: 0.7 },
